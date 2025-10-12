@@ -23,8 +23,8 @@ export interface CreateScheduledRideDTO {
   /** ID автомобиля */
   carId: string;
 
-  /** Промежуточные точки маршрута поездки */
-  waypoints: RideWaypoint[];
+  /** Промежуточные точки маршрута поездки (опционально) */
+  waypoints?: RideWaypoint[];
 
   /** Индексная сигнатура для совместимости с API */
   [key: string]: unknown;

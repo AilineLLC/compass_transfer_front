@@ -88,7 +88,7 @@ export function useNotificationsTable(initialFilters?: {
   const [hasPrevious, setHasPrevious] = useState(false);
 
   // Сортировка
-  const [sortBy, setSortBy] = useState<string>('createdAt');
+  const [sortBy, setSortBy] = useState<string>('Id');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // Видимость колонок
@@ -107,14 +107,14 @@ export function useNotificationsTable(initialFilters?: {
 
     return {
       type: true,
-      content: true,
-      orderType: false,
-      isRead: true,
-      actions: true,
       title: true,
-      orderId: false,
+      content: false,
+      orderType: true,
+      orderId: true,
       rideId: false,
-      createdAt: true,
+      isRead: true,
+      createdAt: false,
+      actions: true,
     };
   });
 

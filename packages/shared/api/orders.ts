@@ -118,6 +118,17 @@ export const ordersApi = {
       throw new Error(result.error.message);
     }
   },
+
+  // Получение заказа по ID
+  getOrderById: async (orderId: string): Promise<GetOrderDTO> => {
+    const result = await apiGet<GetOrderDTO>(`/Order/${orderId}`);
+
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+
+    return result.data!;
+  },
 };
 
 // Сервис для работы с заказами (для новых хуков)

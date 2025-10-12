@@ -16,12 +16,14 @@ import {
 
 interface ColumnVisibility {
   status: boolean;
-  startLocation: boolean;
-  endLocation: boolean;
-  distance: boolean;
+  subStatus: boolean;
+  orderNumber: boolean;
+  orderType: boolean;
+  price: boolean;
+  flight: boolean;
   duration: boolean;
-  startTime: boolean;
-  endTime: boolean;
+  createdAt: boolean;
+  scheduledTime: boolean;
   actions: boolean;
 }
 
@@ -36,7 +38,7 @@ interface UserRidesTableFiltersProps {
   setShowAdvancedFilters: (show: boolean) => void;
   columnVisibility: ColumnVisibility;
   handleColumnVisibilityChange: (column: keyof ColumnVisibility, visible: boolean) => void;
-  totalCount: number;
+  _totalCount: number;
   onRefresh: () => void;
 }
 
@@ -61,13 +63,14 @@ export function UserRidesTableFilters({
   setShowAdvancedFilters,
   columnVisibility,
   handleColumnVisibilityChange,
-  totalCount,
+  _totalCount,
   onRefresh,
 }: UserRidesTableFiltersProps) {
   const handleStatusToggle = (status: string) => {
     const newStatuses = statusFilter.includes(status)
       ? statusFilter.filter(s => s !== status)
       : [...statusFilter, status];
+
     handleStatusFilterChange(newStatuses);
   };
 
@@ -157,13 +160,15 @@ export function UserRidesTableFilters({
                       }
                     />
                     <span className="capitalize">
-                      {column === 'status' && 'Статус'}
-                      {column === 'startLocation' && 'Откуда'}
-                      {column === 'endLocation' && 'Куда'}
-                      {column === 'distance' && 'Расстояние'}
+                      {column === 'status' && 'Статус заказа'}
+                      {column === 'subStatus' && 'Подстатус заказа'}
+                      {column === 'orderNumber' && '№ Заказа'}
+                      {column === 'orderType' && 'Тип заказа'}
+                      {column === 'price' && 'Цена'}
+                      {column === 'flight' && 'Рейс'}
                       {column === 'duration' && 'Длительность'}
-                      {column === 'startTime' && 'Время начала'}
-                      {column === 'endTime' && 'Время окончания'}
+                      {column === 'createdAt' && 'Создан'}
+                      {column === 'scheduledTime' && 'Запланировано'}
                       {column === 'actions' && 'Действия'}
                     </span>
                   </label>

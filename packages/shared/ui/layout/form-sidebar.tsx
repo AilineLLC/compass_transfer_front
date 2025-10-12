@@ -42,6 +42,8 @@ export function FormSidebar({
   onUpdate,
   isSubmitting = false,
   onBack,
+  createButtonText = 'Создать',
+  updateButtonText = 'Обновить',
 }: {
   title?: string;
   chapters?: readonly FormChapter[] | FormChapter[];
@@ -54,6 +56,8 @@ export function FormSidebar({
   onUpdate?: () => void;
   isSubmitting?: boolean;
   onBack?: () => void;
+  createButtonText?: string;
+  updateButtonText?: string;
 }) {
   const [expandedChapter, setExpandedChapter] = useState<string | null>(null);
 
@@ -281,7 +285,7 @@ export function FormSidebar({
             ) : (
               <>
                 <Check className='h-5 w-5 mr-2' />
-                Создать пользователя
+                {createButtonText}
               </>
             )}
           </Button>
@@ -299,12 +303,12 @@ export function FormSidebar({
             {isSubmitting ? (
               <>
                 <Loader2 className='h-5 w-5 mr-2 animate-spin' />
-                Обновление...SidebarFooter
+                Обновление...
               </>
             ) : (
               <>
                 <Check className='h-5 w-5 mr-2' />
-                Обновить данные
+                {updateButtonText}
               </>
             )}
           </Button>

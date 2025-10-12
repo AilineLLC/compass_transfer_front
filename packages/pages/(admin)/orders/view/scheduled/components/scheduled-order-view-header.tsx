@@ -26,6 +26,26 @@ export function ScheduledOrderViewHeader({ order }: ScheduledOrderViewHeaderProp
   };
 
   const formatPrice = (price: number | null | undefined) => {
+    // Если заказ отменен системой - показываем расчетную цену
+    if (order.subStatus === 'CancelledBySystem') {
+      if (order.initialPrice && order.initialPrice > 0) {
+        return new Intl.NumberFormat('ru-RU').format(order.initialPrice) + ' сом';
+      }
+
+      return 'Не применимо';
+    }
+
+    // Если заказ отменен или истек
+    if (order.status === 'Cancelled' || order.status === 'Expired') {
+      return 'Отменен';
+    }
+
+    // Если заказ завершен, но цены нет - это ошибка
+    if (order.status === 'Completed' && (!price || price === 0)) {
+      return 'Ошибка расчета';
+    }
+
+    // Если заказ в процессе или запланирован
     if (!price || price === 0) return 'В процессе';
     
     return new Intl.NumberFormat('ru-RU').format(price) + ' сом';
@@ -90,7 +110,13 @@ export function ScheduledOrderViewHeader({ order }: ScheduledOrderViewHeaderProp
                 <div className='flex items-center gap-1'>
                   <DollarSign className='h-4 w-4 flex-shrink-0' />
                   <span className='font-medium'>Стоимость:</span>
-                  <span className={`font-semibold ${!order.finalPrice || order.finalPrice === 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                  <span className={`font-semibold ${
+                    order.status === 'Expired' || order.subStatus === 'CancelledBySystem'
+                      ? 'text-gray-500'
+                      : !order.finalPrice || order.finalPrice === 0
+                      ? 'text-orange-600'
+                      : 'text-green-600'
+                  }`}>
                     {formatPrice(order.finalPrice)}
                   </span>
                 </div>

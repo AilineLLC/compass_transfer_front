@@ -1,13 +1,15 @@
 'use client';
 
+import { use } from 'react';
 import { NotificationEditView } from '@pages/(admin)/notifications/edit/notification-edit-view';
 
 interface EditNotificationPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default function EditNotificationPage({ params }: EditNotificationPageProps) {
-  return <NotificationEditView notificationId={params.id} />;
+  const { id } = use(params);
+  return <NotificationEditView notificationId={id} />;
 }

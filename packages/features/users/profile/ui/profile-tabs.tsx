@@ -1,17 +1,18 @@
 'use client';
 
-import { User, ShoppingCart, Car } from 'lucide-react';
+import { User, Car, DollarSign } from 'lucide-react';
 import { Button } from '@shared/ui/forms/button';
 
-export type ProfileTab = 'basic' | 'orders' | 'rides';
+export type ProfileTab = 'basic' | 'rides' | 'payments';
 
 interface ProfileTabsProps {
   activeTab: ProfileTab;
   onTabChange: (tab: ProfileTab) => void;
   hideMy?: boolean;
+  showPayments?: boolean;
 }
 
-export function ProfileTabs({ activeTab, onTabChange, hideMy = false }: ProfileTabsProps) {
+export function ProfileTabs({ activeTab, onTabChange, hideMy = false, showPayments = false }: ProfileTabsProps) {
   const tabs = [
     {
       id: 'basic' as ProfileTab,
@@ -19,15 +20,15 @@ export function ProfileTabs({ activeTab, onTabChange, hideMy = false }: ProfileT
       icon: User,
     },
     {
-      id: 'orders' as ProfileTab,
-      label: hideMy ? 'Заказы' : 'Мои заказы',
-      icon: ShoppingCart,
-    },
-    {
       id: 'rides' as ProfileTab,
       label: hideMy ? 'Поездки' : 'Мои поездки',
       icon: Car,
     },
+    ...(showPayments ? [{
+      id: 'payments' as ProfileTab,
+      label: hideMy ? 'Платежи' : 'Мои платежи',
+      icon: DollarSign,
+    }] : []),
   ];
 
   return (
@@ -44,8 +45,8 @@ export function ProfileTabs({ activeTab, onTabChange, hideMy = false }: ProfileT
             onClick={() => onTabChange(tab.id)}
             className={`gap-2 ${
               isActive
-                ? 'bg-white shadow-sm text-gray-900'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
+                ? 'bg-white shadow-sm text-gray-900 hover:bg-white hover:text-gray-900'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-white/80'
             }`}
           >
             <Icon className='h-4 w-4' />

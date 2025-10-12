@@ -22,7 +22,7 @@ export function PromoBanners({ userRole = 'operator' }: PromoBannersProps) {
   const showCarsBanner = userRole === 'admin' || userRole === 'operator' || userRole === 'partner';
 
   return (
-    <div className={`grid grid-cols-1 ${showCarsBanner ? 'lg:grid-cols-2' : 'lg:grid-cols-1'} gap-6 px-5`}>
+    <div className={`grid grid-cols-1 ${showCarsBanner ? 'lg:grid-cols-2' : 'lg:grid-cols-1'} gap-6`}>
       {/* Первый баннер - Автомобили (только для админов и операторов) */}
       {showCarsBanner && (
       <div 

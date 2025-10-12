@@ -10,7 +10,7 @@ export const RideWaypointSchema = z
      * ID локации
      */
     locationId: z
-      .string({ required_error: 'Выберите локацию' })
+      .string({ message: 'Выберите локацию' })
       .uuid({ message: 'Выберите корректную локацию' }),
 
     /**
@@ -47,23 +47,22 @@ export const CreateScheduledRideDTOSchema = z.object({
    * ID водителя (обязательно)
    */
   driverId: z
-    .string({ required_error: 'Выберите водителя' })
+    .string({ message: 'Выберите водителя' })
     .uuid({ message: 'Выберите корректного водителя' }),
 
   /**
    * ID автомобиля (обязательно)
    */
   carId: z
-    .string({ required_error: 'Выберите автомобиль' })
+    .string({ message: 'Выберите автомобиль' })
     .uuid({ message: 'Выберите корректный автомобиль' }),
 
   /**
-   * Промежуточные точки маршрута поездки (технические остановки для водителя)
+   * Промежуточные точки маршрута поездки (технические остановки для водителя) - опционально
    */
   waypoints: z
     .array(RideWaypointSchema)
-    .min(1, { message: 'Добавьте хотя бы одну точку маршрута' })
-    .default([]),
+    .optional(),
 });
 
 /**
@@ -74,7 +73,7 @@ export const UpdateScheduledRideDTOSchema = CreateScheduledRideDTOSchema.partial
    * ID поездки для обновления
    */
   rideId: z
-    .string({ required_error: 'ID поездки обязателен' })
+    .string({ message: 'ID поездки обязателен' })
     .uuid({ message: 'Некорректный ID поездки' }),
 });
 

@@ -2,14 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { usersApi } from '@shared/api/users';
 import { carsApi } from '@shared/api/cars';
+import { usersApi } from '@shared/api/users';
 import {
   getRoleLabel,
   getPageTitle,
   BasicInfoSection,
   OperatorSection,
-  UserOrdersSection,
   UserRidesSection,
   AdminSection,
   CustomerSection,
@@ -125,9 +124,10 @@ export function ProfileView({ userId, userRole }: ProfileViewProps) {
 
       // Перезагружаем данные пользователя
       const updatedUser = await usersApi.getDriver(userId);
+
       setUser(updatedUser);
     } catch (error) {
-      console.error('Ошибка назначения автомобиля:', error);
+      // Логируем ошибку для отладки
       toast.error(error instanceof Error ? error.message : 'Ошибка назначения автомобиля');
       throw error;
     }
@@ -138,9 +138,10 @@ export function ProfileView({ userId, userRole }: ProfileViewProps) {
 
     try {
       const updatedUser = await usersApi.getDriver(userId);
+
       setUser(updatedUser);
-    } catch (error) {
-      console.error('Ошибка обновления данных водителя:', error);
+    } catch {
+      // Игнорируем ошибку обновления
     }
   };
 
@@ -190,8 +191,6 @@ export function ProfileView({ userId, userRole }: ProfileViewProps) {
             {renderRoleSpecificSection()}
           </>
         );
-      case 'orders':
-        return <UserOrdersSection userId={userId} />;
       case 'rides':
         return <UserRidesSection userId={userId} />;
       default:
@@ -262,7 +261,7 @@ export function ProfileView({ userId, userRole }: ProfileViewProps) {
             isOpen={isAssignCarModalOpen}
             onClose={() => setIsAssignCarModalOpen(false)}
             onAssignCar={handleAssignCar}
-            driverId={userId}
+            _driverId={userId}
             driverName={user.fullName}
           />
 

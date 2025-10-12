@@ -48,11 +48,16 @@ export function UserRidesTable({
   } = useUserRidesTable(initialFilters, userId);
 
   const handleViewDetails = (rideId: string) => {
-    // Найдем поездку по ID, чтобы получить orderId
+    // Найдем поездку по ID, чтобы получить orderId и тип заказа
     const ride = paginatedRides.find(r => r.id === rideId);
     
-    if (ride && ride.orderId) {
-      // Используем Instant по умолчанию, так как в GetRideDTO нет orderType
+    if (ride && ride.orderId && ride.order?.type) {
+      // Используем реальный тип заказа из order
+      const route = getOrderViewRoute(ride.orderId, ride.order.type);
+
+      window.open(route, '_blank');
+    } else if (ride && ride.orderId) {
+      // Fallback - если нет типа, используем Instant
       const route = getOrderViewRoute(ride.orderId, OrderType.Instant);
 
       window.open(route, '_blank');
@@ -86,7 +91,7 @@ export function UserRidesTable({
         setShowAdvancedFilters={setShowAdvancedFilters}
         columnVisibility={columnVisibility}
         handleColumnVisibilityChange={handleColumnVisibilityChange}
-        totalCount={totalCount}
+        _totalCount={totalCount}
         onRefresh={refetch}
       />
 

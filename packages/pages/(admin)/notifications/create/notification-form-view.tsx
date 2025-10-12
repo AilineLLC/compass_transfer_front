@@ -109,6 +109,7 @@ export function NotificationFormView({
             isSubmitting={isSubmitting}
             onBack={onBack}
             onChapterClick={handleChapterClick}
+            createButtonText='Создать уведомление'
           />
         </div>
       </div>

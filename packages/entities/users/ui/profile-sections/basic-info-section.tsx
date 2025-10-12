@@ -1,8 +1,8 @@
 'use client';
 
 import { User, Mail, Phone, MessageCircle, Send } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/layout/card';
 import { Button } from '@shared/ui/forms/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/layout/card';
 import { formatPhoneNumber } from '@entities/my-profile/lib/profile-helpers';
 import type { AnyUserProfile } from '@entities/users/ui/profile-sections/types';
 
@@ -23,6 +23,7 @@ const handleWhatsAppClick = (phoneNumber: string) => {
   // Убираем все символы кроме цифр и добавляем код страны если нужно
   const cleanNumber = phoneNumber.replace(/\D/g, '');
   const whatsappNumber = cleanNumber.startsWith('996') ? cleanNumber : `996${cleanNumber}`;
+
   window.open(`https://wa.me/${whatsappNumber}`, '_blank');
 };
 
@@ -30,6 +31,7 @@ const handleTelegramClick = (phoneNumber: string) => {
   // Убираем все символы кроме цифр и добавляем код страны если нужно
   const cleanNumber = phoneNumber.replace(/\D/g, '');
   const telegramNumber = cleanNumber.startsWith('996') ? cleanNumber : `996${cleanNumber}`;
+
   window.open(`https://t.me/+${telegramNumber}`, '_blank');
 };
 

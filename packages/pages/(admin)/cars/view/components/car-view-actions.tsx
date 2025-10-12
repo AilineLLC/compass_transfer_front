@@ -40,7 +40,7 @@ export function CarViewActions({
   };
 
   return (
-    <div className='flex flex-col gap-4'>
+    <div className='sticky top-4 flex flex-col gap-4'>
       {/* Основные действия */}
       <Card>
         <CardHeader>

@@ -1,6 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
+import { ordersApi, type GetOrderDTO } from '@shared/api/orders';
 import { ridesApi } from '@shared/api/rides';
 import type { GetRideDTO } from '@entities/rides/interface';
+
+// Расширенный тип поездки с информацией о заказе
+export interface RideWithOrder extends GetRideDTO {
+  order?: GetOrderDTO;
+}
 
 // Интерфейс для параметров запроса поездок
 interface RideFilters {
@@ -23,17 +29,19 @@ interface RideFilters {
 
 interface ColumnVisibility {
   status: boolean;
-  startLocation: boolean;
-  endLocation: boolean;
-  distance: boolean;
+  subStatus: boolean;
+  orderNumber: boolean;
+  orderType: boolean;
+  price: boolean;
+  flight: boolean;
   duration: boolean;
-  startTime: boolean;
-  endTime: boolean;
+  createdAt: boolean;
+  scheduledTime: boolean;
   actions: boolean;
 }
 
 export function useUserRidesTable(_initialFilters: unknown, userId: string) {
-  const [paginatedRides, setPaginatedRides] = useState<GetRideDTO[]>([]);
+  const [paginatedRides, setPaginatedRides] = useState<RideWithOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -59,12 +67,14 @@ export function useUserRidesTable(_initialFilters: unknown, userId: string) {
   // Видимость колонок
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>({
     status: true,
-    startLocation: true,
-    endLocation: true,
-    distance: true,
+    subStatus: true,
+    orderNumber: true,
+    orderType: true,
+    price: true,
+    flight: false,
     duration: false,
-    startTime: true,
-    endTime: false,
+    createdAt: true,
+    scheduledTime: true,
     actions: true,
   });
 
@@ -95,13 +105,30 @@ export function useUserRidesTable(_initialFilters: unknown, userId: string) {
 
       const response = await ridesApi.getUserRides(userId, params);
 
-      setPaginatedRides(response.data || []);
+      // Загружаем информацию о заказах для каждой поездки
+      const ridesWithOrders: RideWithOrder[] = await Promise.all(
+        (response.data || []).map(async (ride) => {
+          if (ride.orderId) {
+            try {
+              const order = await ordersApi.getOrderById(ride.orderId);
+
+              return { ...ride, order };
+            } catch {
+              // Если не удалось загрузить заказ, возвращаем поездку без него
+              return ride;
+            }
+          }
+
+          return ride;
+        })
+      );
+
+      setPaginatedRides(ridesWithOrders);
       setTotalCount(response.totalCount || 0);
       setHasNext(response.hasNext || false);
       setHasPrevious(response.hasPrevious || false);
 
     } catch (err) {
-      console.error('Ошибка загрузки поездок пользователя:', err);
       setError(err instanceof Error ? err.message : 'Ошибка загрузки поездок');
     } finally {
       setLoading(false);

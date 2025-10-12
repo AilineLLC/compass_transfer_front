@@ -5,7 +5,7 @@ import { cn } from '@shared/lib/utils';
 import { Input } from '@shared/ui/forms/input';
 import { Label } from '@shared/ui/forms/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/forms/select';
-import { NotificationTypeValues, NotificationTypeLabels, type NotificationType } from '../enums/NotificationType.enum';
+import { NotificationTypeLabels, type NotificationType } from '../enums/NotificationType.enum';
 import type { NotificationCreateFormData } from '../schemas/notificationCreateSchema';
 
 // Типы заказов
@@ -59,18 +59,20 @@ export function NotificationBasicSection({
         <Select
           value={type}
           onValueChange={(value) => setValue('type', value as NotificationType)}
+          disabled
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Выберите тип уведомления" />
+            <SelectValue placeholder="Системное сообщение" />
           </SelectTrigger>
           <SelectContent>
-            {NotificationTypeValues.map((notificationType) => (
-              <SelectItem key={notificationType} value={notificationType}>
-                {NotificationTypeLabels[notificationType]}
-              </SelectItem>
-            ))}
+            <SelectItem value="SystemMessage">
+              {NotificationTypeLabels.SystemMessage}
+            </SelectItem>
           </SelectContent>
         </Select>
+        <p className="text-xs text-muted-foreground">
+          В данный момент можно создавать только системные сообщения
+        </p>
         {errors.type && (
           <p className="text-sm text-red-600">{errors.type.message}</p>
         )}

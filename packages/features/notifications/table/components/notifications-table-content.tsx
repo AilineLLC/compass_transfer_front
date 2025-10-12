@@ -41,8 +41,8 @@ interface NotificationsTableContentProps {
   handleSort: (field: string) => void;
   onDeleteNotification: (notification: GetNotificationDTO) => void;
   onToggleReadStatus: (notification: GetNotificationDTO) => void;
-  showMyNotifications: boolean;
   isUpdating: boolean;
+  showMyNotifications: boolean;
 }
 
 // Компонент для сортируемых заголовков
@@ -83,8 +83,8 @@ export function NotificationsTableContent({
   handleSort,
   onDeleteNotification,
   onToggleReadStatus,
-  showMyNotifications,
   isUpdating,
+  showMyNotifications,
 }: NotificationsTableContentProps) {
   if (paginatedNotifications.length === 0) {
     return;
@@ -95,10 +95,13 @@ export function NotificationsTableContent({
       <Table>
         <TableHeader>
           <TableRow>
-            {columnVisibility.type && <SortableHeader field='type' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Тип</SortableHeader>}
-            {columnVisibility.content && <SortableHeader field='content' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Содержимое</SortableHeader>}
-            {columnVisibility.orderType && <SortableHeader field='orderType' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Тип заказа</SortableHeader>}
-            {columnVisibility.isRead && <SortableHeader field='isRead' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Статус</SortableHeader>}
+            {columnVisibility.type && <SortableHeader field='Type' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Тип</SortableHeader>}
+            {columnVisibility.title && <SortableHeader field='Title' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Заголовок</SortableHeader>}
+            {columnVisibility.content && <SortableHeader field='Content' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Содержимое</SortableHeader>}
+            {columnVisibility.orderType && <SortableHeader field='OrderType' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Тип заказа</SortableHeader>}
+            {columnVisibility.orderId && <TableHead>Заказ</TableHead>}
+            {columnVisibility.isRead && <SortableHeader field='IsRead' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Статус</SortableHeader>}
+            {showMyNotifications && <TableHead className='w-[150px]'>Отметить</TableHead>}
             {columnVisibility.actions && <TableHead className='w-[120px]'>Действия</TableHead>}
           </TableRow>
         </TableHeader>
@@ -116,6 +119,11 @@ export function NotificationsTableContent({
                       {getNotificationTypeLabel(notification.type)}
                     </Badge>
                   </div>
+                </TableCell>
+              )}
+              {columnVisibility.title && (
+                <TableCell className='font-medium'>
+                  {notification.title || <span className='text-muted-foreground italic'>—</span>}
                 </TableCell>
               )}
               {columnVisibility.content && (
@@ -139,11 +147,49 @@ export function NotificationsTableContent({
                   </Badge>
                 </TableCell>
               )}
+              {columnVisibility.orderId && (
+                <TableCell>
+                  {notification.orderId ? (
+                    <Button
+                      variant='link'
+                      size='sm'
+                      className='h-auto p-0 text-blue-600'
+                      onClick={() => {
+                        const orderPath = notification.orderType === 'Instant' 
+                          ? `/orders/instant/${notification.orderId}`
+                          : `/orders/scheduled/${notification.orderId}`;
+                        router.push(orderPath);
+                      }}
+                    >
+                      Перейти к заказу
+                    </Button>
+                  ) : (
+                    <span className='text-muted-foreground italic'>—</span>
+                  )}
+                </TableCell>
+              )}
               {columnVisibility.isRead && (
                 <TableCell>
                   <Badge className={notification.isRead ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}>
                     {notification.isRead ? 'Прочитано' : 'Новое'}
                   </Badge>
+                </TableCell>
+              )}
+              {showMyNotifications && (
+                <TableCell>
+                  {!notification.isRead ? (
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={() => onToggleReadStatus(notification)}
+                      disabled={isUpdating}
+                    >
+                      <Mail className='mr-2 h-4 w-4' />
+                      Прочитано
+                    </Button>
+                  ) : (
+                    <span className='text-sm text-muted-foreground'>—</span>
+                  )}
                 </TableCell>
               )}
               {columnVisibility.actions && (
@@ -159,23 +205,14 @@ export function NotificationsTableContent({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align='end'>
-                      <DropdownMenuItem onClick={() => router.push(`/notifications/${notification.id}`)}>
+                      <DropdownMenuItem onClick={() => router.push(showMyNotifications ? `/notifications/me/${notification.id}` : `/notifications/${notification.id}`)}>
                         <Eye className='mr-2 h-4 w-4' />
                         Просмотр
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => router.push(`/notifications/${notification.id}/edit`)}>
+                      <DropdownMenuItem onClick={() => router.push(`/notifications/edit/${notification.id}`)}>
                         <Edit className='mr-2 h-4 w-4' />
                         Редактировать
                       </DropdownMenuItem>
-                      {!notification.isRead && showMyNotifications && (
-                        <DropdownMenuItem
-                          onClick={() => onToggleReadStatus(notification)}
-                          disabled={isUpdating}
-                        >
-                          <Mail className='mr-2 h-4 w-4' />
-                          Отметить как прочитанное
-                        </DropdownMenuItem>
-                      )}
                       <DropdownMenuItem
                         className='text-red-600'
                         onClick={() => onDeleteNotification(notification)}

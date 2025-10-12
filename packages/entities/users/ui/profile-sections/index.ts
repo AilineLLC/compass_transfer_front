@@ -9,4 +9,5 @@ export { OrdersSection } from './orders-section';
 export { RidesSection } from './rides-section';
 export { UserOrdersSection } from './user-orders-section';
 export { UserRidesSection } from './user-rides-section';
+export { MyPaymentsSection } from './my-payments-section';
 export type { AnyUserProfile, MapSheetData, RoleSpecificSectionProps, SectionWithMapProps } from './types';

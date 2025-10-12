@@ -3,12 +3,13 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { ordersApi, type OrderFilters, type GetOrderDTO } from '@shared/api/orders';
-import { useSavedFilters } from '@shared/hooks';
 import { useUserRole } from '@shared/contexts/user-role-context';
-import { Role } from '@entities/users/enums';
+import { useSavedFilters } from '@shared/hooks';
+import { useSignalR } from '@shared/hooks/signal/useSignalR';
 import type { OrderStatus } from '@entities/orders/enums/OrderStatus.enum';
 import type { OrderSubStatus } from '@entities/orders/enums/OrderSubStatus.enum';
 import type { OrderType } from '@entities/orders/enums/OrderType.enum';
+import { Role } from '@entities/users/enums';
 
 interface ColumnVisibility {
   orderNumber: boolean;
@@ -23,7 +24,7 @@ interface ColumnVisibility {
   actions: boolean;
 }
 
-interface SavedOrderFilters {
+interface SavedOrderFilters extends Record<string, unknown> {
   orderNumberFilter: string;
   typeFilter: OrderType[];
   statusFilter: OrderStatus[];
@@ -45,6 +46,7 @@ export function useOrdersTable(initialFilters?: {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { userRole } = useUserRole();
+  const signalR = useSignalR();
   
   // Данные
   const [orders, setOrders] = useState<GetOrderDTO[]>([]);
@@ -265,6 +267,43 @@ export function useOrdersTable(initialFilters?: {
   useEffect(() => {
     loadOrders();
   }, [loadOrders]);
+
+  // Подписка на SignalR события для автоматического обновления списка заказов
+  useEffect(() => {
+    if (!signalR.isConnected) return;
+
+    // События, которые влияют на список заказов
+    const orderEvents = [
+      'OrderCreatedNotification',
+      'OrderConfirmedNotification',
+      'OrderCompletedNotification',
+      'OrderCancelledNotification',
+      'OrderUpdatedNotification',
+      'RideRequestNotification',
+      'RideAcceptedNotification',
+      'RideStartedNotification',
+      'RideCompletedNotification',
+      'RideCancelledNotification',
+      'DriverAssignedNotification',
+    ];
+
+    // Обработчик события - перезагружаем список заказов
+    const handleOrderEvent = () => {
+      loadOrders();
+    };
+
+    // Подписываемся на все события
+    orderEvents.forEach(event => {
+      signalR.on(event, handleOrderEvent);
+    });
+
+    // Отписываемся при размонтировании
+    return () => {
+      orderEvents.forEach(event => {
+        signalR.off(event, handleOrderEvent);
+      });
+    };
+  }, [signalR, loadOrders]);
 
   // Конфигурация для сохранения фильтров
   const defaultFilters: SavedOrderFilters = useMemo(() => ({

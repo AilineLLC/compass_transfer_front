@@ -1,9 +1,13 @@
-import { ArrowLeft, Edit, Trash2 } from 'lucide-react';
+'use client';
+
+import { ArrowLeft, Edit, Trash2, DollarSign } from 'lucide-react';
+import { useState } from 'react';
 import { useUserRole } from '@shared/contexts/user-role-context';
 import { Button } from '@shared/ui/forms/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/layout';
 import type { GetOrderDTO } from '@entities/orders/interface';
 import { Role } from '@entities/users/enums';
+import { OrderPaymentsModal } from '../../components/order-payments-modal';
 
 interface InstantOrderViewActionsProps {
   order: GetOrderDTO;
@@ -13,10 +17,12 @@ interface InstantOrderViewActionsProps {
 }
 
 export function InstantOrderViewActions({
+  order,
   onEdit,
   onDelete,
   onBack
 }: InstantOrderViewActionsProps) {
+  const [isPaymentsModalOpen, setIsPaymentsModalOpen] = useState(false);
   const { userRole } = useUserRole();
 
   // Партнеры не могут редактировать и удалять заказы
@@ -24,10 +30,11 @@ export function InstantOrderViewActions({
   const canDeleteOrders = userRole !== Role.Partner;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Действия</CardTitle>
-      </CardHeader>
+    <div className='sticky top-4'>
+      <Card>
+        <CardHeader>
+          <CardTitle>Действия</CardTitle>
+        </CardHeader>
       <CardContent className='space-y-3'>
         <Button
           onClick={onBack}
@@ -59,7 +66,25 @@ export function InstantOrderViewActions({
             Удалить
           </Button>
         )}
+
+        {/* Кнопка просмотра платежей */}
+        <Button
+          onClick={() => setIsPaymentsModalOpen(true)}
+          variant='outline'
+          className='w-full justify-start'
+        >
+          <DollarSign className='h-4 w-4 mr-2' />
+          Платежи
+        </Button>
       </CardContent>
-    </Card>
+      </Card>
+
+      {/* Модальное окно платежей */}
+      <OrderPaymentsModal
+        orderId={order.id}
+        isOpen={isPaymentsModalOpen}
+        onClose={() => setIsPaymentsModalOpen(false)}
+      />
+    </div>
   );
 }

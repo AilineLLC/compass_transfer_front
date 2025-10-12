@@ -8,6 +8,7 @@ import {
   Home,
   CreditCard,
   Settings,
+  DollarSign,
 } from 'lucide-react';
 import { sidebarMockData } from '@entities/users/mock-data';
 
@@ -58,19 +59,19 @@ export const sidebarData = {
       items: [
         {
           title: 'Все заказы',
-          url: '/orders/all',
+          url: '/orders',
         },
         {
-          title: 'Активные',
-          url: '/orders/active',
+          title: 'Мгновенные',
+          url: '/orders?type=Instant',
         },
         {
-          title: 'Завершенные',
-          url: '/orders/completed',
+          title: 'Запланированные',
+          url: '/orders?type=Scheduled',
         },
         {
-          title: 'Отмененные',
-          url: '/orders/cancelled',
+          title: 'Создать заказ',
+          url: '/orders/create',
         },
       ],
     },
@@ -231,6 +232,33 @@ export const sidebarData = {
         {
           title: 'Создать услугу',
           url: '/services/create',
+        },
+      ],
+    },
+    {
+      name: 'Платежи',
+      url: '/payments',
+      icon: DollarSign,
+      items: [
+        {
+          title: 'Все платежи',
+          url: '/payments',
+        },
+        {
+          title: 'Завершенные',
+          url: '/payments?status=Completed',
+        },
+        {
+          title: 'В обработке',
+          url: '/payments?status=Processing',
+        },
+        {
+          title: 'Ожидание',
+          url: '/payments?status=Pending',
+        },
+        {
+          title: 'Ошибки',
+          url: '/payments?status=Failed',
         },
       ],
     },

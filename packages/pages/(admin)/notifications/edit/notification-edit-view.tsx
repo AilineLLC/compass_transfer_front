@@ -190,6 +190,7 @@ function NotificationEditFormView({
             onUpdate={onUpdate}
             isSubmitting={isSubmitting}
             onBack={onBack}
+            updateButtonText='Обновить уведомление'
           />
         </div>
       </div>

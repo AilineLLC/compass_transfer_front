@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { OrderType } from '@entities/orders/enums/OrderType.enum';
-import { useGetScheduledOrder } from '@entities/orders/hooks';
+import { useScheduledOrderById } from '@entities/orders/hooks';
 import { getOrderEditRoute } from '@entities/orders/utils/order-routes';
 import { ScheduledOrderViewActions } from './components/scheduled-order-view-actions';
 import { ScheduledOrderViewContent } from './components/scheduled-order-view-content';
@@ -21,7 +21,7 @@ export function ScheduledOrderViewPage({ orderId }: ScheduledOrderViewPageProps)
     order,
     isLoading,
     error
-  } = useGetScheduledOrder(orderId);
+  } = useScheduledOrderById(orderId);
 
   const handleBack = () => {
     router.push('/orders');

@@ -1,6 +1,6 @@
 'use client';
 
-import { DollarSign, Filter, RefreshCw } from 'lucide-react';
+import { Filter, RefreshCw } from 'lucide-react';
 import { Button } from '@shared/ui/forms/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/layout/card';
 import { type ServiceClass, type CarType } from '@entities/tariffs/enums';
@@ -55,7 +55,6 @@ export function TariffsList({
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
                 Выбор тарифа ({filteredTariffs.length} из {tariffs.length})
               </CardTitle>
               <div className="flex items-center gap-2">
@@ -106,7 +105,6 @@ export function TariffsList({
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5" />
             Выбор тарифа ({filteredTariffs.length} из {tariffs.length})
           </CardTitle>
           <div className="flex items-center gap-2">

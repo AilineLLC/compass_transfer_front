@@ -12,6 +12,7 @@ import type { GetOrderDTO } from '@entities/orders/interface';
 import { useLocation } from '@features/locations/hooks/useLocation';
 import { useUserById } from '@features/users';
 import { DriverSheet } from '@widgets/sidebar/ui/driver-sheet';
+import { RideDetailCard } from '@entities/rides';
 
 interface InstantOrderViewContentProps {
   order: GetOrderDTO;
@@ -44,6 +45,28 @@ export function InstantOrderViewContent({ order }: InstantOrderViewContentProps)
 
   const formatPrice = (price: number | null | undefined) => {
     if (!price || price === 0) return 'В процессе';
+
+    return new Intl.NumberFormat('ru-RU').format(price) + ' сом';
+  };
+
+  const formatFinalPrice = (price: number | null | undefined) => {
+    // Если заказ истек или отменен системой - показываем расчетную цену
+    if (order.status === 'Expired' || order.subStatus === 'CancelledBySystem') {
+      if (order.initialPrice && order.initialPrice > 0) {
+        return new Intl.NumberFormat('ru-RU').format(order.initialPrice) + ' сом';
+      }
+      return 'Не применимо';
+    }
+
+    // Если заказ завершен, но цены нет - это ошибка
+    if (order.status === 'Completed' && (!price || price === 0)) {
+      return 'Ошибка расчета';
+    }
+
+    // Если заказ в процессе
+    if (!price || price === 0) {
+      return 'В процессе';
+    }
 
     return new Intl.NumberFormat('ru-RU').format(price) + ' сом';
   };
@@ -190,18 +213,30 @@ export function InstantOrderViewContent({ order }: InstantOrderViewContentProps)
           <CardContent>
             <div className='space-y-3'>
               {order.passengers.map((passenger, index) => (
-                <div key={index} className='flex items-center gap-3 p-3 bg-gray-50 rounded-lg'>
-                  <div className='w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center'>
-                    <User className='h-4 w-4 text-blue-600' />
-                  </div>
-                  <div>
-                    <div className='font-medium'>
-                      {`${passenger.firstName} ${passenger.lastName || ''}`.trim() || 'Без имени'}
+                <div key={index} className='flex items-center justify-between gap-3 p-3 bg-gray-50 rounded-lg'>
+                  <div className='flex items-center gap-3'>
+                    <div className='w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center'>
+                      <User className='h-4 w-4 text-blue-600' />
                     </div>
-                    <div className='text-sm text-muted-foreground'>
-                      {passenger.isMainPassenger ? 'Основной пассажир' : 'Пассажир'}
+                    <div>
+                      <div className='font-medium'>
+                        {`${passenger.firstName} ${passenger.lastName || ''}`.trim() || 'Без имени'}
+                      </div>
+                      <div className='text-sm text-muted-foreground'>
+                        {passenger.isMainPassenger ? 'Основной пассажир' : 'Пассажир'}
+                      </div>
                     </div>
                   </div>
+                  {passenger.customerId && (
+                    <Button
+                      variant='ghost'
+                      size='sm'
+                      className='h-8 w-8 p-0'
+                      onClick={() => window.open(`/users/customer/${passenger.customerId}`, '_blank')}
+                    >
+                      <ExternalLink className='h-4 w-4' />
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
@@ -275,39 +310,7 @@ export function InstantOrderViewContent({ order }: InstantOrderViewContentProps)
           <CardContent>
             <div className='space-y-3'>
               {order.rides.map((ride, index) => (
-                <div key={ride.id} className='p-3 bg-gray-50 rounded-lg'>
-                  <div className='flex items-center justify-between mb-2'>
-                    <div className='text-sm font-medium'>
-                      Поездка #{index + 1}
-                    </div>
-                    <Badge variant='outline' className='text-xs'>
-                      {ride.status}
-                    </Badge>
-                  </div>
-                  {ride.startedAt && (
-                    <div className='text-xs text-muted-foreground mb-2'>
-                      {formatDate(ride.startedAt)}
-                    </div>
-                  )}
-                  {ride.driverId && (
-                    <div className='flex items-center gap-2'>
-                      <User className='h-3 w-3 text-muted-foreground' />
-                      <span className='text-xs text-muted-foreground'>Водитель:</span>
-                      <Button
-                        variant='ghost'
-                        size='sm'
-                        className='h-5 px-1 text-xs'
-                        onClick={() => {
-                          // TODO: Реализовать загрузку данных водителя по ID
-                          setIsDriverSheetOpen(true);
-                        }}
-                      >
-                        {ride.driverId}
-                        <ExternalLink className='h-2 w-2 ml-1' />
-                      </Button>
-                    </div>
-                  )}
-                </div>
+                <RideDetailCard key={ride.id} rideId={ride.id} rideIndex={index} />
               ))}
             </div>
           </CardContent>
@@ -324,14 +327,6 @@ export function InstantOrderViewContent({ order }: InstantOrderViewContentProps)
         </CardHeader>
         <CardContent className='space-y-4'>
           <div>
-            <div className='text-sm text-muted-foreground'>Тип заказа</div>
-            <div className='font-medium'>Мгновенный</div>
-          </div>
-          <div>
-            <div className='text-sm text-muted-foreground'>Номер заказа</div>
-            <div className='font-medium'>#{order.orderNumber}</div>
-          </div>
-          <div>
             <div className='text-sm text-muted-foreground'>Создатель</div>
             <div className='font-medium flex items-center gap-2'>
               {creatorLoading ? (
@@ -344,29 +339,10 @@ export function InstantOrderViewContent({ order }: InstantOrderViewContentProps)
                       variant='ghost'
                       size='sm'
                       className='h-4 w-4 p-0'
-                      onClick={() => window.open(`/users/${creator.id}`, '_blank')}
-                    >
-                      <ExternalLink className='h-3 w-3' />
-                    </Button>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-          <div>
-            <div className='text-sm text-muted-foreground'>Тариф</div>
-            <div className='font-medium flex items-center gap-2'>
-              {tariffLoading ? (
-                <Skeleton className='h-4 w-24' />
-              ) : (
-                <>
-                  {tariff?.name || 'Не указан'}
-                  {tariff && (
-                    <Button
-                      variant='ghost'
-                      size='sm'
-                      className='h-4 w-4 p-0'
-                      onClick={() => window.open(`/tariffs/${tariff.id}`, '_blank')}
+                      onClick={() => {
+                        const roleUrl = creator.role.toLowerCase();
+                        window.open(`/users/${roleUrl}/${creator.id}`, '_blank');
+                      }}
                     >
                       <ExternalLink className='h-3 w-3' />
                     </Button>
@@ -379,12 +355,6 @@ export function InstantOrderViewContent({ order }: InstantOrderViewContentProps)
             <div className='text-sm text-muted-foreground'>Создан</div>
             <div className='font-medium'>{formatDate(order.createdAt)}</div>
           </div>
-          {order.completedAt && (
-            <div>
-              <div className='text-sm text-muted-foreground'>Завершен</div>
-              <div className='font-medium'>{formatDate(order.completedAt)}</div>
-            </div>
-          )}
         </CardContent>
       </Card>
 
@@ -403,8 +373,14 @@ export function InstantOrderViewContent({ order }: InstantOrderViewContentProps)
           </div>
           <div className='flex justify-between font-medium text-lg border-t pt-2'>
             <span>Итоговая цена:</span>
-            <span className={!order.finalPrice || order.finalPrice === 0 ? 'text-orange-600' : 'text-green-600'}>
-              {formatPrice(order.finalPrice)}
+            <span className={
+              order.status === 'Expired' || order.subStatus === 'CancelledBySystem'
+                ? 'text-gray-500'
+                : !order.finalPrice || order.finalPrice === 0
+                ? 'text-orange-600'
+                : 'text-green-600'
+            }>
+              {formatFinalPrice(order.finalPrice)}
             </span>
           </div>
         </CardContent>

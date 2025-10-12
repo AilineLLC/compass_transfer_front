@@ -1,72 +1,34 @@
 'use client';
 
-import { Car, Eye, MapPin, Clock, Route, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Car, Eye, Clock, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { Badge } from '@shared/ui/data-display/badge';
-import { Button } from '@shared/ui/forms/button';
 import { Skeleton } from '@shared/ui/data-display/skeleton';
-import type { GetRideDTO } from '@entities/rides/interface';
+import { Button } from '@shared/ui/forms/button';
+import { orderStatusLabels, orderSubStatusLabels } from '@entities/orders';
+import { orderTypeLabels } from '@entities/orders/constants/order-status-labels';
+import type { RideWithOrder } from '../hooks/use-user-rides-table';
 
 interface ColumnVisibility {
   status: boolean;
-  startLocation: boolean;
-  endLocation: boolean;
-  distance: boolean;
+  subStatus: boolean;
+  orderNumber: boolean;
+  orderType: boolean;
+  price: boolean;
+  flight: boolean;
   duration: boolean;
-  startTime: boolean;
-  endTime: boolean;
+  createdAt: boolean;
+  scheduledTime: boolean;
   actions: boolean;
 }
 
 interface UserRidesTableContentProps {
-  rides: GetRideDTO[];
+  rides: RideWithOrder[];
   loading: boolean;
   columnVisibility: ColumnVisibility;
   sortBy: string;
   sortOrder: 'asc' | 'desc';
   onSortChange: (column: string, order: 'asc' | 'desc') => void;
   onViewDetails: (rideId: string) => void;
-}
-
-function getStatusColor(status: string): string {
-  switch (status) {
-    case 'Requested':
-      return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-    case 'Searching':
-      return 'bg-orange-100 text-orange-800 border-orange-200';
-    case 'Accepted':
-      return 'bg-blue-100 text-blue-800 border-blue-200';
-    case 'Arrived':
-      return 'bg-purple-100 text-purple-800 border-purple-200';
-    case 'InProgress':
-      return 'bg-indigo-100 text-indigo-800 border-indigo-200';
-    case 'Completed':
-      return 'bg-green-100 text-green-800 border-green-200';
-    case 'Cancelled':
-      return 'bg-red-100 text-red-800 border-red-200';
-    default:
-      return 'bg-gray-100 text-gray-800 border-gray-200';
-  }
-}
-
-function getStatusLabel(status: string): string {
-  switch (status) {
-    case 'Requested':
-      return 'Запрошена';
-    case 'Searching':
-      return 'Поиск водителя';
-    case 'Accepted':
-      return 'Принята водителем';
-    case 'Arrived':
-      return 'Водитель прибыл';
-    case 'InProgress':
-      return 'В процессе';
-    case 'Completed':
-      return 'Завершена';
-    case 'Cancelled':
-      return 'Отменена';
-    default:
-      return status;
-  }
 }
 
 function formatDate(dateString: string): string {
@@ -77,16 +39,6 @@ function formatDate(dateString: string): string {
     hour: '2-digit',
     minute: '2-digit',
   });
-}
-
-function formatDuration(seconds: number): string {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  
-  if (hours > 0) {
-    return `${hours}ч ${minutes}м`;
-  }
-  return `${minutes}м`;
 }
 
 export function UserRidesTableContent({
@@ -110,6 +62,7 @@ export function UserRidesTableContent({
     if (sortBy !== column) {
       return <ArrowUpDown className="h-4 w-4" />;
     }
+
     return sortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />;
   };
 
@@ -159,29 +112,25 @@ export function UserRidesTableContent({
                     onClick={() => handleSort('status')}
                     className="h-auto p-0 font-medium hover:bg-transparent"
                   >
-                    Статус
+                    Статус заказа
                     {getSortIcon('status')}
                   </Button>
                 </th>
               )}
-              {columnVisibility.startLocation && (
-                <th className="text-left p-3 font-medium">Откуда</th>
+              {columnVisibility.subStatus && (
+                <th className="text-left p-3 font-medium">Подстатус заказа</th>
               )}
-              {columnVisibility.endLocation && (
-                <th className="text-left p-3 font-medium">Куда</th>
+              {columnVisibility.orderNumber && (
+                <th className="text-left p-3 font-medium">№ Заказа</th>
               )}
-              {columnVisibility.distance && (
-                <th className="text-left p-3 font-medium">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSort('distance')}
-                    className="h-auto p-0 font-medium hover:bg-transparent"
-                  >
-                    Расстояние
-                    {getSortIcon('distance')}
-                  </Button>
-                </th>
+              {columnVisibility.orderType && (
+                <th className="text-left p-3 font-medium">Тип заказа</th>
+              )}
+              {columnVisibility.price && (
+                <th className="text-left p-3 font-medium">Цена</th>
+              )}
+              {columnVisibility.flight && (
+                <th className="text-left p-3 font-medium">Рейс</th>
               )}
               {columnVisibility.duration && (
                 <th className="text-left p-3 font-medium">
@@ -196,34 +145,34 @@ export function UserRidesTableContent({
                   </Button>
                 </th>
               )}
-              {columnVisibility.startTime && (
+              {columnVisibility.createdAt && (
                 <th className="text-left p-3 font-medium">
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleSort('startTime')}
+                    onClick={() => handleSort('createdAt')}
                     className="h-auto p-0 font-medium hover:bg-transparent"
                   >
-                    Время начала
-                    {getSortIcon('startTime')}
+                    Создан
+                    {getSortIcon('createdAt')}
                   </Button>
                 </th>
               )}
-              {columnVisibility.endTime && (
+              {columnVisibility.scheduledTime && (
                 <th className="text-left p-3 font-medium">
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleSort('endTime')}
+                    onClick={() => handleSort('scheduledTime')}
                     className="h-auto p-0 font-medium hover:bg-transparent"
                   >
-                    Время окончания
-                    {getSortIcon('endTime')}
+                    Запланировано
+                    {getSortIcon('scheduledTime')}
                   </Button>
                 </th>
               )}
               {columnVisibility.actions && (
-                <th className="text-left p-3 font-medium"></th>
+                <th className="text-left p-3 font-medium" />
               )}
             </tr>
           </thead>
@@ -232,41 +181,44 @@ export function UserRidesTableContent({
               <tr key={ride.id} className="border-t hover:bg-muted/25">
                 {columnVisibility.status && (
                   <td className="p-3">
-                    <Badge className={`${getStatusColor(ride.status)} w-fit`}>
-                      {getStatusLabel(ride.status)}
+                    <Badge className="w-fit">
+                      {ride.order?.status ? orderStatusLabels[ride.order.status] : '-'}
                     </Badge>
                   </td>
                 )}
-                {columnVisibility.startLocation && (
+                {columnVisibility.subStatus && (
                   <td className="p-3">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-green-600" />
-                      <span className="text-sm max-w-32 truncate" title={ride.startLocation?.address}>
-                        {ride.startLocation?.address || 'Не указано'}
-                      </span>
-                    </div>
+                    <span className="text-sm">
+                      {ride.order?.subStatus ? orderSubStatusLabels[ride.order.subStatus] : '-'}
+                    </span>
                   </td>
                 )}
-                {columnVisibility.endLocation && (
+                {columnVisibility.orderNumber && (
                   <td className="p-3">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-red-600" />
-                      <span className="text-sm max-w-32 truncate" title={ride.endLocation?.address}>
-                        {ride.endLocation?.address || 'Не указано'}
-                      </span>
-                    </div>
+                    <span className="text-sm font-medium">
+                      {ride.order?.orderNumber || '-'}
+                    </span>
                   </td>
                 )}
-                {columnVisibility.distance && (
+                {columnVisibility.orderType && (
                   <td className="p-3">
-                    {ride.distance ? (
-                      <div className="flex items-center gap-2">
-                        <Route className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{ride.distance.toFixed(1)} км</span>
-                      </div>
-                    ) : (
-                      '-'
-                    )}
+                    <span className="text-sm">
+                      {ride.order?.type ? orderTypeLabels[ride.order.type] : '-'}
+                    </span>
+                  </td>
+                )}
+                {columnVisibility.price && (
+                  <td className="p-3">
+                    <span className="text-sm font-medium">
+                      {ride.order?.initialPrice ? `${ride.order.initialPrice} сом` : '-'}
+                    </span>
+                  </td>
+                )}
+                {columnVisibility.flight && (
+                  <td className="p-3">
+                    <span className="text-sm">
+                      {ride.order?.airFlight || ride.order?.flyReis || '-'}
+                    </span>
                   </td>
                 )}
                 {columnVisibility.duration && (
@@ -274,31 +226,31 @@ export function UserRidesTableContent({
                     {ride.duration ? (
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{formatDuration(ride.duration)}</span>
+                        <span className="text-sm">{ride.duration}</span>
                       </div>
                     ) : (
                       '-'
                     )}
                   </td>
                 )}
-                {columnVisibility.startTime && (
+                {columnVisibility.createdAt && (
                   <td className="p-3">
-                    {ride.startTime ? (
+                    {ride.order?.createdAt ? (
                       <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-green-600" />
-                        <span className="text-sm">{formatDate(ride.startTime)}</span>
+                        <Clock className="h-4 w-4 text-gray-600" />
+                        <span className="text-sm">{formatDate(ride.order.createdAt)}</span>
                       </div>
                     ) : (
                       '-'
                     )}
                   </td>
                 )}
-                {columnVisibility.endTime && (
+                {columnVisibility.scheduledTime && (
                   <td className="p-3">
-                    {ride.endTime ? (
+                    {ride.order?.scheduledTime ? (
                       <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-red-600" />
-                        <span className="text-sm">{formatDate(ride.endTime)}</span>
+                        <Clock className="h-4 w-4 text-blue-600" />
+                        <span className="text-sm">{formatDate(ride.order.scheduledTime)}</span>
                       </div>
                     ) : (
                       '-'

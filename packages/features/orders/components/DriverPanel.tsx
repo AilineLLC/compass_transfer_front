@@ -38,8 +38,8 @@ export function DriverPanel({ selectedDriver, onDriverSelect, onClose, activeDri
     const loadAllDrivers = async () => {
       const allDriversData = await searchDrivers({
         role: ['Driver'],
-        sortBy: 'online',
-        sortOrder: 'Desc'
+        sortBy: 'fullName',
+        sortOrder: 'Asc'
       });
 
       setAllDrivers(allDriversData);
@@ -57,8 +57,16 @@ export function DriverPanel({ selectedDriver, onDriverSelect, onClose, activeDri
 
   // Партнеры не должны видеть панель водителей (убираем проверку, так как partner не входит в тип)
 
-  // Определяем какие водители показывать
-  const displayDrivers = searchQuery.trim().length >= 2 ? (drivers || []) : (allDrivers || []);
+  // Определяем какие водители показывать и сортируем их (онлайн водители сверху)
+  const displayDrivers = (searchQuery.trim().length >= 2 ? (drivers || []) : (allDrivers || []))
+    .sort((a, b) => {
+      // Сначала сортируем по статусу онлайн (онлайн водители сверху)
+      if (a.online && !b.online) return -1;
+      if (!a.online && b.online) return 1;
+
+      // Затем по имени
+      return (a.fullName || '').localeCompare(b.fullName || '');
+    });
 
   const handleDriverClick = (driver: GetDriverDTO) => {
     // В моментальных заказах не разрешаем выбор водителей

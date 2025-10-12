@@ -4,9 +4,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import type { AxiosError } from 'axios';
 import { useState, useMemo, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
-import { toast } from '@shared/lib/conditional-toast';
 import { notificationsApi } from '@shared/api/notifications';
 import { logger } from '@shared/lib';
+import { toast } from '@shared/lib/conditional-toast';
 import { NotificationType } from '@entities/notifications/enums/NotificationType.enum';
 import {
   getBasicNotificationDataStatus,
@@ -37,7 +37,7 @@ export function useNotificationFormLogic({
     resolver: zodResolver(notificationCreateSchema),
     mode: 'onSubmit',
     defaultValues: {
-      type: NotificationType.System,
+      type: NotificationType.SystemMessage,
       title: '',
       content: '',
       orderId: '',

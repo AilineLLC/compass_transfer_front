@@ -165,7 +165,7 @@ export function PremiumCarShowcase({ cars, isLoading, tariffName, cardWidth = 10
       <div className='relative'>
         <div
           data-cars-container
-          className='flex gap-6 overflow-x-auto px-6'
+          className='flex gap-6 overflow-x-auto'
           style={{
             scrollbarWidth: 'none',
             msOverflowStyle: 'none'

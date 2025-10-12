@@ -808,13 +808,7 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
         const rideData = {
           driverId: selectedDriver.id,
           carId: carId,
-          waypoints: [
-            {
-              locationId: "",
-              arrivalTime: null,
-              departureTime: null
-            }
-          ],
+          waypoints: [],
         };
 
         // Определяем ID заказа для назначения водителя

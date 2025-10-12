@@ -1,9 +1,10 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { ordersApi, type OrderStatsResponse } from '@shared/api/orders';
 import { useUserRole } from '@shared/contexts/user-role-context';
+import { useSignalR } from '@shared/hooks/signal/useSignalR';
 import { orderStatsLabels, orderStatsColors } from '@entities/orders';
 import { Role } from '@entities/users/enums';
 
@@ -18,28 +19,65 @@ export function OrdersStats({ className, activeStatus }: OrderStatsProps) {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { userRole } = useUserRole();
+  const signalR = useSignalR();
 
+  const loadStats = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Для партнеров используем API для статистики созданных ими заказов
+      const data = userRole === Role.Partner
+        ? await ordersApi.getMyCreatorOrderStats()
+        : await ordersApi.getOrderStats();
+
+      setStats(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ошибка загрузки статистики');
+    } finally {
+      setLoading(false);
+    }
+  }, [userRole]);
+
+  // Загрузка статистики при монтировании
   useEffect(() => {
-    const loadStats = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+    loadStats();
+  }, [loadStats]);
 
-        // Для партнеров используем API для статистики созданных ими заказов
-        const data = userRole === Role.Partner
-          ? await ordersApi.getMyCreatorOrderStats()
-          : await ordersApi.getOrderStats();
+  // Подписка на SignalR события для автоматического обновления статистики
+  useEffect(() => {
+    if (!signalR.isConnected) return;
 
-        setStats(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Ошибка загрузки статистики');
-      } finally {
-        setLoading(false);
-      }
+    // События, которые влияют на статистику заказов
+    const orderEvents = [
+      'OrderCreatedNotification',
+      'OrderConfirmedNotification',
+      'OrderCompletedNotification',
+      'OrderCancelledNotification',
+      'RideRequestNotification',
+      'RideAcceptedNotification',
+      'RideStartedNotification',
+      'RideCompletedNotification',
+      'RideCancelledNotification',
+    ];
+
+    // Обработчик события - перезагружаем статистику
+    const handleOrderEvent = () => {
+      loadStats();
     };
 
-    loadStats();
-  }, [userRole]);
+    // Подписываемся на все события
+    orderEvents.forEach(event => {
+      signalR.on(event, handleOrderEvent);
+    });
+
+    // Отписываемся при размонтировании
+    return () => {
+      orderEvents.forEach(event => {
+        signalR.off(event, handleOrderEvent);
+      });
+    };
+  }, [signalR, loadStats]);
 
   // Преобразуем ключ статистики в значение статуса для API
   const statusMap: Record<keyof OrderStatsResponse, string> = {

@@ -11,8 +11,8 @@ import {
 } from '@entities/my-profile';
 import {
   BasicInfoSection,
-  OrdersSection,
   RidesSection,
+  MyPaymentsSection,
   AdminSection,
   CustomerSection,
   DriverSection,
@@ -97,10 +97,10 @@ export function MeProfileView() {
             {renderRoleSpecificSection()}
           </>
         );
-      case 'orders':
-        return <OrdersSection />;
       case 'rides':
         return <RidesSection />;
+      case 'payments':
+        return <MyPaymentsSection />;
       default:
         return null;
     }
@@ -138,7 +138,7 @@ export function MeProfileView() {
           <div className='lg:col-span-3 flex flex-col gap-6'>
             {/* Табы для переключения между секциями */}
             <div className='px-4'>
-              <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} />
+              <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} showPayments />
             </div>
             {/* Контент выбранной вкладки */}
             {renderTabContent()}

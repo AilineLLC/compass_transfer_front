@@ -133,8 +133,8 @@ export function NotificationsTable({
           handleSort={handleSort}
           onDeleteNotification={openDeleteModal}
           onToggleReadStatus={toggleReadStatus}
-          showMyNotifications={showMyNotifications}
           isUpdating={isUpdating}
+          showMyNotifications={showMyNotifications}
         />
 
         <DataTablePagination

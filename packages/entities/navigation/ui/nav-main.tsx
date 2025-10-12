@@ -3,7 +3,7 @@
 import { IconCirclePlusFilled } from '@tabler/icons-react';
 import { MoreHorizontal } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useUserRole } from '@shared/contexts';
 import {
@@ -54,6 +54,7 @@ const getRouteForItem = (title: string, url?: string): string => {
 };
 
 export function NavMain({ items }: { items: MenuItem[] }) {
+  const router = useRouter();
   const { isMobile } = useSidebar();
   const pathname = usePathname();
   const [isOrderTypeModalOpen, setIsOrderTypeModalOpen] = useState(false);
@@ -61,6 +62,17 @@ export function NavMain({ items }: { items: MenuItem[] }) {
 
   // Операторы могут создавать заказы, но не пользователей
   const canCreateOrders = true; // Все роли могут создавать заказы
+
+  // Обработчик создания заказа
+  const handleCreateOrder = () => {
+    if (userRole === Role.Partner) {
+      // Для ВСЕХ партнеров сразу переходим на запланированные заказы
+      router.push('/orders/create/scheduled');
+    } else {
+      // Для остальных ролей открываем модальное окно выбора типа заказа
+      setIsOrderTypeModalOpen(true);
+    }
+  };
 
   // Функция для фильтрации подпунктов меню в зависимости от роли пользователя
   const filterMenuItems = (menuItems: { title: string; url: string }[] | undefined) => {
@@ -85,7 +97,7 @@ export function NavMain({ items }: { items: MenuItem[] }) {
               <SidebarMenuButton
                 tooltip='Создать заказ'
                 className='bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear'
-                onClick={() => setIsOrderTypeModalOpen(true)}
+                onClick={handleCreateOrder}
               >
                 <IconCirclePlusFilled />
                 <span className='group-data-[collapsible=icon]:hidden'>Создать Заказ</span>

@@ -68,7 +68,7 @@ export function PassengersTab({ users, passengers: initialPassengers, handlePass
   }
 
   return (
-    <div className={`flex flex-col gap-6 max-h-screen ${userRole !== 'partner' ? 'lg:flex-row' : ''}`}>
+    <div className={`flex flex-row gap-6 max-h-screen ${userRole !== 'partner' ? 'lg:flex-row' : ''}`}>
       {/* Левая колонка - Профиль выбранного клиента */}
       <div className={`w-full flex-shrink-0 ${userRole !== 'partner' ? 'lg:flex-1 lg:sticky lg:top-0 lg:self-start' : ''}`}>
         <Card className='h-full'>
