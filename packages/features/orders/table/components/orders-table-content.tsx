@@ -29,6 +29,8 @@ interface ColumnVisibility {
   createdAt: boolean;
   completedAt: boolean;
   scheduledTime: boolean;
+  airFlight: boolean;
+  flyReis: boolean;
   actions: boolean;
 }
 
@@ -141,6 +143,8 @@ export function OrdersTableContent({
             {columnVisibility.createdAt && <SortableHeader field='createdAt' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Создан</SortableHeader>}
             {columnVisibility.completedAt && <SortableHeader field='completedAt' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Завершен</SortableHeader>}
             {columnVisibility.scheduledTime && <SortableHeader field='scheduledTime' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Запланирован</SortableHeader>}
+            {columnVisibility.airFlight && <TableHead>Рейс (прилет)</TableHead>}
+            {columnVisibility.flyReis && <TableHead>Рейс (вылет)</TableHead>}
             {columnVisibility.actions && <TableHead className='w-[120px]'>Действия</TableHead>}
           </TableRow>
         </TableHeader>
@@ -190,6 +194,16 @@ export function OrdersTableContent({
               {columnVisibility.scheduledTime && (
                 <TableCell>
                   {order.scheduledTime ? formatDate(order.scheduledTime) : '—'}
+                </TableCell>
+              )}
+              {columnVisibility.airFlight && (
+                <TableCell>
+                  {order.airFlight || '—'}
+                </TableCell>
+              )}
+              {columnVisibility.flyReis && (
+                <TableCell>
+                  {order.flyReis || '—'}
                 </TableCell>
               )}
               {columnVisibility.actions && (

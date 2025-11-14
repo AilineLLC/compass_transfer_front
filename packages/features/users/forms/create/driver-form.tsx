@@ -186,24 +186,19 @@ export function useDriverFormLogic({
         // Подготавливаем данные для API (исключаем confirmPassword)
         const { confirmPassword: _confirmPassword, ...formDataWithoutConfirm } = cleanedData;
 
-        // Конвертируем employmentType в числовое значение для бэкенда
-        const employmentTypeMapping: Record<string, number> = {
-          'Percentage': 0,
-          'FixedAmount': 1,
-          'FullTime': 2,
-          'PartTime': 3,
-          'Contractor': 4,
-          'Freelancer': 5,
-          'SelfEmployed': 6,
-        };
-
         const apiData: CreateDriverDTO = {
           ...formDataWithoutConfirm,
           phoneNumber: data.phoneNumber || null,
           avatarUrl: data.avatarUrl || null,
+          profile: {
+            ...formDataWithoutConfirm.profile,
+            citizenshipCountry: typeof formDataWithoutConfirm.profile.citizenshipCountry === 'string' 
+              ? formDataWithoutConfirm.profile.citizenshipCountry as CitizenshipCountry
+              : formDataWithoutConfirm.profile.citizenshipCountry,
+          },
           employment: {
             ...formDataWithoutConfirm.employment,
-            employmentType: employmentTypeMapping[formDataWithoutConfirm.employment.employmentType] ?? formDataWithoutConfirm.employment.employmentType,
+            employmentType: formDataWithoutConfirm.employment.employmentType as EmploymentType,
           },
         };
 
@@ -214,9 +209,7 @@ export function useDriverFormLogic({
         console.log('- verificationStatus:', apiData.verificationStatus);
         console.log('- profile:', !!apiData.profile);
         console.log('- fullName:', apiData.fullName);
-        console.log('- employment.employmentType (original):', formDataWithoutConfirm.employment.employmentType);
-        console.log('- employment.employmentType (converted):', apiData.employment.employmentType);
-        console.log('- employment.employmentType type:', typeof apiData.employment.employmentType);
+        console.log('- employment.employmentType:', apiData.employment.employmentType);
         const result = await usersApi.createDriver(apiData);
 
         if (result && result.fullName) {

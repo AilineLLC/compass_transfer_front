@@ -21,6 +21,8 @@ interface ColumnVisibility {
   createdAt: boolean;
   completedAt: boolean;
   scheduledTime: boolean;
+  airFlight: boolean;
+  flyReis: boolean;
   actions: boolean;
 }
 
@@ -119,6 +121,8 @@ export function useOrdersTable(initialFilters?: {
       createdAt: true,
       completedAt: true,
       scheduledTime: true,
+      airFlight: false,
+      flyReis: false,
       actions: true,
     };
   });

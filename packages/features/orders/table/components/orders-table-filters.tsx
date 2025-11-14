@@ -283,6 +283,8 @@ export function OrdersTableFilters({
                   { key: 'createdAt', label: 'Создан' },
                   { key: 'completedAt', label: 'Завершен' },
                   { key: 'scheduledTime', label: 'Запланирован' },
+                  { key: 'airFlight', label: 'Рейс (прилет)' },
+                  { key: 'flyReis', label: 'Рейс (вылет)' },
                   { key: 'actions', label: 'Действия' },
                 ].map(column => (
                   <DropdownMenuItem
