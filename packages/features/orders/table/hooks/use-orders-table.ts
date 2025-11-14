@@ -131,8 +131,6 @@ export function useOrdersTable(initialFilters?: {
     const currentStatus = searchParams.get('status');
     const currentType = searchParams.get('type');
     const currentOrderNumber = searchParams.get('orderNumber');
-    const currentAirFlight = searchParams.get('airFlight');
-    const currentFlyReis = searchParams.get('flyReis');
 
     // Обновляем фильтры только если они изменились
     let filtersChanged = false;
@@ -156,17 +154,8 @@ export function useOrdersTable(initialFilters?: {
       filtersChanged = true;
     }
 
-    if (currentAirFlight !== airFlightFilter) {
-      setAirFlightInput(currentAirFlight || '');
-      setAirFlightFilter(currentAirFlight || '');
-      filtersChanged = true;
-    }
-
-    if (currentFlyReis !== flyReisFilter) {
-      setFlyReisInput(currentFlyReis || '');
-      setFlyReisFilter(currentFlyReis || '');
-      filtersChanged = true;
-    }
+    // Фильтры рейсов (airFlight и flyReis) не синхронизируются с URL
+    // Они работают только локально с debounce
 
     // Сбрасываем пагинацию при изменении фильтров
     if (filtersChanged) {
@@ -175,7 +164,7 @@ export function useOrdersTable(initialFilters?: {
       setIsFirstPage(true);
       setCurrentPageNumber(1);
     }
-  }, [searchParams, statusFilter, typeFilter, orderNumberFilter, airFlightFilter, flyReisFilter]);
+  }, [searchParams, statusFilter, typeFilter, orderNumberFilter]);
 
   // Загрузка данных
   const loadOrders = useCallback(async () => {
