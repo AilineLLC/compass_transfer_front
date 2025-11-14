@@ -40,12 +40,10 @@ interface OrdersTableFiltersProps {
   handleStatusFilterChange: (statuses: OrderStatus[]) => void;
   subStatusFilter: OrderSubStatus[];
   handleSubStatusFilterChange: (subStatuses: OrderSubStatus[]) => void;
-  creatorIdFilter: string;
-  setCreatorIdFilter: (creatorId: string) => void;
-  airFlightFilter: string;
-  setAirFlightFilter: (airFlight: string) => void;
-  flyReisFilter: string;
-  setFlyReisFilter: (flyReis: string) => void;
+  airFlightInput: string;
+  setAirFlightInput: (airFlight: string) => void;
+  flyReisInput: string;
+  setFlyReisInput: (flyReis: string) => void;
   pageSize: number;
   handlePageSizeChange: (size: number) => void;
   showAdvancedFilters: boolean;
@@ -69,12 +67,10 @@ export function OrdersTableFilters({
   handleStatusFilterChange,
   subStatusFilter,
   handleSubStatusFilterChange,
-  creatorIdFilter,
-  setCreatorIdFilter,
-  airFlightFilter,
-  setAirFlightFilter,
-  flyReisFilter,
-  setFlyReisFilter,
+  airFlightInput,
+  setAirFlightInput,
+  flyReisInput,
+  setFlyReisInput,
   pageSize,
   handlePageSizeChange,
   showAdvancedFilters,
@@ -115,15 +111,13 @@ export function OrdersTableFilters({
     handleTypeFilterChange([]);
     handleStatusFilterChange([]);
     handleSubStatusFilterChange([]);
-    setCreatorIdFilter('');
-    setAirFlightFilter('');
-    setFlyReisFilter('');
+    setAirFlightInput('');
+    setFlyReisInput('');
   };
 
   const activeFiltersCount = [
-    creatorIdFilter,
-    airFlightFilter,
-    flyReisFilter,
+    airFlightInput,
+    flyReisInput,
   ].filter(Boolean).length +
   typeFilter.length +
   statusFilter.length +
@@ -313,35 +307,25 @@ export function OrdersTableFilters({
             </DropdownMenu>
             </div>
           </div>
-          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
 
             <div>
-              <Label htmlFor='creatorId'>ID создателя</Label>
-              <Input
-                id='creatorId'
-                placeholder='Введите ID создателя...'
-                value={creatorIdFilter}
-                onChange={(e) => setCreatorIdFilter(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor='airFlight'>Номер рейса</Label>
+              <Label htmlFor='airFlight'>Номер рейса (прилет)</Label>
               <Input
                 id='airFlight'
-                placeholder='Введите номер рейса...'
-                value={airFlightFilter}
-                onChange={(e) => setAirFlightFilter(e.target.value)}
+                placeholder='Введите номер рейса прилета...'
+                value={airFlightInput}
+                onChange={(e) => setAirFlightInput(e.target.value)}
               />
             </div>
 
             <div>
-              <Label htmlFor='flyReis'>Fly Reis</Label>
+              <Label htmlFor='flyReis'>Номер рейса (вылет)</Label>
               <Input
                 id='flyReis'
-                placeholder='Введите Fly Reis...'
-                value={flyReisFilter}
-                onChange={(e) => setFlyReisFilter(e.target.value)}
+                placeholder='Введите номер рейса вылета (только A-Z, 0-9, пробел, дефис)...'
+                value={flyReisInput}
+                onChange={(e) => setFlyReisInput(e.target.value)}
               />
             </div>
           </div>

@@ -11,11 +11,12 @@ import { Badge } from '@shared/ui/data-display/badge';
 import { ordersApi, orderService } from '@shared/api/orders';
 import { useDebounce } from '@shared/hooks/use-debounce';
 import { orderTypeLabels, orderStatusLabels } from '@entities/orders/constants/order-status-labels';
+import { orderNumberToString } from '@shared/utils/orderNumberConverter';
 import type { NotificationCreateFormData } from '../schemas/notificationCreateSchema';
 
 interface OrderSearchResult {
   id: string;
-  orderNumber: string;
+  orderNumber: number;
   type: string;
   status: string;
   passengers: Array<{
@@ -94,7 +95,7 @@ export function NotificationRelationsSection({
           
           if (order) {
             setFoundOrder(order);
-            setOrderNumber(order.orderNumber);
+            setOrderNumber(orderNumberToString(order.orderNumber));
             
             // Если есть userId, добавляем его в выбранные
             if (userId) {
@@ -204,7 +205,7 @@ export function NotificationRelationsSection({
 
       if (order) {
         setFoundOrder(order);
-        setOrderNumber(order.orderNumber);
+        setOrderNumber(orderNumberToString(order.orderNumber));
         setValue('orderId', initialOrderData.orderId);
         setValue('rideId', initialOrderData.rideId);
         setValue('orderType', initialOrderData.orderType as any);

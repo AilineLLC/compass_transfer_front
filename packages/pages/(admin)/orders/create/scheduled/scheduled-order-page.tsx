@@ -9,6 +9,7 @@ import { logger } from '@shared/lib/logger';
 import { Button } from '@shared/ui/forms/button';
 import { Card, CardContent } from '@shared/ui/layout/card';
 import { SidebarHeader } from '@shared/ui/layout/sidebar';
+import { orderNumberToString } from '@shared/utils/orderNumberConverter';
 import type { GetLocationDTO } from '@entities/locations/interface';
 import { orderStatusLabels } from '@entities/orders/constants/order-status-labels';
 import { OrderStatus } from '@entities/orders/enums';
@@ -515,7 +516,7 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
   }, [isEditMode, id, isLoadingOrder, existingOrder]);
 
   // Получаем номер заказа для отображения в заголовке
-  const orderNumber = existingOrder?.orderNumber || '';
+  const orderNumber = existingOrder?.orderNumber ? orderNumberToString(existingOrder.orderNumber) : '';
 
   // Заполняем данные заказа при загрузке (только один раз)
   useEffect(() => {

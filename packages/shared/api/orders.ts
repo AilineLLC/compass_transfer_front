@@ -2,6 +2,7 @@ import type { OrderStatus } from '@entities/orders/enums/OrderStatus.enum';
 import type { OrderSubStatus } from '@entities/orders/enums/OrderSubStatus.enum';
 import type { OrderType } from '@entities/orders/enums/OrderType.enum';
 import type { GetOrderDTO } from '@entities/orders/interface/GetOrderDTO';
+import { orderNumberToInteger } from '@shared/utils/orderNumberConverter';
 import { apiGet, apiDelete, apiPost, apiPut } from './client';
 
 export interface OrderFilters {
@@ -10,7 +11,7 @@ export interface OrderFilters {
   after?: string;
   last?: boolean;
   size?: number;
-  orderNumber?: string;
+  orderNumber?: string | number;
   orderNumberOp?: 'GreaterThan' | 'GreaterThanOrEqual' | 'Equal' | 'LessThanOrEqual' | 'LessThan';
   type?: OrderType[];
   status?: OrderStatus[];
@@ -68,7 +69,13 @@ export interface PotentialDriverResponse {
 export const ordersApi = {
   // Получение списка заказов
   getOrders: async (filters: OrderFilters = {}): Promise<OrderApiResponse> => {
-    const result = await apiGet<OrderApiResponse>('/Order', { params: filters });
+    // Конвертируем orderNumber из base36 string в integer если это строка
+    const processedFilters = { ...filters };
+    if (processedFilters.orderNumber && typeof processedFilters.orderNumber === 'string') {
+      processedFilters.orderNumber = orderNumberToInteger(processedFilters.orderNumber);
+    }
+
+    const result = await apiGet<OrderApiResponse>('/Order', { params: processedFilters });
 
     if (result.error) {
       throw new Error(result.error.message);
@@ -101,7 +108,13 @@ export const ordersApi = {
 
   // Получение заказов созданных партнером
   getMyCreatorOrders: async (filters: OrderFilters = {}): Promise<OrderApiResponse> => {
-    const result = await apiGet<OrderApiResponse>('/Order/my/creator', { params: filters });
+    // Конвертируем orderNumber из base36 string в integer если это строка
+    const processedFilters = { ...filters };
+    if (processedFilters.orderNumber && typeof processedFilters.orderNumber === 'string') {
+      processedFilters.orderNumber = orderNumberToInteger(processedFilters.orderNumber);
+    }
+
+    const result = await apiGet<OrderApiResponse>('/Order/my/creator', { params: processedFilters });
 
     if (result.error) {
       throw new Error(result.error.message);

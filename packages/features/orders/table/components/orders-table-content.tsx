@@ -7,6 +7,7 @@ import { Badge } from '@shared/ui/data-display/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shared/ui/data-display/table';
 import { Button } from '@shared/ui/forms/button';
 import { DeleteConfirmationModal } from '@shared/ui/modals';
+import { orderNumberToString } from '@shared/utils/orderNumberConverter';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -147,7 +148,7 @@ export function OrdersTableContent({
           {paginatedOrders.map((order) => (
             <TableRow key={order.id} className='hover:bg-muted/50'>
               {columnVisibility.orderNumber && (
-                <TableCell className='font-medium'>{order.orderNumber}</TableCell>
+                <TableCell className='font-medium'>{orderNumberToString(order.orderNumber)}</TableCell>
               )}
               {columnVisibility.type && (
                 <TableCell>

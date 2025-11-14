@@ -6,6 +6,7 @@ import { Skeleton } from '@shared/ui/data-display/skeleton';
 import { Button } from '@shared/ui/forms/button';
 import { orderStatusLabels, orderSubStatusLabels } from '@entities/orders';
 import { orderTypeLabels } from '@entities/orders/constants/order-status-labels';
+import { orderNumberToString } from '@shared/utils/orderNumberConverter';
 import type { RideWithOrder } from '../hooks/use-user-rides-table';
 
 interface ColumnVisibility {
@@ -196,7 +197,7 @@ export function UserRidesTableContent({
                 {columnVisibility.orderNumber && (
                   <td className="p-3">
                     <span className="text-sm font-medium">
-                      {ride.order?.orderNumber || '-'}
+                      {ride.order?.orderNumber ? orderNumberToString(ride.order.orderNumber) : '-'}
                     </span>
                   </td>
                 )}

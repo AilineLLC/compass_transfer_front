@@ -14,9 +14,9 @@ export interface GetOrderDTO {
   id: string;
 
   /**
-   * Номер заказа
+   * Номер заказа (integer от backend, конвертируется в base36 string для отображения)
    */
-  orderNumber: string;
+  orderNumber: number;
 
   /**
    * Тип заказа

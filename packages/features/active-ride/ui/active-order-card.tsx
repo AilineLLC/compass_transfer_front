@@ -7,6 +7,7 @@ import type { GetOrderDTO } from '@shared/api/orders';
 import { ridesApi } from '@shared/api/rides/rides-api';
 import { Button } from '@shared/ui/forms/button';
 import { Card } from '@shared/ui/layout/card';
+import { orderNumberToString } from '@shared/utils/orderNumberConverter';
 import { RideStatus, OrderSubStatus } from '@entities/orders/enums';
 import { useLocation } from '@features/locations/hooks/useLocation';
 
@@ -224,7 +225,7 @@ export function ActiveOrderCard({ order, onStatusUpdate }: ActiveOrderCardProps)
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h3 className="font-semibold text-gray-900">
-              Заказ #{order.orderNumber || order.id.slice(-8)}
+              Заказ #{order.orderNumber ? orderNumberToString(order.orderNumber) : order.id.slice(-8)}
             </h3>
             <span className={`text-sm font-medium ${statusInfo.color}`}>
               {statusInfo.text}

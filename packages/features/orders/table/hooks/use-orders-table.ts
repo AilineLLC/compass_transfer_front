@@ -29,7 +29,6 @@ interface SavedOrderFilters extends Record<string, unknown> {
   typeFilter: OrderType[];
   statusFilter: OrderStatus[];
   subStatusFilter: OrderSubStatus[];
-  creatorIdFilter: string;
   airFlightFilter: string;
   flyReisFilter: string;
 }
@@ -39,7 +38,6 @@ export function useOrdersTable(initialFilters?: {
   type?: string;
   status?: string;
   subStatus?: string;
-  creatorId?: string;
   airFlight?: string;
   flyReis?: string;
 }) {
@@ -67,7 +65,10 @@ export function useOrdersTable(initialFilters?: {
   const [subStatusFilter, setSubStatusFilter] = useState<OrderSubStatus[]>(
     initialFilters?.subStatus ? [initialFilters.subStatus as OrderSubStatus] : []
   );
-  const [creatorIdFilter, setCreatorIdFilter] = useState(initialFilters?.creatorId || '');
+  // Локальные состояния для ввода (без debounce)
+  const [airFlightInput, setAirFlightInput] = useState(initialFilters?.airFlight || '');
+  const [flyReisInput, setFlyReisInput] = useState(initialFilters?.flyReis || '');
+  // Фактические фильтры для API (с debounce)
   const [airFlightFilter, setAirFlightFilter] = useState(initialFilters?.airFlight || '');
   const [flyReisFilter, setFlyReisFilter] = useState(initialFilters?.flyReis || '');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -130,7 +131,6 @@ export function useOrdersTable(initialFilters?: {
     const currentStatus = searchParams.get('status');
     const currentType = searchParams.get('type');
     const currentOrderNumber = searchParams.get('orderNumber');
-    const currentCreatorId = searchParams.get('creatorId');
     const currentAirFlight = searchParams.get('airFlight');
     const currentFlyReis = searchParams.get('flyReis');
 
@@ -156,17 +156,14 @@ export function useOrdersTable(initialFilters?: {
       filtersChanged = true;
     }
 
-    if (currentCreatorId !== creatorIdFilter) {
-      setCreatorIdFilter(currentCreatorId || '');
-      filtersChanged = true;
-    }
-
     if (currentAirFlight !== airFlightFilter) {
+      setAirFlightInput(currentAirFlight || '');
       setAirFlightFilter(currentAirFlight || '');
       filtersChanged = true;
     }
 
     if (currentFlyReis !== flyReisFilter) {
+      setFlyReisInput(currentFlyReis || '');
       setFlyReisFilter(currentFlyReis || '');
       filtersChanged = true;
     }
@@ -178,7 +175,7 @@ export function useOrdersTable(initialFilters?: {
       setIsFirstPage(true);
       setCurrentPageNumber(1);
     }
-  }, [searchParams, statusFilter, typeFilter, orderNumberFilter, creatorIdFilter, airFlightFilter, flyReisFilter]);
+  }, [searchParams, statusFilter, typeFilter, orderNumberFilter, airFlightFilter, flyReisFilter]);
 
   // Загрузка данных
   const loadOrders = useCallback(async () => {
@@ -212,9 +209,6 @@ export function useOrdersTable(initialFilters?: {
       }
       if (subStatusFilter.length > 0) {
         params.subStatus = subStatusFilter;
-      }
-      if (creatorIdFilter) {
-        params.creatorId = creatorIdFilter;
       }
       if (airFlightFilter) {
         params.airFlight = airFlightFilter;
@@ -256,7 +250,6 @@ export function useOrdersTable(initialFilters?: {
     typeFilter,
     statusFilter,
     subStatusFilter,
-    creatorIdFilter,
     airFlightFilter,
     flyReisFilter,
     searchTerm,
@@ -267,6 +260,35 @@ export function useOrdersTable(initialFilters?: {
   useEffect(() => {
     loadOrders();
   }, [loadOrders]);
+
+  // Debounce для фильтров рейсов (применяем через 500мс после последнего ввода)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (airFlightInput !== airFlightFilter) {
+        setAirFlightFilter(airFlightInput);
+        setCursorsHistory([]);
+        setCurrentCursor(null);
+        setIsFirstPage(true);
+        setCurrentPageNumber(1);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [airFlightInput, airFlightFilter]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (flyReisInput !== flyReisFilter) {
+        setFlyReisFilter(flyReisInput);
+        setCursorsHistory([]);
+        setCurrentCursor(null);
+        setIsFirstPage(true);
+        setCurrentPageNumber(1);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [flyReisInput, flyReisFilter]);
 
   // Подписка на SignalR события для автоматического обновления списка заказов
   useEffect(() => {
@@ -311,7 +333,6 @@ export function useOrdersTable(initialFilters?: {
     typeFilter: [],
     statusFilter: [],
     subStatusFilter: [],
-    creatorIdFilter: '',
     airFlightFilter: '',
     flyReisFilter: '',
   }), []);
@@ -321,10 +342,9 @@ export function useOrdersTable(initialFilters?: {
     typeFilter,
     statusFilter,
     subStatusFilter,
-    creatorIdFilter,
     airFlightFilter,
     flyReisFilter,
-  }), [orderNumberFilter, typeFilter, statusFilter, subStatusFilter, creatorIdFilter, airFlightFilter, flyReisFilter]);
+  }), [orderNumberFilter, typeFilter, statusFilter, subStatusFilter, airFlightFilter, flyReisFilter]);
 
   // Функция загрузки сохраненных фильтров
   const onFiltersLoad = useCallback((filters: SavedOrderFilters) => {
@@ -332,8 +352,9 @@ export function useOrdersTable(initialFilters?: {
     setTypeFilter(filters.typeFilter || []);
     setStatusFilter(filters.statusFilter || []);
     setSubStatusFilter(filters.subStatusFilter || []);
-    setCreatorIdFilter(filters.creatorIdFilter || '');
+    setAirFlightInput(filters.airFlightFilter || '');
     setAirFlightFilter(filters.airFlightFilter || '');
+    setFlyReisInput(filters.flyReisFilter || '');
     setFlyReisFilter(filters.flyReisFilter || '');
   }, []);
 
@@ -449,8 +470,9 @@ export function useOrdersTable(initialFilters?: {
     typeFilter,
     statusFilter,
     subStatusFilter,
-    creatorIdFilter,
+    airFlightInput,
     airFlightFilter,
+    flyReisInput,
     flyReisFilter,
     showAdvancedFilters,
 
@@ -485,26 +507,15 @@ export function useOrdersTable(initialFilters?: {
       setIsFirstPage(true);
       setCurrentPageNumber(1);
     },
-    setCreatorIdFilter: (creatorId: string) => {
-      setCreatorIdFilter(creatorId);
-      setCursorsHistory([]);
-      setCurrentCursor(null);
-      setIsFirstPage(true);
-      setCurrentPageNumber(1);
+    setAirFlightInput: (airFlight: string) => {
+      setAirFlightInput(airFlight);
+      // Debounce будет применен через useEffect
     },
-    setAirFlightFilter: (airFlight: string) => {
-      setAirFlightFilter(airFlight);
-      setCursorsHistory([]);
-      setCurrentCursor(null);
-      setIsFirstPage(true);
-      setCurrentPageNumber(1);
-    },
-    setFlyReisFilter: (flyReis: string) => {
-      setFlyReisFilter(flyReis);
-      setCursorsHistory([]);
-      setCurrentCursor(null);
-      setIsFirstPage(true);
-      setCurrentPageNumber(1);
+    setFlyReisInput: (flyReis: string) => {
+      // Валидация: только заглавные буквы, цифры, пробелы и дефисы
+      const sanitized = flyReis.toUpperCase().replace(/[^A-Z0-9\s-]/g, '');
+      setFlyReisInput(sanitized);
+      // Debounce будет применен через useEffect
     },
     setShowAdvancedFilters,
 

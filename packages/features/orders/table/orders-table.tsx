@@ -12,7 +12,6 @@ export function OrdersTable({
     type?: string;
     status?: string;
     subStatus?: string;
-    creatorId?: string;
     airFlight?: string;
     flyReis?: string;
   };
@@ -25,9 +24,8 @@ export function OrdersTable({
     typeFilter,
     statusFilter,
     subStatusFilter,
-    creatorIdFilter,
-    airFlightFilter,
-    flyReisFilter,
+    airFlightInput,
+    flyReisInput,
     showAdvancedFilters,
     pageSize,
     columnVisibility,
@@ -38,9 +36,8 @@ export function OrdersTable({
     sortBy,
     sortOrder,
     setSearchTerm,
-    setCreatorIdFilter,
-    setAirFlightFilter,
-    setFlyReisFilter,
+    setAirFlightInput,
+    setFlyReisInput,
     setShowAdvancedFilters,
     handleNextPage,
     handlePrevPage,
@@ -81,12 +78,10 @@ export function OrdersTable({
         handleStatusFilterChange={handleStatusFilterChange}
         subStatusFilter={subStatusFilter}
         handleSubStatusFilterChange={handleSubStatusFilterChange}
-        creatorIdFilter={creatorIdFilter}
-        setCreatorIdFilter={setCreatorIdFilter}
-        airFlightFilter={airFlightFilter}
-        setAirFlightFilter={setAirFlightFilter}
-        flyReisFilter={flyReisFilter}
-        setFlyReisFilter={setFlyReisFilter}
+        airFlightInput={airFlightInput}
+        setAirFlightInput={setAirFlightInput}
+        flyReisInput={flyReisInput}
+        setFlyReisInput={setFlyReisInput}
         pageSize={pageSize}
         handlePageSizeChange={handlePageSizeChange}
         showAdvancedFilters={showAdvancedFilters}

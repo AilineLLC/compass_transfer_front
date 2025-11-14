@@ -5,6 +5,7 @@ import { Card, CardContent } from '@shared/ui/layout';
 import { orderStatusLabels, orderSubStatusLabels, orderStatusColors } from '@entities/orders';
 import type { GetOrderDTO } from '@entities/orders/interface';
 import { useLocation } from '@features/locations/hooks/useLocation';
+import { orderNumberToString } from '@shared/utils/orderNumberConverter';
 
 interface ScheduledOrderViewHeaderProps {
   order: GetOrderDTO;
@@ -67,7 +68,7 @@ export function ScheduledOrderViewHeader({ order }: ScheduledOrderViewHeaderProp
             <div className='flex-1 min-w-0'>
               <div className='flex items-center gap-3 mb-2'>
                 <h1 className='text-2xl font-bold text-gray-900 truncate'>
-                  Запланированный заказ #{order.orderNumber}
+                  Запланированный заказ #{orderNumberToString(order.orderNumber)}
                 </h1>
                 <Badge 
                   className={`${orderStatusColors[order.status]} text-white`}

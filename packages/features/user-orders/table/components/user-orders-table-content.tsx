@@ -4,6 +4,7 @@ import { ShoppingCart, Eye, Calendar, DollarSign, ArrowUpDown, ArrowUp, ArrowDow
 import { Badge } from '@shared/ui/data-display/badge';
 import { Button } from '@shared/ui/forms/button';
 import { Skeleton } from '@shared/ui/data-display/skeleton';
+import { orderNumberToString } from '@shared/utils/orderNumberConverter';
 import type { GetOrderDTO } from '@entities/orders/interface';
 import { orderTypeLabels, orderStatusLabels, orderSubStatusLabels } from '@entities/orders';
 
@@ -244,7 +245,7 @@ export function UserOrdersTableContent({
                   <td className="p-3">
                     <div className="flex items-center gap-2">
                       <ShoppingCart className="h-4 w-4 text-blue-600" />
-                      <span className="font-medium">#{order.orderNumber}</span>
+                      <span className="font-medium">#{orderNumberToString(order.orderNumber)}</span>
                     </div>
                   </td>
                 )}

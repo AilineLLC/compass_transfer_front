@@ -3,6 +3,7 @@
 import { ArrowLeft, Navigation, MapPin, Clock, User } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@shared/ui/forms/button';
+import { orderNumberToString } from '@shared/utils/orderNumberConverter';
 import type { GetOrderDTO } from '@entities/orders/interface/GetOrderDTO';
 
 interface OrderDetailPageProps {
@@ -84,7 +85,7 @@ export function OrderDetailPage({ order, onBack }: OrderDetailPageProps) {
             <ArrowLeft className='w-5 h-5' />
           </Button>
           <div className='flex-1'>
-            <h1 className='text-lg font-semibold'>Заказ #{order.orderNumber}</h1>
+            <h1 className='text-lg font-semibold'>Заказ #{orderNumberToString(order.orderNumber)}</h1>
             <div className='flex items-center mt-1'>
               <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
                 {getStatusText(order.status)}

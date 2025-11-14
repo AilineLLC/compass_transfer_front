@@ -5,6 +5,7 @@ import { Calendar, TrendingUp, DollarSign, Clock, Car, CheckCircle } from 'lucid
 import { toast } from 'sonner';
 import { Button } from '@shared/ui/forms/button';
 import { Card } from '@shared/ui/layout/card';
+import { orderNumberToString } from '@shared/utils/orderNumberConverter';
 import type { GetOrderDTO } from '@entities/orders/interface/GetOrderDTO';
 
 interface EarningsStats {
@@ -225,7 +226,7 @@ export function DriverStatisticsPage() {
                   {orders.map((order) => (
                     <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="py-3 px-4">
-                        <span className="font-medium">#{order.orderNumber || order.id.slice(-8)}</span>
+                        <span className="font-medium">#{order.orderNumber ? orderNumberToString(order.orderNumber) : order.id.slice(-8)}</span>
                       </td>
                       <td className="py-3 px-4 text-sm text-gray-600">
                         {order.completedAt 
