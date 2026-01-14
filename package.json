@@ -85,6 +85,7 @@
     "dotenv": "^16.5.0",
     "effector": "^23.3.0",
     "effector-react": "^23.3.0",
+    "exceljs": "^4.4.0",
     "html2canvas": "^1.4.1",
     "http-server": "14.1.1",
     "jose": "^6.0.11",

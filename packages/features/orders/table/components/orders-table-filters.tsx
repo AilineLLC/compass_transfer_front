@@ -1,6 +1,7 @@
 'use client';
 
-import { Search, Filter, Columns, ChevronDown, X, Save } from 'lucide-react';
+import { useState } from 'react';
+import { Search, Filter, Columns, ChevronDown, X, Save, Download, Check } from 'lucide-react';
 import { Badge } from '@shared/ui/data-display/badge';
 import { Button } from '@shared/ui/forms/button';
 import { Checkbox } from '@shared/ui/forms/checkbox';
@@ -17,6 +18,7 @@ import { type OrderStatus, OrderStatusValues } from '@entities/orders/enums/Orde
 import { type OrderSubStatus, OrderSubStatusValues } from '@entities/orders/enums/OrderSubStatus.enum';
 import { type OrderType, OrderTypeValues } from '@entities/orders/enums/OrderType.enum';
 import { orderTypeLabels, orderStatusLabels, orderSubStatusLabels } from '@entities/orders';
+import { OrdersExportModal } from './orders-export-modal';
 
 interface ColumnVisibility {
   orderNumber: boolean;
@@ -82,6 +84,7 @@ export function OrdersTableFilters({
   hasSavedFilters,
   justSavedFilters,
 }: OrdersTableFiltersProps) {
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const handleTypeChange = (type: OrderType, checked: boolean) => {
     if (checked) {
       handleTypeFilterChange([...typeFilter, type]);
@@ -153,18 +156,24 @@ export function OrdersTableFilters({
             </DropdownMenuTrigger>
             <DropdownMenuContent align='start' className='w-56'>
               <div className='p-2 space-y-2'>
-                {OrderTypeValues.map((type) => (
-                  <div key={type} className='flex items-center space-x-2'>
-                    <Checkbox
-                      id={`main-type-${type}`}
-                      checked={typeFilter.includes(type)}
-                      onCheckedChange={(checked) => handleTypeChange(type, !!checked)}
-                    />
-                    <Label htmlFor={`main-type-${type}`} className='text-sm cursor-pointer'>
-                      {orderTypeLabels[type]}
-                    </Label>
-                  </div>
-                ))}
+                {OrderTypeValues.map((type) => {
+                  const isChecked = typeFilter.includes(type);
+                  return (
+                    <div key={type} className='flex items-center space-x-2'>
+                      <Checkbox
+                        id={`main-type-${type}`}
+                        checked={isChecked}
+                        onCheckedChange={(checked) => handleTypeChange(type, !!checked)}
+                      />
+                      <Label htmlFor={`main-type-${type}`} className='text-sm cursor-pointer flex-1'>
+                        {orderTypeLabels[type]}
+                      </Label>
+                      {isChecked && (
+                        <Check className='h-4 w-4 text-green-600' />
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -183,6 +192,14 @@ export function OrdersTableFilters({
         </div>
 
         <div className='flex flex-col gap-2 md:flex-row md:items-center md:gap-2 pr-4'>
+          <Button
+            variant='outline'
+            className='w-full md:w-auto'
+            onClick={() => setIsExportModalOpen(true)}
+          >
+            <Download className='mr-2 h-4 w-4' />
+            Экспорт в Excel
+          </Button>
           <div className='relative'>
             <Button
               variant={showAdvancedFilters ? 'default' : 'outline'}
@@ -338,18 +355,21 @@ export function OrdersTableFilters({
             <div>
               <Label className='text-sm font-medium'>Статус заказа</Label>
               <div className='mt-2 space-y-2 max-h-40 overflow-y-auto'>
-                {OrderStatusValues.map((status) => (
-                  <div key={status} className='flex items-center space-x-2'>
-                    <Checkbox
-                      id={`status-${status}`}
-                      checked={statusFilter.includes(status)}
-                      onCheckedChange={(checked) => handleStatusChange(status, !!checked)}
-                    />
-                    <Label htmlFor={`status-${status}`} className='text-sm'>
-                      {orderStatusLabels[status]}
-                    </Label>
-                  </div>
-                ))}
+                {OrderStatusValues.map((status) => {
+                  const isChecked = statusFilter.includes(status);
+                  return (
+                    <div key={status} className='flex items-center space-x-2'>
+                      <Checkbox
+                        id={`status-${status}`}
+                        checked={isChecked}
+                        onCheckedChange={(checked) => handleStatusChange(status, !!checked)}
+                      />
+                      <Label htmlFor={`status-${status}`} className='text-sm flex-1 cursor-pointer'>
+                        {orderStatusLabels[status]}
+                      </Label>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -357,23 +377,41 @@ export function OrdersTableFilters({
             <div>
               <Label className='text-sm font-medium'>Подстатус заказа</Label>
               <div className='mt-2 space-y-2 max-h-40 overflow-y-auto'>
-                {OrderSubStatusValues.map((subStatus) => (
-                  <div key={subStatus} className='flex items-center space-x-2'>
-                    <Checkbox
-                      id={`subStatus-${subStatus}`}
-                      checked={subStatusFilter.includes(subStatus)}
-                      onCheckedChange={(checked) => handleSubStatusChange(subStatus, !!checked)}
-                    />
-                    <Label htmlFor={`subStatus-${subStatus}`} className='text-sm'>
-                      {orderSubStatusLabels[subStatus]}
-                    </Label>
-                  </div>
-                ))}
+                {OrderSubStatusValues.map((subStatus) => {
+                  const isChecked = subStatusFilter.includes(subStatus);
+                  return (
+                    <div key={subStatus} className='flex items-center space-x-2'>
+                      <Checkbox
+                        id={`subStatus-${subStatus}`}
+                        checked={isChecked}
+                        onCheckedChange={(checked) => handleSubStatusChange(subStatus, !!checked)}
+                      />
+                      <Label htmlFor={`subStatus-${subStatus}`} className='text-sm flex-1 cursor-pointer'>
+                        {orderSubStatusLabels[subStatus]}
+                      </Label>
+                      {isChecked && (
+                        <Check className='h-4 w-4 text-green-600' />
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
         </div>
       )}
+
+      <OrdersExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        currentFilters={{
+          typeFilter: typeFilter,
+          statusFilter: statusFilter,
+          subStatusFilter: subStatusFilter,
+          airFlight: airFlightInput,
+          flyReis: flyReisInput,
+        }}
+      />
     </>
   );
 }

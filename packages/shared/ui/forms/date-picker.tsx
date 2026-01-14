@@ -20,6 +20,7 @@ interface DatePickerProps {
   disabled?: boolean;
   className?: string;
   id?: string;
+  modal?: boolean; // Флаг для использования внутри модального окна
 }
 
 export function DatePicker({
@@ -29,6 +30,7 @@ export function DatePicker({
   disabled = false,
   className,
   id,
+  modal = false,
 }: DatePickerProps) {
   const [open, setOpen] = useState(false);
 
@@ -51,7 +53,14 @@ export function DatePicker({
           </span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
+      <PopoverContent 
+        className={cn(
+          "w-auto p-0",
+          modal && "!z-[1003]"
+        )} 
+        align="start"
+        style={modal ? { zIndex: 1003 } : undefined}
+      >
         <Calendar
           mode="single"
           defaultMonth={value || new Date()}
