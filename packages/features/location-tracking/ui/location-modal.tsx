@@ -21,13 +21,9 @@ export function LocationModal({ isOpen, onClose, onLocationNameChange }: Locatio
 
     try {
       // Используем Nominatim API (OpenStreetMap) для обратного геокодирования
+      // В браузере нельзя выставлять User-Agent (forbidden header) — в Safari это часто приводит к TypeError.
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ru,en&zoom=18&addressdetails=1`,
-        {
-          headers: {
-            'User-Agent': 'LocationApp/1.0'
-          }
-        }
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ru,en&zoom=18&addressdetails=1`
       );
 
       if (!response.ok) throw new Error('Ошибка получения данных');

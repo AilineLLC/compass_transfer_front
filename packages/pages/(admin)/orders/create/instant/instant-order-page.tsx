@@ -242,8 +242,11 @@ export function InstantOrderPage({ mode, id, userRole = 'operator', initialTarif
           return false;
         }
 
+        const startLocation = routePoints.find(p => p.type === 'start')?.location;
+        const endLocation = routePoints.find(p => p.type === 'end')?.location;
+
         // Должны быть выбраны точки (расстояние не обязательно - может быть ошибка API)
-        return routePoints.length >= 2;
+        return !!startLocation && !!endLocation;
       case 'summary':
         return !!isReadyToCreate;
       default:

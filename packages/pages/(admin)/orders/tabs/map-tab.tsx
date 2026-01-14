@@ -73,19 +73,6 @@ export function MapTab({
   const [routeLoading, setRouteLoading] = useState(false);
   const [routeDistance, setRouteDistance] = useState<number>(0);
 
-  // Обработчик изменения расстояния маршрута
-  const handleRouteDistanceChange = (distance: number) => {
-    setRouteDistance(distance);
-
-    // Если расстояние 0, значит произошла ошибка построения маршрута
-    setRouteError(distance === 0 && routePoints.length >= 2);
-
-    // Передаем дальше
-    if (onRouteDistanceChange) {
-      onRouteDistanceChange(distance);
-    }
-  };
-
   // Состояние для управления видимостью маркеров
   const [showDrivers, setShowDrivers] = useState<boolean>(true);
   const [showLocations, setShowLocations] = useState<boolean>(true);
@@ -135,9 +122,28 @@ export function MapTab({
     // onRouteDistanceChange НЕ передаем в useOrderLocations - он не используется там
   });
 
-  // Отслеживаем изменения точек маршрута для управления состоянием загрузки
+  const hasStartEndLocations =
+    !!routePoints.find(p => p.type === 'start')?.location &&
+    !!routePoints.find(p => p.type === 'end')?.location;
+
+  // Обработчик изменения расстояния маршрута
+  const handleRouteDistanceChange = (distance: number) => {
+    setRouteDistance(distance);
+
+    // Если расстояние 0, значит произошла ошибка построения маршрута
+    setRouteError(distance === 0 && hasStartEndLocations);
+    // Расчет маршрута завершился (успех или ошибка) — снимаем блокировку перехода на следующий шаг
+    setRouteLoading(false);
+
+    // Передаем дальше
+    if (onRouteDistanceChange) {
+      onRouteDistanceChange(distance);
+    }
+  };
+
+  // Отслеживаем изменения выбора start/end, чтобы управлять состоянием загрузки маршрута
   useEffect(() => {
-    if (routePoints.length < 2) {
+    if (!hasStartEndLocations) {
       setRouteError(false);
       setRouteLoading(false);
       setRouteDistance(0);
@@ -145,15 +151,9 @@ export function MapTab({
       // Если есть минимум 2 точки, начинаем загрузку маршрута
       setRouteLoading(true);
       setRouteError(false);
+      setRouteDistance(0);
     }
-  }, [routePoints.length]);
-
-  // Отслеживаем получение расстояния для завершения загрузки
-  useEffect(() => {
-    if (routeDistance > 0) {
-      setRouteLoading(false);
-    }
-  }, [routeDistance]);
+  }, [hasStartEndLocations, routePoints]);
 
   // Передаем состояние загрузки в родительский компонент
   useEffect(() => {
