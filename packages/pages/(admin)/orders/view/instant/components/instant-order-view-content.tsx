@@ -13,6 +13,8 @@ import { useLocation } from '@features/locations/hooks/useLocation';
 import { useUserById } from '@features/users';
 import { DriverSheet } from '@widgets/sidebar/ui/driver-sheet';
 import { RideDetailCard } from '@entities/rides';
+import { useUsdRate } from '@shared/hooks';
+import { formatPriceWithUsd } from '@shared/utils/format-price-with-usd';
 
 interface InstantOrderViewContentProps {
   order: GetOrderDTO;
@@ -32,6 +34,7 @@ export function InstantOrderViewContent({ order }: InstantOrderViewContentProps)
   const [activeOrderType, setActiveOrderType] = useState('all');
 
   // Данные выбранного водителя получаются в DriverSheet при необходимости
+  const usdRate = useUsdRate();
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('ru-RU', {
@@ -46,14 +49,14 @@ export function InstantOrderViewContent({ order }: InstantOrderViewContentProps)
   const formatPrice = (price: number | null | undefined) => {
     if (!price || price === 0) return 'В процессе';
 
-    return new Intl.NumberFormat('ru-RU').format(price) + ' сом';
+    return formatPriceWithUsd(price, usdRate);
   };
 
   const formatFinalPrice = (price: number | null | undefined) => {
     // Если заказ истек или отменен системой - показываем расчетную цену
     if (order.status === 'Expired' || order.subStatus === 'CancelledBySystem') {
       if (order.initialPrice && order.initialPrice > 0) {
-        return new Intl.NumberFormat('ru-RU').format(order.initialPrice) + ' сом';
+        return formatPriceWithUsd(order.initialPrice, usdRate);
       }
       return 'Не применимо';
     }
@@ -68,7 +71,7 @@ export function InstantOrderViewContent({ order }: InstantOrderViewContentProps)
       return 'В процессе';
     }
 
-    return new Intl.NumberFormat('ru-RU').format(price) + ' сом';
+    return formatPriceWithUsd(price, usdRate);
   };
 
   // Функция для поиска услуги по имени

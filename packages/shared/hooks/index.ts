@@ -6,4 +6,5 @@ export * from './useOrderData';
 export * from './useTariffs';
 export * from './useTariffById';
 export * from './useServices';
+export * from './use-usd-rate';
     

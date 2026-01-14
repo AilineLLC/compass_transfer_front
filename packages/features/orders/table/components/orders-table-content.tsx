@@ -18,6 +18,8 @@ import { useUserRole } from '@shared/contexts';
 import { type GetOrderDTO, type OrderStatus, type OrderSubStatus, type OrderType, orderTypeLabels, orderStatusLabels, orderSubStatusLabels, orderStatusColors, getOrderEditRoute, getOrderViewRoute } from '@entities/orders';
 import { Role } from '@entities/users/enums';
 import { useDeleteOrder } from '@features/orders/hooks/use-delete-order';
+import { useUsdRate } from '@shared/hooks';
+import { formatPriceWithUsd } from '@shared/utils/format-price-with-usd';
 
 interface ColumnVisibility {
   orderNumber: boolean;
@@ -106,14 +108,7 @@ export function OrdersTableContent({
 
   // Проверяем, может ли пользователь редактировать заказы (все роли кроме Partner)
   const canEditOrders = userRole !== Role.Partner;
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('ru-RU', {
-      style: 'currency',
-      currency: 'KGS',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(price);
-  };
+  const usdRate = useUsdRate();
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('ru-RU', {
@@ -176,11 +171,11 @@ export function OrdersTableContent({
                 </TableCell>
               )}
               {columnVisibility.initialPrice && (
-                <TableCell>{formatPrice(order.initialPrice)}</TableCell>
+                <TableCell>{formatPriceWithUsd(order.initialPrice, usdRate)}</TableCell>
               )}
               {columnVisibility.finalPrice && (
                 <TableCell>
-                  {order.finalPrice ? formatPrice(order.finalPrice) : '—'}
+                  {order.finalPrice ? formatPriceWithUsd(order.finalPrice, usdRate) : '—'}
                 </TableCell>
               )}
               {columnVisibility.createdAt && (
