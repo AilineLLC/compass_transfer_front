@@ -7,6 +7,8 @@ import { Skeleton } from '@shared/ui/data-display/skeleton';
 import { orderNumberToString } from '@shared/utils/orderNumberConverter';
 import type { GetOrderDTO } from '@entities/orders/interface';
 import { orderTypeLabels, orderStatusLabels, orderSubStatusLabels } from '@entities/orders';
+import { useUsdRate } from '@shared/hooks';
+import { formatPriceWithUsd } from '@shared/utils/format-price-with-usd';
 
 interface ColumnVisibility {
   orderNumber: boolean;
@@ -58,12 +60,6 @@ function formatDate(dateString: string): string {
   });
 }
 
-function formatPrice(price: number): string {
-  return new Intl.NumberFormat('ru-RU', {
-    minimumFractionDigits: 0,
-  }).format(price);
-}
-
 export function UserOrdersTableContent({
   orders,
   loading,
@@ -73,6 +69,7 @@ export function UserOrdersTableContent({
   onSortChange,
   onViewDetails,
 }: UserOrdersTableContentProps) {
+  const usdRate = useUsdRate();
   const handleSort = (column: string) => {
     if (sortBy === column) {
       onSortChange(column, sortOrder === 'asc' ? 'desc' : 'asc');
@@ -278,7 +275,7 @@ export function UserOrdersTableContent({
                   <td className="p-3">
                     <div className="flex items-center gap-2">
                       <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span>{formatPrice(order.initialPrice)}</span>
+                      <span>{formatPriceWithUsd(order.initialPrice, usdRate)}</span>
                     </div>
                   </td>
                 )}
@@ -286,7 +283,7 @@ export function UserOrdersTableContent({
                   <td className="p-3">
                     <div className="flex items-center gap-2">
                       <DollarSign className="h-4 w-4 text-green-600" />
-                      <span className="font-medium">{formatPrice(order.finalPrice)}</span>
+                      <span className="font-medium">{formatPriceWithUsd(order.finalPrice, usdRate)}</span>
                     </div>
                   </td>
                 )}

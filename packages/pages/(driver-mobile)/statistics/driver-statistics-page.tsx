@@ -7,6 +7,8 @@ import { Button } from '@shared/ui/forms/button';
 import { Card } from '@shared/ui/layout/card';
 import { orderNumberToString } from '@shared/utils/orderNumberConverter';
 import type { GetOrderDTO } from '@entities/orders/interface/GetOrderDTO';
+import { useUsdRate } from '@shared/hooks';
+import { formatPriceWithUsd } from '@shared/utils/format-price-with-usd';
 
 interface EarningsStats {
   totalEarnings: number;
@@ -23,6 +25,7 @@ interface DateRange {
 export function DriverStatisticsPage() {
   const [orders, setOrders] = useState<GetOrderDTO[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const usdRate = useUsdRate();
   const [dateRange, setDateRange] = useState<DateRange>({
     from: new Date(new Date().setDate(new Date().getDate() - 30)), // Последние 30 дней
     to: new Date()
@@ -235,10 +238,10 @@ export function DriverStatisticsPage() {
                         }
                       </td>
                       <td className="py-3 px-4">
-                        <span className="font-medium">{order.finalPrice || order.initialPrice} сом</span>
+                        <span className="font-medium">{formatPriceWithUsd(order.finalPrice || order.initialPrice, usdRate)}</span>
                       </td>
                       <td className="py-3 px-4">
-                        <span className="font-medium text-green-600">{order.driverProfit} сом</span>
+                        <span className="font-medium text-green-600">{formatPriceWithUsd(order.driverProfit || 0, usdRate)}</span>
                       </td>
                       <td className="py-3 px-4">
                         {order.status === 'Completed' ? (

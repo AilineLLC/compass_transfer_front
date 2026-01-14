@@ -5,6 +5,8 @@ import { Checkbox } from '@shared/ui/forms/checkbox';
 import { Input } from '@shared/ui/forms/input';
 import { Label } from '@shared/ui/forms/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/layout/card';
+import { useUsdRate } from '@shared/hooks';
+import { formatPriceWithUsd } from '@shared/utils/format-price-with-usd';
 
 interface PriceInfoCardProps {
   basePrice: string;
@@ -24,6 +26,7 @@ interface PriceInfoCardProps {
     price?: number;
   }>;
   servicesPrice?: number;
+  totalPriceValue?: number;
 }
 
 /**
@@ -41,8 +44,11 @@ export function PriceInfoCard({
   calculatedPrice = 0,
   customPriceValue = 0,
   selectedServices = [],
-  servicesPrice = 0
+  servicesPrice = 0,
+  totalPriceValue = 0
 }: PriceInfoCardProps) {
+  const usdRate = useUsdRate();
+
   // Форматирование цены
   const formatPrice = (price: number): string => {
     return new Intl.NumberFormat('ru-RU', {
@@ -106,11 +112,17 @@ export function PriceInfoCard({
           
           <div className="flex justify-between items-center font-medium border-t border-gray-100 pt-2 mt-2">
             <span>Итоговая стоимость:</span>
-            <span className={`text-lg ${isCustomPrice ? 'line-through text-gray-500' : ''}`}>{totalPrice}</span>
+            <span className={`text-lg ${isCustomPrice ? 'line-through text-gray-500' : ''}`}>
+              {isCustomPrice 
+                ? formatPrice(calculatedPrice) 
+                : totalPriceValue > 0 
+                  ? formatPriceWithUsd(totalPriceValue, usdRate)
+                  : totalPrice}
+            </span>
           </div>
           {isCustomPrice && (
             <div className="flex justify-end items-center font-medium">
-              <span className="text-lg">{formatPrice(customPriceValue)} ₽</span>
+              <span className="text-lg">{formatPriceWithUsd(customPriceValue, usdRate)}</span>
             </div>
           )}
           

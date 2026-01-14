@@ -260,6 +260,7 @@ export function SummaryTab({
             showCustomPrice /* Показываем для всех режимов */
             calculatedPrice={currentPrice} /* Передаем рассчитанную цену */
             customPriceValue={_customPrice ? parseFloat(_customPrice.replace(/[^0-9.-]+/g, '')) : 0} /* Передаем значение кастомной цены */
+            totalPriceValue={useCustomPrice && _customPrice ? parseFloat(_customPrice.replace(/[^0-9.-]+/g, '')) : currentPrice} /* Передаем числовое значение итоговой цены */
             selectedServices={selectedServices.map(service => {
               // Ищем услугу в справочнике services по serviceId (для GetOrderServiceDTO) или id (для UISelectedService)
               const serviceId = service.serviceId || service.id;

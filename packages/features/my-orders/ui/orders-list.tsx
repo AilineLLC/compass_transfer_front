@@ -6,6 +6,8 @@ import { Badge } from '@shared/ui/data-display/badge';
 import { DataTable } from '@shared/ui/data-table';
 import { Button } from '@shared/ui/forms/button';
 import type { GetOrderDTO } from '@entities/orders/interface';
+import { useUsdRate } from '@shared/hooks';
+import { formatPriceWithUsd } from '@shared/utils/format-price-with-usd';
 
 interface OrdersListProps {
   orders: GetOrderDTO[];
@@ -49,11 +51,8 @@ const formatDate = (dateString: string) => {
   });
 };
 
-const formatPrice = (price: number) => {
-  return `${price.toLocaleString()} сом`;
-};
-
 export function OrdersList({ orders, isLoading, onViewDetails }: OrdersListProps) {
+  const usdRate = useUsdRate();
   const columns: ColumnDef<GetOrderDTO>[] = [
     {
       accessorKey: 'orderNumber',
@@ -99,11 +98,13 @@ export function OrdersList({ orders, isLoading, onViewDetails }: OrdersListProps
           <DollarSign className='h-4 w-4 text-muted-foreground' />
           <div className='flex flex-col'>
             <span className='text-sm font-medium'>
-              {row.original.finalPrice ? formatPrice(row.original.finalPrice) : formatPrice(row.original.initialPrice)}
+              {row.original.finalPrice 
+                ? formatPriceWithUsd(row.original.finalPrice, usdRate) 
+                : formatPriceWithUsd(row.original.initialPrice, usdRate)}
             </span>
             {row.original.finalPrice && row.original.finalPrice !== row.original.initialPrice && (
               <span className='text-xs text-muted-foreground'>
-                (было {formatPrice(row.original.initialPrice)})
+                (было {formatPriceWithUsd(row.original.initialPrice, usdRate)})
               </span>
             )}
           </div>
