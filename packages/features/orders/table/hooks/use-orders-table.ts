@@ -139,13 +139,17 @@ export function useOrdersTable(initialFilters?: {
     // Обновляем фильтры только если они изменились
     let filtersChanged = false;
 
-    if (currentStatus && currentStatus !== statusFilter[0]) {
-      setStatusFilter([currentStatus as OrderStatus]);
-      filtersChanged = true;
-    } else if (!currentStatus && statusFilter.length > 0) {
-      setStatusFilter([]);
-      filtersChanged = true;
+    // Если в URL есть статус, обновляем фильтр (для поддержки прямых ссылок)
+    if (currentStatus) {
+      const statusArray = [currentStatus as OrderStatus];
+      // Проверяем, изменился ли фильтр (сравниваем массивы)
+      if (statusArray.length !== statusFilter.length || 
+          !statusArray.every(status => statusFilter.includes(status))) {
+        setStatusFilter(statusArray);
+        filtersChanged = true;
+      }
     }
+    // Не сбрасываем statusFilter если нет currentStatus - пользователь мог выбрать через UI
 
     if (currentType && currentType !== typeFilter[0]) {
       setTypeFilter([currentType as OrderType]);
