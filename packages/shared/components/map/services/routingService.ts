@@ -73,9 +73,9 @@ class OSRMProvider implements RoutingProvider {
           ? `${server}/route/v1/driving/${waypoints}?overview=full&geometries=geojson&alternatives=false&steps=false`
           : `${server}/route/v1/driving/${waypoints}?overview=full&geometries=geojson&alternatives=false&steps=false&continue_straight=default`;
 
-        const response = await fetch(url, {
-          headers: { 'User-Agent': 'CompassTransfer/1.0' },
-        });
+        // В браузере нельзя выставлять User-Agent (forbidden header) — Safari может падать с TypeError,
+        // а кастомные заголовки вызывают CORS-preflight у публичных OSRM серверов.
+        const response = await fetch(url);
 
         if (!response.ok) continue;
 
@@ -177,9 +177,8 @@ export class RoutingService {
           ? `${server}/route/v1/driving/${waypoints}?overview=full&geometries=geojson&alternatives=true&steps=false&number_of_alternatives=3`
           : `${server}/route/v1/driving/${waypoints}?overview=full&geometries=geojson&alternatives=true&steps=false&continue_straight=default`;
 
-        const response = await fetch(url, {
-          headers: { 'User-Agent': 'CompassTransfer/1.0' },
-        });
+        // См. комментарий выше про forbidden headers и CORS-preflight.
+        const response = await fetch(url);
 
         if (!response.ok) continue;
 
