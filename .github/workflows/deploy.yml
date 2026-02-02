@@ -1,0 +1,33 @@
+name: Deploy to Server (build+start)
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            set -e
+            cd /opt/compass-frontend
+            git fetch --all
+            git reset --hard origin/main
+
+            docker compose -f docker/docker-compose.install.yml run --rm compass-install
+
+            docker compose -f docker/docker-compose.admin.build.yml run --rm compass-admin
+            docker compose -f docker/docker-compose.admin.start.yml up -d
+
+            docker compose -f docker/docker-compose.driver.build.yml run --rm compass-driver
+            docker compose -f docker/docker-compose.driver.start.yml up -d
+
+            docker compose -f docker/docker-compose.terminal.build.yml run --rm compass-terminal
+            docker compose -f docker/docker-compose.terminal.start.yml up -d
