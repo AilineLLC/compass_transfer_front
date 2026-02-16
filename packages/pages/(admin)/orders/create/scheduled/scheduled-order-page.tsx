@@ -1125,6 +1125,7 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
           {/* Кнопки навигации справа */}
           <div className='flex items-center gap-3'>
             <Button
+              type='button'
               variant='outline'
               onClick={goToPreviousTab}
               disabled={!canGoPrevious()}
@@ -1136,6 +1137,7 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
 
             {activeTab === 'summary' ? (
               <Button
+                type='button'
                 onClick={handleSave}
                 className='flex items-center gap-2 bg-green-600 hover:bg-green-700'
                 disabled={isSubmittingOrder || _isUpdatingOrder || isAssigningDriver}
@@ -1149,6 +1151,7 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
               </Button>
             ) : (
               <Button
+                type='button'
                 onClick={goToNextTab}
                 className={`flex items-center gap-2 ${!canGoNext() ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
