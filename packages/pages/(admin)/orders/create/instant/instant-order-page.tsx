@@ -668,6 +668,7 @@ export function InstantOrderPage({ mode, id, userRole = 'operator', initialTarif
           {/* Кнопки навигации справа */}
           <div className='flex items-center gap-3'>
             <Button
+              type='button'
               variant='outline'
               onClick={goToPreviousTab}
               disabled={!canGoPrevious()}
@@ -679,6 +680,7 @@ export function InstantOrderPage({ mode, id, userRole = 'operator', initialTarif
 
             {activeTab === 'summary' ? (
               <Button
+                type='button'
                 onClick={handleSave}
                 className='flex items-center gap-2 bg-green-600 hover:bg-green-700'
                 disabled={isCreatingOrder}
@@ -691,6 +693,7 @@ export function InstantOrderPage({ mode, id, userRole = 'operator', initialTarif
               </Button>
             ) : (
               <Button
+                type='button'
                 onClick={goToNextTab}
                 className={`flex items-center gap-2 ${!canGoNext() ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
