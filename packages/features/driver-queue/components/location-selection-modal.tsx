@@ -76,7 +76,7 @@ export function LocationSelectionModal({ isOpen, onClose, onLocationSelect }: Lo
       }}
     >
       <div
-        className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-hidden"
+        className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
         style={{
           WebkitTransform: 'translate3d(0,0,0)',
@@ -84,14 +84,14 @@ export function LocationSelectionModal({ isOpen, onClose, onLocationSelect }: Lo
         }}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b">
+        <div className="px-6 py-4 border-b flex-shrink-0">
           <h2 className="text-lg font-semibold text-gray-900">
             Выберите стартовую точку
           </h2>
         </div>
 
         {/* Content */}
-        <div className="px-6 py-4">
+        <div className="px-6 py-4 flex-1 min-h-0 overflow-y-auto">
           {isLoading ? (
             <div className="flex justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -101,7 +101,7 @@ export function LocationSelectionModal({ isOpen, onClose, onLocationSelect }: Lo
           ) : locations.length === 0 ? (
             <div className="text-gray-500 text-center py-4">Нет доступных стартовых точек</div>
           ) : (
-            <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+            <div className="space-y-2">
               {locations.map((location) => (
                 <div
                   key={location.id}
@@ -120,7 +120,7 @@ export function LocationSelectionModal({ isOpen, onClose, onLocationSelect }: Lo
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t bg-gray-50 flex justify-end space-x-3">
+        <div className="px-6 py-4 border-t bg-gray-50 flex justify-end space-x-3 flex-shrink-0">
           <Button
             variant="outline"
             onClick={onClose}

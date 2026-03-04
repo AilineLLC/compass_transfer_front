@@ -103,7 +103,7 @@ export function DriverLoginForm() {
       await actions.login({
         phoneNumber: cleanPhoneNumber,
         password: data.password,
-        licensePlate: data.licensePlate,
+        licensePlate: data.licensePlate?.toUpperCase(),
       });
     } catch {
       // Ошибка уже обработана в хуке
