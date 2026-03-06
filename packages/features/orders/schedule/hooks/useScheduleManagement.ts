@@ -29,7 +29,7 @@ export function useScheduleManagement({
 }: UseScheduleManagementParams): UseScheduleManagementResult {
   const getInitialTime = () => {
     const now = new Date();
-    const minAllowedTime = new Date(now.getTime() + 10 * 60 * 1000);
+    const minAllowedTime = new Date(now.getTime() + 5 * 60 * 1000);
 
     const minutes = Math.ceil(minAllowedTime.getMinutes() / 5) * 5;
     let hours = minAllowedTime.getHours();
@@ -72,7 +72,7 @@ export function useScheduleManagement({
   const [selectedTime, setSelectedTime] = useState<string | null>(initialValues.time);
   const [selectedHour, setSelectedHour] = useState<number>(initialValues.hour);
   const [selectedMinute, setSelectedMinute] = useState<number>(initialValues.minute);
-  
+
   // Инициализируем состояние валидности при первой загрузке
   useEffect(() => {
     // Используем отдельную функцию, чтобы избежать повторных вызовов useEffect
@@ -87,12 +87,12 @@ export function useScheduleManagement({
         const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
         const day = String(selectedDate.getDate()).padStart(2, '0');
         const scheduledTimeString = `${year}-${month}-${day}T${selectedTime}`;
-        
+
         // Проверяем, что выбранное время валидно
         const selectedDateTime = new Date(scheduledTimeString);
         const now = new Date();
-        const minAllowedTime = new Date(now.getTime() + 5 * 60 * 1000);
-        
+        const minAllowedTime = new Date(now.getTime() + 1 * 60 * 1000);
+
         if (selectedDateTime > minAllowedTime && onValidityChange) {
           onValidityChange(true);
           if (onScheduleChange) {
@@ -101,7 +101,7 @@ export function useScheduleManagement({
         }
       }
     };
-    
+
     // Вызываем функцию инициализации один раз при загрузке
     initializeValidity();
   }, []);
@@ -110,7 +110,7 @@ export function useScheduleManagement({
     if (!selectedDate) return false;
 
     const now = new Date();
-    const minAllowedTime = new Date(now.getTime() + 10 * 60 * 1000);
+    const minAllowedTime = new Date(now.getTime() + 1 * 60 * 1000);
     const selectedDateTime = new Date(selectedDate);
 
     selectedDateTime.setHours(hour, minute, 0, 0);
@@ -138,11 +138,11 @@ export function useScheduleManagement({
 
       const selectedDateTime = new Date(scheduledTimeString);
       const now = new Date();
-      const minAllowedTime = new Date(now.getTime() + 5 * 60 * 1000);
+      const minAllowedTime = new Date(now.getTime() + 1 * 60 * 1000);
 
       if (selectedDateTime < minAllowedTime) {
         toast.error('Время в прошлом', {
-          description: 'Выберите время минимум через 5 минут от текущего времени'
+          description: 'Выберите время минимум через 1 минуту от текущего времени'
         });
 
         if (onValidityChange) {

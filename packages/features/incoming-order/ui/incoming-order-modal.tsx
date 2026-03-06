@@ -34,14 +34,13 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
   // SignalR слушатель входящих заказов
   useEffect(() => {
     const handleRideRequest = (notification: SignalREventData) => {
-
       if (notification && typeof notification === 'object' && 'data' in notification && notification.data && 'orderId' in notification && notification.orderId) {
         // ID заказа находится в notification.orderId, а данные в notification.data!
         const signalRData = notification.data as { waypoints: Array<{ location: { address?: string; name?: string } }> };
         const orderId = notification.orderId as string;
         const rideId = (notification as { rideId?: string }).rideId as string;
         const orderTypeValue = (notification as { orderType?: string }).orderType as string;
-
+        const passangers = (notification.data as { passengers: Array<{ firstName?: string, lastName?: string, isMainPassenger: boolean }> }).passengers || [];
         // Создаем правильную структуру данных для модального окна
         const waypoints = signalRData.waypoints || [];
         const startLocation = waypoints[0]?.location;
@@ -72,7 +71,7 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
           creatorId: '',
           initialPrice: 0,
           services: [],
-          passengers: []
+          passengers: passangers.length > 1 ? passangers.filter((passenger) => passenger.isMainPassenger) : passangers
         } as unknown as GetOrderDTO;
 
         setCurrentOrder(mappedOrderData);
@@ -206,18 +205,15 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
         {/*  информация о пользователе */}
         <div className='px-6 pt-8 pb-4 text-left'>
           <h3 className='text-lg font-semibold text-gray-900 mb-1'>
-            Рустемов Илим Сейтбекович
+            {currentOrder.passengers[0].firstName} {currentOrder.passengers[0].lastName}
           </h3>
-          <p className='text-sm text-gray-500 mb-4'>
-            +996 700 700 700
-          </p>
         </div>
         <div className='mb-[30px] flex justify-center px-[10px]'>
           <hr className='border-gray-200 border-gray-200 w-full' />
         </div>
 
         {/* Маршруты */}
-        <div className='px-6 pb-6 space-y-3'>
+        <div className='px-6 pt-3 pb-6 space-y-3'>
           {/* Откуда */}
           <div className='flex items-center space-x-3'>
             <div className='flex items-center justify-center w-6 h-6'>

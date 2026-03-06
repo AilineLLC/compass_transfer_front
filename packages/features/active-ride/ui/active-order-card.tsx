@@ -371,6 +371,11 @@ export function ActiveOrderCard({ order, onStatusUpdate }: ActiveOrderCardProps)
                           </span>
                         )}
                       </div>
+                      {passenger.phone && (
+                        <a href={`tel:${passenger.phone}`} className="text-sm text-gray-500 hover:text-blue-500 transition-colors">
+                          {passenger.phone}
+                        </a>
+                      )}
                       {passenger.customerId && (
                         <p className="text-xs text-gray-500">ID: {passenger.customerId}</p>
                       )}

@@ -59,10 +59,10 @@ export function OrdersTable({
 
   if (error) {
     return (
-      <DataTableErrorState 
-        error={error} 
-        onRetry={loadOrders} 
-        entityName="заказов" 
+      <DataTableErrorState
+        error={error}
+        onRetry={loadOrders}
+        entityName="заказов"
       />
     );
   }
@@ -90,6 +90,8 @@ export function OrdersTable({
         handleColumnVisibilityChange={handleColumnVisibilityChange}
         onSaveFilters={saveFilters}
         onClearSavedFilters={clearSavedFilters}
+        onRefresh={refetch}
+        isLoading={loading}
         hasSavedFilters={hasSavedFilters}
         justSavedFilters={justSavedFilters}
       />

@@ -4,6 +4,7 @@
  */
 export interface PassengerDTO {
   customerId?: string | null;
+  phone?: string | null;
   firstName: string;
   lastName: string | null;
   isMainPassenger: boolean;

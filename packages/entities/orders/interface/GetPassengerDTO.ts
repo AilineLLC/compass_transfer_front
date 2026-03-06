@@ -18,6 +18,8 @@ export interface GetPassengerDTO {
    */
   firstName: string;
 
+  phone: string;
+
   /**
    * Фамилия пассажира
    */

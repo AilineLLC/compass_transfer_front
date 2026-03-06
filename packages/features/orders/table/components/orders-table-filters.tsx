@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Filter, Columns, ChevronDown, X, Save, Download, Check } from 'lucide-react';
+import { Search, Filter, Columns, ChevronDown, X, Save, Download, Check, RotateCw } from 'lucide-react';
 import { Badge } from '@shared/ui/data-display/badge';
 import { Button } from '@shared/ui/forms/button';
 import { Checkbox } from '@shared/ui/forms/checkbox';
@@ -54,6 +54,8 @@ interface OrdersTableFiltersProps {
   handleColumnVisibilityChange: (column: keyof ColumnVisibility, visible: boolean) => void;
   onSaveFilters?: () => void;
   onClearSavedFilters?: () => void;
+  onRefresh?: () => void;
+  isLoading?: boolean;
   hasSavedFilters?: boolean;
   justSavedFilters?: boolean;
 }
@@ -81,6 +83,8 @@ export function OrdersTableFilters({
   handleColumnVisibilityChange,
   onSaveFilters,
   onClearSavedFilters,
+  onRefresh,
+  isLoading,
   hasSavedFilters,
   justSavedFilters,
 }: OrdersTableFiltersProps) {
@@ -122,9 +126,9 @@ export function OrdersTableFilters({
     airFlightInput,
     flyReisInput,
   ].filter(Boolean).length +
-  typeFilter.length +
-  statusFilter.length +
-  subStatusFilter.length;
+    typeFilter.length +
+    statusFilter.length +
+    subStatusFilter.length;
 
   return (
     <>
@@ -194,6 +198,16 @@ export function OrdersTableFilters({
         <div className='flex flex-col gap-2 md:flex-row md:items-center md:gap-2 pr-4'>
           <Button
             variant='outline'
+            className='w-full md:w-auto text-blue-600 border-blue-200 hover:bg-blue-50'
+            onClick={onRefresh}
+            disabled={isLoading}
+          >
+            <RotateCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Обновить
+          </Button>
+
+          <Button
+            variant='outline'
             className='w-full md:w-auto'
             onClick={() => setIsExportModalOpen(true)}
           >
@@ -255,11 +269,10 @@ export function OrdersTableFilters({
             <div className='flex items-center gap-2'>
               {onSaveFilters && (
                 <div className='flex items-center gap-3'>
-                  <span className={`text-sm font-medium ${
-                    justSavedFilters ? 'text-green-600' :
+                  <span className={`text-sm font-medium ${justSavedFilters ? 'text-green-600' :
                     hasSavedFilters ? 'text-blue-600' :
-                    'text-gray-500'
-                  }`}>
+                      'text-gray-500'
+                    }`}>
                     {justSavedFilters ? 'Сохранено!' : hasSavedFilters ? 'Запоминание Фильтров включено' : 'Запоминание фильтров отключено'}
                   </span>
 
@@ -268,10 +281,9 @@ export function OrdersTableFilters({
                     size='sm'
                     onClick={hasSavedFilters ? onClearSavedFilters : onSaveFilters}
                     title={hasSavedFilters ? 'Отключить автоматические фильтры' : 'Включить автоматическое применение фильтров'}
-                    className={`h-8 w-8 p-0 transition-all duration-200 ${
-                      hasSavedFilters ? 'text-red-500 hover:text-red-600 hover:bg-red-50' :
+                    className={`h-8 w-8 p-0 transition-all duration-200 ${hasSavedFilters ? 'text-red-500 hover:text-red-600 hover:bg-red-50' :
                       'text-blue-500 hover:text-blue-600 hover:bg-blue-50'
-                    }`}
+                      }`}
                   >
                     {hasSavedFilters ? (
                       <X className='h-4 w-4' />
@@ -282,48 +294,48 @@ export function OrdersTableFilters({
                 </div>
               )}
               <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant='outline'>
-                  <Columns className='mr-2 h-4 w-4' />
-                  Настроить колонки
-                  <ChevronDown className='ml-2 h-4 w-4' />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align='start' className='w-48'>
-                {[
-                  { key: 'orderNumber', label: 'Номер заказа' },
-                  { key: 'type', label: 'Тип' },
-                  { key: 'status', label: 'Статус' },
-                  { key: 'subStatus', label: 'Подстатус' },
-                  { key: 'initialPrice', label: 'Начальная цена' },
-                  { key: 'finalPrice', label: 'Итоговая цена' },
-                  { key: 'createdAt', label: 'Создан' },
-                  { key: 'completedAt', label: 'Завершен' },
-                  { key: 'scheduledTime', label: 'Запланирован' },
-                  { key: 'airFlight', label: 'Рейс (прилет)' },
-                  { key: 'flyReis', label: 'Рейс (вылет)' },
-                  { key: 'actions', label: 'Действия' },
-                ].map(column => (
-                  <DropdownMenuItem
-                    key={column.key}
-                    className='flex items-center space-x-2 cursor-pointer'
-                    onSelect={e => {
-                      e.preventDefault();
-                      handleColumnVisibilityChange(
-                        column.key as keyof ColumnVisibility,
-                        !columnVisibility[column.key as keyof ColumnVisibility],
-                      );
-                    }}
-                  >
-                    <Checkbox
-                      checked={columnVisibility[column.key as keyof ColumnVisibility]}
-                      className='pointer-events-none'
-                    />
-                    <span className='text-sm'>{column.label}</span>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant='outline'>
+                    <Columns className='mr-2 h-4 w-4' />
+                    Настроить колонки
+                    <ChevronDown className='ml-2 h-4 w-4' />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align='start' className='w-48'>
+                  {[
+                    { key: 'orderNumber', label: 'Номер заказа' },
+                    { key: 'type', label: 'Тип' },
+                    { key: 'status', label: 'Статус' },
+                    { key: 'subStatus', label: 'Подстатус' },
+                    { key: 'initialPrice', label: 'Начальная цена' },
+                    { key: 'finalPrice', label: 'Итоговая цена' },
+                    { key: 'createdAt', label: 'Создан' },
+                    { key: 'completedAt', label: 'Завершен' },
+                    { key: 'scheduledTime', label: 'Запланирован' },
+                    { key: 'airFlight', label: 'Рейс (прилет)' },
+                    { key: 'flyReis', label: 'Рейс (вылет)' },
+                    { key: 'actions', label: 'Действия' },
+                  ].map(column => (
+                    <DropdownMenuItem
+                      key={column.key}
+                      className='flex items-center space-x-2 cursor-pointer'
+                      onSelect={e => {
+                        e.preventDefault();
+                        handleColumnVisibilityChange(
+                          column.key as keyof ColumnVisibility,
+                          !columnVisibility[column.key as keyof ColumnVisibility],
+                        );
+                      }}
+                    >
+                      <Checkbox
+                        checked={columnVisibility[column.key as keyof ColumnVisibility]}
+                        className='pointer-events-none'
+                      />
+                      <span className='text-sm'>{column.label}</span>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
           <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>

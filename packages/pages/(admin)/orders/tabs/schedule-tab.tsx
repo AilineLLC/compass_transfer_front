@@ -135,7 +135,7 @@ export function ScheduleTab({ onScheduleChange, onValidityChange, initialSchedul
                 disabled={date => {
                   // Блокируем прошлые даты с резервом в 10 минут
                   const now = new Date();
-                  const minAllowedTime = new Date(now.getTime() + 10 * 60 * 1000); // +10 минут
+                  const minAllowedTime = new Date(now.getTime() + 1 * 60 * 1000); // +1 минута
                   const today = new Date(minAllowedTime);
 
                   today.setHours(0, 0, 0, 0);

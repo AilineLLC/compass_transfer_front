@@ -262,7 +262,7 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
   // Состояние для кастомной цены
   const [useCustomPrice, setUseCustomPrice] = useState<boolean>(false);
   const [customPrice, setCustomPrice] = useState<string>('');
-  
+
   // Состояние для включения доп.точек в стоимость
   const [includeIntermediateInPrice, setIncludeIntermediateInPrice] = useState<boolean>(true);
 
@@ -322,7 +322,7 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
         routeLocations: routeLocations || [],
         flatLocations: routeLocations || [],
         routePoints: routePoints, // Используем реальные точки маршрута
-        
+
         // Добавляем правильные объекты локаций для передачи в RouteInfoCard
         startLocation: startPoint?.location || null,
         endLocation: endPoint?.location || null,
@@ -351,7 +351,7 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
   useEffect(() => {
     if (mode === 'create' && initialTariffId && tariffs.length > 0 && !selectedTariff) {
       const foundTariff = tariffs.find(t => t.id === initialTariffId);
-      
+
       if (foundTariff && !foundTariff.archived) {
         setSelectedTariff(foundTariff);
         // Автоматически переключаемся на таб тарифов, чтобы показать выбранный тариф
@@ -360,23 +360,23 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
       }
     }
   }, [mode, initialTariffId, tariffs, selectedTariff]);
-  
+
   // Автоматический расчет цены при изменении тарифа, расстояния или услуг
   useEffect(() => {
     if (selectedTariff) {
       // Рассчитываем базовую цену за маршрут
       let baseRoutePrice = selectedTariff.basePrice;
-      
+
       // Добавляем стоимость за расстояние, если оно известно
       if (routeDistance > 0) {
         let distanceForPricing = routeDistance;
-        
+
         // Если переключатель выключен и есть промежуточные точки, 
         // рассчитываем расстояние только от начальной до конечной точки
         if (!includeIntermediateInPrice && routePoints.length > 2) {
           const startPoint = routePoints.find(p => p.type === 'start');
           const endPoint = routePoints.find(p => p.type === 'end');
-          
+
           // Если есть обе точки, можно было бы рассчитать прямое расстояние
           // Но для простоты используем пропорциональное уменьшение
           // В реальном проекте здесь должен быть отдельный API-запрос для расчета прямого маршрута
@@ -391,10 +391,10 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
             }
           }
         }
-        
+
         const apiDistanceKm = distanceForPricing / 1000;
         const roundedDistanceKm = Math.round(apiDistanceKm * 10) / 10; // Округляем до 1 знака
-        
+
         baseRoutePrice += roundedDistanceKm * selectedTariff.perKmPrice;
       }
 
@@ -404,7 +404,7 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
         // Цену берем из справочника услуг (services) или устанавливаем в 0
         const serviceInfo = services.find(s => s.id === service.serviceId);
         const price = serviceInfo?.price || 0;
-        
+
         return total + (price * quantity);
       }, 0);
 
@@ -512,7 +512,7 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
 
   // Отладочная информация
   useEffect(() => {
-    if (isEditMode) {}
+    if (isEditMode) { }
   }, [isEditMode, id, isLoadingOrder, existingOrder]);
 
   // Получаем номер заказа для отображения в заголовке
@@ -526,10 +526,10 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
 
       setOrderStatus(currentStatus);
       setOriginalOrderStatus(currentStatus); // Сохраняем оригинальный статус
-      
+
       // initialPrice уже в сомах, не нужно конвертировать
       setCustomPrice(existingOrder.initialPrice?.toString() || '');
-      
+
       // Включаем кастомную цену только если она отличается от автоматически рассчитанной
       // (будет проверено позже в useEffect после расчета currentPrice)
 
@@ -633,7 +633,7 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
     if (isEditMode && existingOrder && currentPrice > 0 && customPrice) {
       const customPriceValue = parseFloat(customPrice);
       const priceDifference = Math.abs(customPriceValue - currentPrice);
-      
+
       // Если разница больше 1 сома, включаем кастомную цену
       if (priceDifference > 1) {
         setUseCustomPrice(true);
@@ -659,7 +659,7 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
   } = useScheduledOrderSubmit({
     orderId: isEditMode ? id : undefined, // Передаем ID для режима редактирования
     shouldUpdatePassengers: isEditMode, // Обновляем пассажиров только при редактировании
-    passengers: isEditMode ? (methods.getValues('passengers') as Array<{customerId: string; firstName: string; lastName: string; isMainPassenger: boolean}>)?.map((p) => ({
+    passengers: isEditMode ? (methods.getValues('passengers') as Array<{ customerId: string; firstName: string; lastName: string; isMainPassenger: boolean }>)?.map((p) => ({
       customerId: p.customerId,
       firstName: p.firstName,
       lastName: p.lastName,
@@ -738,7 +738,7 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
           const distancePrice = distance * perKmPrice;
           const servicesPrice = selectedServices.reduce((sum, sel) => {
             const svc = services.find(s => s.id === sel.serviceId);
-            
+
             return sum + ((svc?.price || 0) * (sel.quantity || 1));
           }, 0);
 
@@ -761,9 +761,10 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
           const passengers = Array.isArray(passengersData) ? passengersData as PassengerDTO[] : [];
 
           return passengers.map((passenger: PassengerDTO) => ({
-          customerId: passenger.customerId || null,
-          firstName: passenger.firstName,
-          lastName: passenger.lastName || null,
+            customerId: passenger.customerId || null,
+            phone: passenger.phone || null,
+            firstName: passenger.firstName,
+            lastName: passenger.lastName || null,
             isMainPassenger: passenger.isMainPassenger,
           }));
         })(),
@@ -814,7 +815,7 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
 
         // Определяем ID заказа для назначения водителя
         const orderIdForDriver = isEditMode ? id : resultOrder?.id;
-        
+
         if (orderIdForDriver) {
           try {
             // Назначаем водителя на заказ
@@ -908,36 +909,36 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
         {/* Статус заказа справа (только для редактирования) */}
         {mode === 'edit' && (
           <div className='flex flex-col justify-end items-end'>
-          <div className='flex flex-row items-end gap-3'>
-            <div className='text-sm text-muted-foreground'>Статус заказа</div>
-          </div>
+            <div className='flex flex-row items-end gap-3'>
+              <div className='text-sm text-muted-foreground'>Статус заказа</div>
+            </div>
 
-          {/* Выбор нового статуса */}
-          <div className='flex flex-row items-end gap-3'>
-            <div className='flex flex-row gap-2'>
-              <div className='flex flex-row items-center gap-3 justify-center'>
-                {orderStatus !== originalOrderStatus && (
-                  <div className='flex items-center gap-2 text-xs'>
-                    <span className='text-muted-foreground'>Изменить на:</span>
-                  </div>
-                )}
-                <select
-                  value={orderStatus}
-                  onChange={e => {
-                    setOrderStatus(e.target.value as OrderStatus);
-                  }}
-                  className='px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[220px]'
-                >
-                  <option value={OrderStatus.Pending}>{orderStatusLabels.Pending}</option>
-                  <option value={OrderStatus.Scheduled}>{orderStatusLabels.Scheduled}</option>
-                  <option value={OrderStatus.InProgress}>{orderStatusLabels.InProgress}</option>
-                  <option value={OrderStatus.Completed}>{orderStatusLabels.Completed}</option>
-                  <option value={OrderStatus.Cancelled}>{orderStatusLabels.Cancelled}</option>
-                  <option value={OrderStatus.Expired}>{orderStatusLabels.Expired}</option>
-                </select>
+            {/* Выбор нового статуса */}
+            <div className='flex flex-row items-end gap-3'>
+              <div className='flex flex-row gap-2'>
+                <div className='flex flex-row items-center gap-3 justify-center'>
+                  {orderStatus !== originalOrderStatus && (
+                    <div className='flex items-center gap-2 text-xs'>
+                      <span className='text-muted-foreground'>Изменить на:</span>
+                    </div>
+                  )}
+                  <select
+                    value={orderStatus}
+                    onChange={e => {
+                      setOrderStatus(e.target.value as OrderStatus);
+                    }}
+                    className='px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[220px]'
+                  >
+                    <option value={OrderStatus.Pending}>{orderStatusLabels.Pending}</option>
+                    <option value={OrderStatus.Scheduled}>{orderStatusLabels.Scheduled}</option>
+                    <option value={OrderStatus.InProgress}>{orderStatusLabels.InProgress}</option>
+                    <option value={OrderStatus.Completed}>{orderStatusLabels.Completed}</option>
+                    <option value={OrderStatus.Cancelled}>{orderStatusLabels.Cancelled}</option>
+                    <option value={OrderStatus.Expired}>{orderStatusLabels.Expired}</option>
+                  </select>
+                </div>
               </div>
             </div>
-          </div>
           </div>
 
         )}
@@ -961,11 +962,11 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
                   return (
                     <TabComponentAny
                       {...({} as Record<string, unknown>)}
-                       // Данные
-                       tariffs={tariffs}
-                       services={services}
-                       _services={services}
-                       users={users}
+                      // Данные
+                      tariffs={tariffs}
+                      services={services}
+                      _services={services}
+                      users={users}
                       // Информация о водителе
                       _selectedDriver={selectedDriver}
                       _onTabChange={undefined}
@@ -998,7 +999,7 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
                       onScheduleChange={
                         activeTab === 'schedule'
                           ? (scheduledTime: string) =>
-                              methods.setValue('scheduledTime', scheduledTime)
+                            methods.setValue('scheduledTime', scheduledTime)
                           : undefined
                       }
                       onValidityChange={
@@ -1028,7 +1029,7 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
                         const stops = isEditMode && existingOrder?.additionalStops
                           ? existingOrder.additionalStops
                           : methods.getValues('additionalStops') as string[] || [];
-                          
+
                         return stops;
                       })()}
                       rides={existingOrder?.rides} // Передаем rides для режима редактирования
@@ -1081,15 +1082,14 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
                     <button
                       onClick={() => isAccessible && goToTab(tab.id)}
                       disabled={!isAccessible}
-                      className={`relative flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all ${
-                        isActive
+                      className={`relative flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all ${isActive
                           ? 'bg-primary border-primary text-primary-foreground shadow-sm'
                           : isCompleted
                             ? 'bg-green-500 border-green-500 text-white'
                             : isAccessible
                               ? 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
                               : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
-                      }`}
+                        }`}
                     >
                       {isCompleted ? (
                         <Check className='h-4 w-4' />
@@ -1101,11 +1101,10 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
                     {/* Линия между кружками */}
                     {index < tabs.length - 1 && (
                       <div
-                        className={`w-12 h-0.5 mx-2 transition-colors ${
-                          index < tabs.findIndex(t => t.id === activeTab)
+                        className={`w-12 h-0.5 mx-2 transition-colors ${index < tabs.findIndex(t => t.id === activeTab)
                             ? 'bg-green-500'
                             : 'bg-gray-200'
-                        }`}
+                          }`}
                       />
                     )}
                   </div>
