@@ -20,7 +20,8 @@ function convertToUpdateData(data: CreateScheduledOrderRequest, orderId: string)
     initialPrice: data.initialPrice,
     scheduledTime: data.scheduledTime,
     passengers: [], // Пассажиры обновляются отдельным запросом
-    status: OrderStatus.Pending // По умолчанию статус Pending при обновлении
+    status: (data.status as string) || (OrderStatus.Pending as string),
+    subStatus: (data as any).subStatus || 'SearchingDriver'
   };
 
   return updateData;
@@ -80,10 +81,10 @@ export interface UseScheduledOrderSubmitResult {
 export function useScheduledOrderSubmit(
   options: UseScheduledOrderSubmitOptions = {}
 ): UseScheduledOrderSubmitResult {
-  const { 
-    onSuccess, 
-    onError, 
-    onSettled, 
+  const {
+    onSuccess,
+    onError,
+    onSettled,
     orderId,
     shouldUpdatePassengers,
     passengers
@@ -109,19 +110,19 @@ export function useScheduledOrderSubmit(
       // Режим создания
       return OrdersApi.createScheduledOrder(data);
     },
-    
+
     onSuccess: (data: GetOrderDTO) => {
       toast.success(
         `✅ Заказ ${orderId ? 'обновлен' : 'создан'} успешно`
       );
-      
+
       // Инвалидируем кэш для обновленного заказа
       if (orderId) {
         queryClient.invalidateQueries({
           queryKey: ['scheduled-order', orderId]
         });
       }
-      
+
       onSuccess?.(data);
     },
 
@@ -131,7 +132,7 @@ export function useScheduledOrderSubmit(
       );
       onError?.(error);
     },
-    
+
     onSettled: () => {
       onSettled?.();
     }

@@ -10,3 +10,4 @@ export * from './personal-info';
 export * from './ride-preferences';
 export * from './security';
 export * from './terminal-data';
+export * from './partner-sale';

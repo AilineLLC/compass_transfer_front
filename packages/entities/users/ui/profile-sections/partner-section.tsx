@@ -95,6 +95,26 @@ export function PartnerSection({ profile, openMapSheet: _openMapSheet }: Section
         </CardContent>
       </Card>
 
+      {/* Условия сотрудничества */}
+      <Card>
+        <CardHeader>
+          <CardTitle className='flex items-center gap-2'>
+            <Building className='h-5 w-5' />
+            Условия сотрудничества
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className='border-l-4 border-yellow-200 pl-4 flex flex-col gap-2'>
+            <label className='text-sm font-medium text-muted-foreground'>Скидка (%)</label>
+            <p className='text-sm font-medium'>
+              {profile.sale !== null && profile.sale !== undefined
+                ? `${(profile.sale * 100).toFixed(2).replace(/\.?0+$/, '')}%`
+                : 'Не указана'}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Дополнительная информация */}
       <Card>
         <CardHeader>

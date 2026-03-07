@@ -16,6 +16,8 @@ import {
   getCompanyDataErrors,
   getSecurityStatus,
   getSecurityErrors,
+  getPartnerSaleStatus,
+  getPartnerSaleErrors,
 } from '@entities/users/model/validation/ui';
 import {
   partnerCreateSchema,
@@ -39,22 +41,23 @@ export function usePartnerFormLogic({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<PartnerCreateFormData>({
-    resolver: zodResolver(partnerCreateSchema),
+    resolver: zodResolver(partnerCreateSchema) as any,
     mode: 'onSubmit',
     defaultValues: {
       phoneNumber: '',
       fullName: '',
       avatarUrl: null,
       verificationStatus: VerificationStatus.Pending,
+      sale: null,
       profile: {
         companyName: '',
-        companyType: BusinessType.LLC,
-        registrationNumber: '',
-        taxIdentifier: '',
+        companyType: BusinessType.Individual,
+        registrationNumber: null,
+        taxIdentifier: null,
         legalAddress: '',
-        contactEmail: '',
-        contactPhone: '',
-        website: '',
+        contactEmail: null,
+        contactPhone: null,
+        website: null,
       },
       email: '',
       password: '',
@@ -83,6 +86,9 @@ export function usePartnerFormLogic({
       if (chapterId === 'security') {
         return getSecurityStatus(formData, errors, isSubmitted);
       }
+      if (chapterId === 'sale') {
+        return getPartnerSaleStatus(formData, errors, isSubmitted);
+      }
 
       return 'pending';
     };
@@ -98,6 +104,9 @@ export function usePartnerFormLogic({
       }
       if (chapterId === 'security') {
         return getSecurityErrors(formData, errors, isSubmitted);
+      }
+      if (chapterId === 'sale') {
+        return getPartnerSaleErrors(formData, errors, isSubmitted);
       }
 
       return [];
@@ -115,9 +124,16 @@ export function usePartnerFormLogic({
           phoneNumber: data.phoneNumber || null,
           avatarUrl: data.avatarUrl || null,
           verificationStatus: data.verificationStatus,
+          sale: data.sale,
           profile: {
-            ...data.profile,
+            companyName: data.profile.companyName,
             companyType: data.profile.companyType,
+            registrationNumber: data.profile.registrationNumber,
+            taxIdentifier: data.profile.taxIdentifier,
+            legalAddress: data.profile.legalAddress,
+            contactEmail: data.profile.contactEmail,
+            contactPhone: data.profile.contactPhone,
+            website: data.profile.website,
           },
         };
         const result = await usersApi.createPartner(apiData);
@@ -171,7 +187,7 @@ export function usePartnerFormLogic({
 
       return;
     }
-    await handleSubmit(onSubmit)();
+    await (handleSubmit as any)(onSubmit)();
   }, [trigger, handleSubmit, onSubmit, form.formState.errors, setFocus]);
 
   const handleChapterClick = useCallback((chapterId: string) => {

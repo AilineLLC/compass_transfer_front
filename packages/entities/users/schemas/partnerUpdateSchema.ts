@@ -45,6 +45,12 @@ export const partnerUpdateSchema = z.object({
       .max(255, { message: 'Веб-сайт не должен превышать 255 символов' })
       .nullable(),
   }),
+  sale: z
+    .number({ message: 'Скидка должна быть числом' } as any)
+    .min(0, { message: 'Скидка не может быть меньше 0' })
+    .max(1, { message: 'Скидка не может превышать 1 (100%)' })
+    .nullable()
+    .optional(),
 });
 
 /**
