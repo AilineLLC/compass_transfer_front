@@ -20,7 +20,7 @@ export function useDriverQueue(): UseDriverQueueReturn {
   // Водитель в очереди, если есть position или joinedAt (статус 200)
   // Если есть orderId или id заказа - это активный заказ (статус 404 с данными)
   const isInQueue = queueData !== null && (
-    queueData.position !== undefined || 
+    queueData.position !== undefined ||
     queueData.joinedAt !== undefined
   ) && !queueData.orderId && !('id' in queueData);
 
@@ -45,7 +45,7 @@ export function useDriverQueue(): UseDriverQueueReturn {
       setIsLoading(true);
       setError(null);
       const result = await driverQueueApi.joinQueue(locationId);
-      
+
       // Обновляем состояние с данными из ответа
       setQueueData({
         driverId: result.driverId,
@@ -70,7 +70,7 @@ export function useDriverQueue(): UseDriverQueueReturn {
       setQueueData(null);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Ошибка при выходе из очереди';
-      
+
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -89,7 +89,7 @@ export function useDriverQueue(): UseDriverQueueReturn {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
-      
+
       return;
     }
 

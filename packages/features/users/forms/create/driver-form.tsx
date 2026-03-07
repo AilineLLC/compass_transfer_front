@@ -166,16 +166,25 @@ export function useDriverFormLogic({
     return cleaned;
   };
 
+  const getErrorMessage = (error: unknown): string => {
+    if (error instanceof Error) {
+        // Вырезаем только первую строку до стектрейса
+        return error.message.split('\n')[0].replace(/^Error:\s*/, '');
+    }
+    if (typeof error === 'string') return error;
+    return 'Неизвестная ошибка при создании водителя';
+  };
+
   const onSubmit = useCallback(
     async (data: DriverCreateFormData) => {
       console.log('=== onSubmit CALLED ===');
       setIsSubmitting(true);
 
       // Отладка: выводим данные формы
-      console.log('=== FORM SUBMISSION DEBUG ===');
-      console.log('Form data before validation:', JSON.stringify(data, null, 2));
-      console.log('Form errors:', JSON.stringify(errors, null, 2));
-      console.log('Form is valid:', Object.keys(errors).length === 0);
+      // console.log('=== FORM SUBMISSION DEBUG ===');
+      // console.log('Form data before validation:', JSON.stringify(data, null, 2));
+      // console.log('Form errors:', JSON.stringify(errors, null, 2));
+      // console.log('Form is valid:', Object.keys(errors).length === 0);
 
       try {
         // Очищаем данные от пустых значений
@@ -202,14 +211,14 @@ export function useDriverFormLogic({
           },
         };
 
-        console.log('Data being sent to API:', JSON.stringify(apiData, null, 2));
-        console.log('Required fields check:');
-        console.log('- email:', apiData.email);
-        console.log('- password:', apiData.password);
-        console.log('- verificationStatus:', apiData.verificationStatus);
-        console.log('- profile:', !!apiData.profile);
-        console.log('- fullName:', apiData.fullName);
-        console.log('- employment.employmentType:', apiData.employment.employmentType);
+        // console.log('Data being sent to API:', JSON.stringify(apiData, null, 2));
+        // console.log('Required fields check:');
+        // console.log('- email:', apiData.email);
+        // console.log('- password:', apiData.password);
+        // console.log('- verificationStatus:', apiData.verificationStatus);
+        // console.log('- profile:', !!apiData.profile);
+        // console.log('- fullName:', apiData.fullName);
+        // console.log('- employment.employmentType:', apiData.employment.employmentType);
         const result = await usersApi.createDriver(apiData);
 
         if (result && result.fullName) {
@@ -222,7 +231,7 @@ export function useDriverFormLogic({
         logger.warn('Ошибка создания водителя:', error);
         if (error instanceof Error && 'response' in error) {
           const axiosError = error as AxiosError<ApiError>;
-
+          
           if (axiosError.response?.data?.errors) {
             const serverErrors = axiosError.response.data.errors;
 
@@ -239,7 +248,9 @@ export function useDriverFormLogic({
             toast.error(axiosError.response?.data?.detail || 'Ошибка создания водителя');
           }
         } else {
-          toast.error('Неизвестная ошибка при создании водителя');
+          toast.error(getErrorMessage(error));
+          // toast.error('Неизвестная ошибка при создании водителя');
+          // console.log(error);
         }
       } finally {
         setIsSubmitting(false);
@@ -305,13 +316,13 @@ export function useDriverFormLogic({
   }, [formData, errors, isSubmitted]);
 
   const onCreate = useCallback(async () => {
-    console.log('=== onCreate CALLED ===');
-    console.log('Triggering validation...');
+    // console.log('=== onCreate CALLED ===');
+    // console.log('Triggering validation...');
 
     const isValid = await trigger();
 
-    console.log('Form is valid:', isValid);
-    console.log('Form errors after trigger:', JSON.stringify(form.formState.errors, null, 2));
+    // console.log('Form is valid:', isValid);
+    // console.log('Form errors after trigger:', JSON.stringify(form.formState.errors, null, 2));
 
     if (!isValid) {
       console.log('Form validation failed, not submitting');

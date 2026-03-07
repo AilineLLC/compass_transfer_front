@@ -14,13 +14,14 @@ export function CreateOrderButton() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleCreateOrder = () => {
-    if (userRole === Role.Partner) {
-      // Для ВСЕХ партнеров сразу переходим на запланированные заказы
-      router.push('/orders/create/scheduled');
-    } else {
-      // Для остальных ролей открываем модальное окно выбора типа заказа
-      setIsModalOpen(true);
-    }
+    // if (userRole === Role.Partner) {
+    //   // Для ВСЕХ партнеров сразу переходим на запланированные заказы
+    //   router.push('/orders/create/scheduled');
+    // } else {
+    //   // Для остальных ролей открываем модальное окно выбора типа заказа
+    //   setIsModalOpen(true);
+    // }
+    router.push('/orders/create/scheduled');
   };
 
   return (

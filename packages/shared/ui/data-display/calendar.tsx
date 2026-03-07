@@ -138,8 +138,8 @@ function TimePicker({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {Array.from({ length: 12 }, (_, i) => {
-                const minute = i * 5;
+              {Array.from({ length: 60 }, (_, i) => {
+                const minute = i * 1;
                 const isDisabled = isTimeDisabled ? isTimeDisabled(selectedHour, minute) : false;
 
                 return (

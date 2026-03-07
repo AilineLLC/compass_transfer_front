@@ -101,6 +101,13 @@ export function BasicDataSection({
             type='tel'
             {...register('phoneNumber')}
             placeholder={defaultPlaceholders.phoneNumber}
+            onKeyDown={(e) => {
+                if (e.key === ' ') e.preventDefault();
+            }}
+            onInput={(e) => {
+                const input = e.currentTarget;
+                input.value = input.value.replace(/\s/g, '');
+            }}
             className={`focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0 hover:shadow-md focus:shadow-md focus-visible:shadow-md transition-shadow ${
               errors.phoneNumber
                 ? 'border-red-500'

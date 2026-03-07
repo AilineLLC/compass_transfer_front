@@ -47,8 +47,9 @@ export default function DriverDashboardPage() {
       } else if (queueData && 'id' in queueData) {
         // Если в 404 ответе есть данные заказа напрямую, используем их
         orderData = queueData as unknown as GetOrderDTO;
+        // orderData = await orderService.getOrderById(queueData.id as string);
+        console.log(orderData)
       }
-
       setCurrentOrder(orderData);
 
     } catch (err) {
@@ -64,7 +65,7 @@ export default function DriverDashboardPage() {
     try {
       // Сначала обновляем данные очереди
       await refetchQueue();
-      
+
       // Затем обновляем заказ
       await fetchActiveOrder();
     } catch (err) {
@@ -80,7 +81,8 @@ export default function DriverDashboardPage() {
   useEffect(() => {
     const handleOrderAccepted = () => {
       // Обновляем данные при получении события принятия заказа
-      fetchActiveOrder();
+      // Используем handleStatusUpdate вместо fetchActiveOrder, чтобы сначала обновить очередь
+      handleStatusUpdate();
     };
 
     const handleOpenLocationModal = () => {
@@ -164,16 +166,16 @@ export default function DriverDashboardPage() {
         ) : (
           // Если нет заказа, показываем DriverStatusCard + DriverStatusBlock
           <>
-             {/* DriverStatusCard занимает основное место */}
-             <div className='flex-1 min-h-0'>
-               <DriverStatusCard
-                 queueData={queueData}
-                 isInQueue={isInQueue}
-                 isLoading={queueIsLoading}
-                 error={queueError}
-                 leaveQueue={leaveQueue}
-               />
-             </div>
+            {/* DriverStatusCard занимает основное место */}
+            <div className='flex-1 min-h-0'>
+              <DriverStatusCard
+                queueData={queueData}
+                isInQueue={isInQueue}
+                isLoading={queueIsLoading}
+                error={queueError}
+                leaveQueue={leaveQueue}
+              />
+            </div>
 
             {/* DriverStatusBlock занимает столько места, сколько нужно */}
             <div className='flex-shrink-0'>

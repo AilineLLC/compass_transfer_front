@@ -140,7 +140,6 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children, acce
 
   const on = useCallback<SignalREventHandler>((event: string, callback: SignalRCallback): void => {
     const handlers = eventHandlers.current.get(event) || [];
-
     handlers.push(callback);
     eventHandlers.current.set(event, handlers);
   }, []);
