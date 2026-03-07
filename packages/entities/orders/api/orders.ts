@@ -232,7 +232,7 @@ export class OrdersApi {
       isMainPassenger: boolean;
     }>
   ): Promise<void> {
-    const response = await apiPut<void, Array<{customerId: string | null; firstName: string; lastName: string | null; isMainPassenger: boolean}>>(`/Order/${orderId}/passengers`, passengers);
+    const response = await apiPut<void, Array<{ customerId: string | null; firstName: string; lastName: string | null; isMainPassenger: boolean }>>(`/Order/${orderId}/passengers`, passengers);
 
     if (response.error) {
       throw new Error(response.error.message || 'Failed to update order passengers');

@@ -37,4 +37,7 @@ export interface UpdateScheduledOrderDTO {
 
   /** Статус заказа */
   status: string;
+
+  /** Подстатус заказа */
+  subStatus: string;
 }

@@ -13,4 +13,6 @@ export interface CreatePartnerDTO {
   profile: PartnerProfile;
   email: string;
   password: string;
+  /** Процент скидки партнера */
+  sale: number | null;
 }

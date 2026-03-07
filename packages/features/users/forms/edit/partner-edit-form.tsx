@@ -34,6 +34,7 @@ export function usePartnerEditFormLogic({
     avatarUrl?: string | null;
     verificationStatus: string; // TODO: Должно быть VerificationStatus
     profile: PartnerProfile;
+    sale: number | null;
   };
   onBack: () => void;
   onSuccess: () => void;
@@ -49,6 +50,7 @@ export function usePartnerEditFormLogic({
       avatarUrl: initialData.avatarUrl || null,
       verificationStatus: initialData.verificationStatus as VerificationStatus,
       profile: initialData.profile,
+      sale: initialData.sale,
     },
   });
 
@@ -70,6 +72,7 @@ export function usePartnerEditFormLogic({
           ...data,
           phoneNumber: data.phoneNumber || null,
           avatarUrl: data.avatarUrl || null,
+          sale: data.sale,
         };
         const result = await usersApi.updatePartner(partnerId, apiData);
 
@@ -126,6 +129,11 @@ export function usePartnerEditFormLogic({
       if (chapterId === 'business') {
         return getCompanyDataStatus(formData.profile, errors, isSubmitted);
       }
+      if (chapterId === 'sale') {
+        if (errors.sale) return 'error';
+        if (formData.sale !== undefined && formData.sale !== null) return 'complete';
+        return 'pending';
+      }
       if (chapterId === 'security') {
         // В форме редактирования нет полей безопасности
         return 'complete';
@@ -148,6 +156,11 @@ export function usePartnerEditFormLogic({
       }
       if (chapterId === 'business') {
         return getCompanyDataErrors(formData.profile, errors, isSubmitted);
+      }
+      if (chapterId === 'sale') {
+        const errorList: string[] = [];
+        if (errors.sale?.message) errorList.push(errors.sale.message);
+        return errorList;
       }
       if (chapterId === 'security') {
         // В форме редактирования нет полей безопасности

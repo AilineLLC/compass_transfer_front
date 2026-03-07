@@ -2,7 +2,7 @@ import { FormProvider, type UseFormReturn } from 'react-hook-form';
 import { Button } from '@shared/ui/forms/button';
 import { Card, CardContent, ChapterHeader } from '@shared/ui/layout';
 import { FormSidebar } from '@shared/ui/layout/form-sidebar';
-import { BasicDataSection, CompanyDataSection, SecuritySection } from '@entities/users';
+import { BasicDataSection, CompanyDataSection, SecuritySection, PartnerSaleSection } from '@entities/users';
 import { BusinessType } from '@entities/users/enums';
 import { PARTNER_FORM_CHAPTERS } from '@entities/users/model/form-chapters/partner-chapters';
 import type { PartnerCreateFormData } from '@entities/users/schemas/partnerCreateSchema';
@@ -19,7 +19,7 @@ const COMPANY_TYPE_OPTIONS = [
 ] as const;
 
 interface PartnerFormViewProps {
-  form: UseFormReturn<PartnerCreateFormData>;
+  form: UseFormReturn<any>;
   isSubmitting: boolean;
   getChapterStatus: (chapterId: string) => 'complete' | 'warning' | 'error' | 'pending';
   getChapterErrors: (chapterId: string) => string[];
@@ -83,6 +83,19 @@ export function PartnerFormView({
                   <div className='relative ml-12'>
                     <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
                     <SecuritySection />
+                  </div>
+                </div>
+
+                {/* Глава 4: Условия сотрудничества */}
+                <div id='chapter-sale' className='relative flex flex-col gap-4'>
+                  <ChapterHeader
+                    number={4}
+                    title='Условия сотрудничества'
+                    status={getChapterStatus('sale')}
+                  />
+                  <div className='relative ml-12'>
+                    <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
+                    <PartnerSaleSection />
                   </div>
                 </div>
                 <div className='flex justify-end space-x-4 pt-6'>

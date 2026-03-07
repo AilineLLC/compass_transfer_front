@@ -11,4 +11,6 @@ export interface UpdatePartnerDTO {
   avatarUrl?: string | null;
   verificationStatus: VerificationStatus;
   profile: PartnerProfile;
+  /** Процент скидки партнера */
+  sale?: number | null;
 }

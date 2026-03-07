@@ -15,4 +15,6 @@ export interface GetPartnerDTO {
   online?: boolean | null;
   verificationStatus?: VerificationStatus;
   profile: PartnerProfile;
+  /** Процент скидки партнера */
+  sale: number | null;
 }

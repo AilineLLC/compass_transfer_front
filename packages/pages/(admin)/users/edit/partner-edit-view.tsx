@@ -7,7 +7,7 @@ import { usersApi } from '@shared/api/users';
 import { Card, CardContent } from '@shared/ui/layout';
 import { ChapterHeader } from '@shared/ui/layout/chapter-header';
 import { FormSidebar } from '@shared/ui/layout/form-sidebar';
-import { BasicDataSection, CompanyDataSection } from '@entities/users';
+import { BasicDataSection, CompanyDataSection, PartnerSaleSection } from '@entities/users';
 import { BusinessType, VerificationStatus } from '@entities/users/enums';
 import type { GetPartnerDTO } from '@entities/users/interface';
 import { PARTNER_FORM_CHAPTERS } from '@entities/users/model/form-chapters/partner-chapters';
@@ -85,6 +85,7 @@ export function PartnerEditView({ userId }: PartnerEditViewProps) {
         contactPhone: null,
         website: null,
       },
+      sale: null,
     },
     onBack: () => router.push(`/users/partner/${userId}`),
     onSuccess: () => router.push(`/users/partner/${userId}`),
@@ -109,6 +110,7 @@ export function PartnerEditView({ userId }: PartnerEditViewProps) {
           contactPhone: partner.profile?.contactPhone || null,
           website: partner.profile?.website || null,
         },
+        sale: partner.sale,
       });
     }
   }, [partner, logic.form]);
@@ -179,6 +181,20 @@ function PartnerEditFormView({
                     {/* Вертикальная линия */}
                     <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
                     <CompanyDataSection companyTypeOptions={COMPANY_TYPE_OPTIONS} />
+                  </div>
+                </div>
+
+                {/* Глава 3: Условия сотрудничества */}
+                <div id='chapter-sale' className='relative flex flex-col gap-4'>
+                  <ChapterHeader
+                    number={3}
+                    title='Условия сотрудничества'
+                    status={getChapterStatus('sale')}
+                  />
+                  <div className='relative ml-12'>
+                    {/* Вертикальная линия */}
+                    <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
+                    <PartnerSaleSection />
                   </div>
                 </div>
               </form>

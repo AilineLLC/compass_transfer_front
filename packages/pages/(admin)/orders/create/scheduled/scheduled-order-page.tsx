@@ -11,8 +11,8 @@ import { Card, CardContent } from '@shared/ui/layout/card';
 import { SidebarHeader } from '@shared/ui/layout/sidebar';
 import { orderNumberToString } from '@shared/utils/orderNumberConverter';
 import type { GetLocationDTO } from '@entities/locations/interface';
-import { orderStatusLabels } from '@entities/orders/constants/order-status-labels';
-import { OrderStatus } from '@entities/orders/enums';
+import { orderStatusLabels, orderSubStatusLabels } from '@entities/orders/constants/order-status-labels';
+import { OrderStatus, OrderSubStatus, OrderSubStatusValues } from '@entities/orders/enums';
 import {
   useScheduledOrderSubmit,
   useUpdateOrderPassengers,
@@ -283,6 +283,7 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
   // Состояние для статуса заказа (для редактирования)
   const [orderStatus, setOrderStatus] = useState<OrderStatus>(OrderStatus.Pending);
   const [originalOrderStatus, setOriginalOrderStatus] = useState<OrderStatus>(OrderStatus.Pending);
+  const [orderSubStatus, setOrderSubStatus] = useState<OrderSubStatus>(OrderSubStatus.SearchingDriver);
 
   const methods = useMemo(
     () => ({
@@ -792,10 +793,11 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
 
       // Отправляем или обновляем заказ в зависимости от режима
       // Обновление пассажиров теперь обрабатывается внутри хука useScheduledOrderSubmit
-      const finalOrderData = isEditMode ? {
+      const finalOrderData = {
         ...orderData,
         status: orderStatus,
-      } : orderData;
+        subStatus: orderSubStatus,
+      };
 
       const resultOrder = await submitOrder(finalOrderData);
 
@@ -939,8 +941,29 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
                 </div>
               </div>
             </div>
-          </div>
 
+            {/* Выбор подстатуса */}
+            <div className='flex flex-row items-end gap-3 mt-4'>
+              <div className='flex flex-row gap-2'>
+                <div className='flex flex-row items-center gap-3 justify-center'>
+                  <div className='text-sm text-muted-foreground'>Подстатус заказа</div>
+                  <select
+                    value={orderSubStatus}
+                    onChange={e => {
+                      setOrderSubStatus(e.target.value as OrderSubStatus);
+                    }}
+                    className='px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[220px]'
+                  >
+                    {OrderSubStatusValues.map(status => (
+                      <option key={status} value={status}>
+                        {orderSubStatusLabels[status]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </SidebarHeader>
 
@@ -1083,12 +1106,12 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
                       onClick={() => isAccessible && goToTab(tab.id)}
                       disabled={!isAccessible}
                       className={`relative flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all ${isActive
-                          ? 'bg-primary border-primary text-primary-foreground shadow-sm'
-                          : isCompleted
-                            ? 'bg-green-500 border-green-500 text-white'
-                            : isAccessible
-                              ? 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
-                              : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
+                        ? 'bg-primary border-primary text-primary-foreground shadow-sm'
+                        : isCompleted
+                          ? 'bg-green-500 border-green-500 text-white'
+                          : isAccessible
+                            ? 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
+                            : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
                         }`}
                     >
                       {isCompleted ? (
@@ -1102,8 +1125,8 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
                     {index < tabs.length - 1 && (
                       <div
                         className={`w-12 h-0.5 mx-2 transition-colors ${index < tabs.findIndex(t => t.id === activeTab)
-                            ? 'bg-green-500'
-                            : 'bg-gray-200'
+                          ? 'bg-green-500'
+                          : 'bg-gray-200'
                           }`}
                       />
                     )}
@@ -1158,6 +1181,6 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 }
