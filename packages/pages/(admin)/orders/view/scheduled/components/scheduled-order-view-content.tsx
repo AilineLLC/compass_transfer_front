@@ -4,7 +4,6 @@ import { Calendar, MapPin, User, Car, Info, DollarSign, Plane, ExternalLink, Set
 import { useState } from 'react';
 import { useServices } from '@shared/hooks/useServices';
 import { useTariffById } from '@shared/hooks/useTariffById';
-import { Badge } from '@shared/ui/data-display/badge';
 import { Skeleton } from '@shared/ui/data-display/skeleton';
 import { Button } from '@shared/ui/forms/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/layout';
@@ -18,9 +17,10 @@ import { formatPriceWithUsd } from '@shared/utils/format-price-with-usd';
 
 interface ScheduledOrderViewContentProps {
   order: GetOrderDTO;
+  userRole: string;
 }
 
-export function ScheduledOrderViewContent({ order }: ScheduledOrderViewContentProps) {
+export function ScheduledOrderViewContent({ order, userRole }: ScheduledOrderViewContentProps) {
   // Запросы для получения данных
   const { location: startLocation, isLoading: startLocationLoading } = useLocation(order.startLocationId || '');
   const { location: endLocation, isLoading: endLocationLoading } = useLocation(order.endLocationId || '');
@@ -222,11 +222,11 @@ export function ScheduledOrderViewContent({ order }: ScheduledOrderViewContentPr
               <div className='grid grid-cols-2 gap-4'>
                 <div>
                   <div className='text-sm text-muted-foreground'>Базовая цена</div>
-                  <div className='font-medium'>{tariff.basePrice} сом</div>
+                  <div className='font-medium'>{tariff.basePrice * (1 - (order?.sale || 0))} сом</div>
                 </div>
                 <div>
                   <div className='text-sm text-muted-foreground'>Цена за минуту</div>
-                  <div className='font-medium'>{tariff.minutePrice} сом</div>
+                  <div className='font-medium'>{tariff.minutePrice * (1 - (order?.sale || 0))} сом</div>
                 </div>
               </div>
               <div className='grid grid-cols-2 gap-4'>
@@ -236,7 +236,7 @@ export function ScheduledOrderViewContent({ order }: ScheduledOrderViewContentPr
                 </div>
                 <div>
                   <div className='text-sm text-muted-foreground'>Цена за км</div>
-                  <div className='font-medium'>{tariff.perKmPrice} сом</div>
+                  <div className='font-medium'>{tariff.perKmPrice * (1 - (order?.sale || 0))} сом</div>
                 </div>
               </div>
               <div>
@@ -332,7 +332,7 @@ export function ScheduledOrderViewContent({ order }: ScheduledOrderViewContentPr
                         {servicesLoading ? (
                           <Skeleton className='h-4 w-16' />
                         ) : (
-                          `${new Intl.NumberFormat('ru-RU').format(actualPrice)} сом`
+                          `${new Intl.NumberFormat('ru-RU').format(actualPrice * (1 - (order?.sale || 0)))} сом`
                         )}
                       </div>
                       <div className='text-sm text-muted-foreground'>
@@ -428,7 +428,7 @@ export function ScheduledOrderViewContent({ order }: ScheduledOrderViewContentPr
                   order.services.reduce((sum, service) => {
                     const serviceData = findServiceByName(service.name);
                     const actualPrice = serviceData?.price || 0;
-                    
+
                     return sum + actualPrice * service.quantity;
                   }, 0)
                 )}
@@ -441,8 +441,8 @@ export function ScheduledOrderViewContent({ order }: ScheduledOrderViewContentPr
               order.status === 'Expired' || order.subStatus === 'CancelledBySystem'
                 ? 'text-gray-500'
                 : !order.finalPrice || order.finalPrice === 0
-                ? 'text-orange-600'
-                : 'text-green-600'
+                  ? 'text-orange-600'
+                  : 'text-green-600'
             }>
               {formatFinalPrice(order.finalPrice)}
             </span>

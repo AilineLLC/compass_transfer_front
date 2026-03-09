@@ -3,15 +3,15 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
+
   // Проверяем различные возможные куки аутентификации
-  const authToken = request.cookies.get('auth-token') || 
-                   request.cookies.get('.AspNetCore.Identity.Application') ||
-                   request.cookies.get('__Host-auth-token');
+  const authToken = request.cookies.get('auth-token') ||
+    request.cookies.get('.AspNetCore.Identity.Application') ||
+    request.cookies.get('__Host-auth-token');
 
   // Публичные страницы, которые не требуют аутентификации
   const publicPages = ['/login', '/forgot-password', '/reset-password', '/register'];
-  
+
   // Проверяем, является ли текущая страница публичной
   const isPublicPage = publicPages.some(page => pathname.startsWith(page));
 
@@ -36,7 +36,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - статические ресурсы из папки public
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|background|logo|regions|taxi-tariffs|video|fonts|auto|.well-known).*)',
   ],
 };

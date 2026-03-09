@@ -39,6 +39,11 @@ export interface GetOrderDTO {
   tariffId?: string | null;
 
   /**
+   * Скидка
+   */
+  sale?: number | null;
+
+  /**
    * Создатель заказа
    */
   creatorId: string;

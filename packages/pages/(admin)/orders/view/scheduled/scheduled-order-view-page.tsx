@@ -12,9 +12,10 @@ import { ScheduledOrderViewLoading } from './components/scheduled-order-view-loa
 
 interface ScheduledOrderViewPageProps {
   orderId: string;
+  userRole: string;
 }
 
-export function ScheduledOrderViewPage({ orderId }: ScheduledOrderViewPageProps) {
+export function ScheduledOrderViewPage({ orderId, userRole }: ScheduledOrderViewPageProps) {
   const router = useRouter();
 
   const {
@@ -55,7 +56,7 @@ export function ScheduledOrderViewPage({ orderId }: ScheduledOrderViewPageProps)
       <div className='grid grid-cols-1 lg:grid-cols-4 gap-6'>
         {/* Левая колонка - основная информация (3/4 ширины) */}
         <div className='lg:col-span-3'>
-          <ScheduledOrderViewContent order={order} />
+          <ScheduledOrderViewContent order={order} userRole={userRole} />
         </div>
 
         {/* Правая колонка - кнопки действий (1/4 ширины) */}

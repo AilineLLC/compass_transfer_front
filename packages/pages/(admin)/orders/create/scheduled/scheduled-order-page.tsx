@@ -30,6 +30,7 @@ import {
   ServicesTab,
   SummaryTab,
 } from '../../tabs';
+import { useSelfProfile } from '@entities/users/hooks/useSelfProfile';
 
 // Интерфейс для точки маршрута в форме заказа
 interface OrderRoutePoint {
@@ -56,6 +57,24 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
 
   // Определяем, находимся ли мы в режиме редактирования
   const isEditMode = mode === 'edit' && !!id;
+
+  // Хук для загрузки заказа при редактировании
+  const { order: existingOrder, isLoading: isLoadingOrder, refetch: _refetchOrder } = useScheduledOrderById(
+    isEditMode ? id : null,
+    {
+      enabled: isEditMode,
+    },
+  );
+
+  // Загружаем профиль текущего пользователя для получения скидки (только при создании заказа партнером)
+  const { data: selfProfile } = useSelfProfile({
+    enabled: userRole === 'partner' && mode === 'create',
+  });
+
+  // Определяем актуальную скидку
+  const activeSale = isEditMode
+    ? existingOrder?.sale
+    : (userRole === 'partner' && selfProfile?.role === 'Partner' ? (selfProfile as any).sale : 0);
 
   // Функция для проверки валидности таба
   const isTabValid = (tabId: string): boolean => {
@@ -365,57 +384,25 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
   // Автоматический расчет цены при изменении тарифа, расстояния или услуг
   useEffect(() => {
     if (selectedTariff) {
-      // Рассчитываем базовую цену за маршрут
-      let baseRoutePrice = selectedTariff.basePrice;
-
-      // Добавляем стоимость за расстояние, если оно известно
-      if (routeDistance > 0) {
-        let distanceForPricing = routeDistance;
-
-        // Если переключатель выключен и есть промежуточные точки, 
-        // рассчитываем расстояние только от начальной до конечной точки
-        if (!includeIntermediateInPrice && routePoints.length > 2) {
-          const startPoint = routePoints.find(p => p.type === 'start');
-          const endPoint = routePoints.find(p => p.type === 'end');
-
-          // Если есть обе точки, можно было бы рассчитать прямое расстояние
-          // Но для простоты используем пропорциональное уменьшение
-          // В реальном проекте здесь должен быть отдельный API-запрос для расчета прямого маршрута
-          if (startPoint?.location && endPoint?.location) {
-            // Примерно уменьшаем расстояние, исключая промежуточные точки
-            // Это упрощенная логика - в реальности нужен отдельный расчет маршрута
-            const intermediatePointsCount = routePoints.filter(p => p.type === 'intermediate').length;
-
-            if (intermediatePointsCount > 0) {
-              // Уменьшаем расстояние примерно на 20% за каждую промежуточную точку
-              distanceForPricing = routeDistance * (0.8 ** intermediatePointsCount);
-            }
-          }
-        }
-
-        const apiDistanceKm = distanceForPricing / 1000;
-        const roundedDistanceKm = Math.round(apiDistanceKm * 10) / 10; // Округляем до 1 знака
-
-        baseRoutePrice += roundedDistanceKm * selectedTariff.perKmPrice;
-      }
-
-      // Добавляем стоимость выбранных услуг
-      const servicesPrice = selectedServices.reduce((total, service) => {
-        const quantity = service.quantity || 1;
-        // Цену берем из справочника услуг (services) или устанавливаем в 0
-        const serviceInfo = services.find(s => s.id === service.serviceId);
-        const price = serviceInfo?.price || 0;
-
-        return total + (price * quantity);
-      }, 0);
-
       // Итоговая цена = базовая цена за маршрут + стоимость услуг
-      setCurrentPrice(Math.round(baseRoutePrice + servicesPrice));
+      // Используем централизованное округление для точности
+      const fullTotal = selectedTariff.basePrice +
+        (routeDistance > 0 ? (Math.round((routeDistance / 1000) * 10) / 10) * selectedTariff.perKmPrice : 0) +
+        selectedServices.reduce((total, service) => {
+          const serviceInfo = services.find(s => s.id === service.serviceId);
+          return total + ((serviceInfo?.price || 0) * (service.quantity || 1));
+        }, 0);
+
+      const finalDiscountedPrice = activeSale ? Math.round(fullTotal * (1 - activeSale)) : Math.round(fullTotal);
+
+      // ВСЕГДА используем итоговую цену со скидкой (контрактная цена)
+      // для отображения в итоговом блоке и для сравнения с initialPrice из базы
+      setCurrentPrice(finalDiscountedPrice);
     } else {
       // Если нет тарифа, цена = 0
       setCurrentPrice(0);
     }
-  }, [selectedTariff, routeDistance, selectedServices, services, includeIntermediateInPrice, routePoints]);
+  }, [selectedTariff, routeDistance, selectedServices, services, includeIntermediateInPrice, routePoints, userRole, activeSale]);
 
   const handlePassengersChange = (newPassengers: PassengerDTO[]) => {
     // Обновляем форму с новыми пассажирами
@@ -503,13 +490,6 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
   // Состояние для отслеживания, что данные уже загружены
   const [isOrderDataLoaded, setIsOrderDataLoaded] = useState(false);
 
-  // Хук для загрузки заказа при редактировании
-  const { order: existingOrder, isLoading: isLoadingOrder, refetch: _refetchOrder } = useScheduledOrderById(
-    isEditMode ? id : null,
-    {
-      enabled: isEditMode,
-    },
-  );
 
   // Отладочная информация
   useEffect(() => {
@@ -635,11 +615,12 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
       const customPriceValue = parseFloat(customPrice);
       const priceDifference = Math.abs(customPriceValue - currentPrice);
 
-      // Если разница больше 1 сома, включаем кастомную цену
+      // Если разница больше 1 сома (запас на округление), включаем кастомную цену
       if (priceDifference > 1) {
         setUseCustomPrice(true);
       } else {
-        // Если цены совпадают (разница <= 1 сом), выключаем кастомную цену
+        // Если цены совпадают (с учетом возможной партнерской скидки, которая уже в currentPrice),
+        // выключаем кастомную цену
         setUseCustomPrice(false);
       }
     }
@@ -734,16 +715,22 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
           // Иначе рассчитываем автоматически
           if (!selectedTariff) return 0;
           const distance = routeDistance ? Math.round((routeDistance / 1000) * 10) / 10 : 0;
-          const basePrice = selectedTariff.basePrice || 0;
-          const perKmPrice = selectedTariff.perKmPrice || 0;
+
+          // Для initialPrice ВСЕГДА применяем скидку, если она есть (sale > 0)
+          // Так как это финальная цена сделки
+          const discountMultiplier = activeSale ? (1 - activeSale) : 1;
+
+          const basePrice = (selectedTariff.basePrice || 0) * discountMultiplier;
+          const perKmPrice = (selectedTariff.perKmPrice || 0) * discountMultiplier;
           const distancePrice = distance * perKmPrice;
           const servicesPrice = selectedServices.reduce((sum, sel) => {
             const svc = services.find(s => s.id === sel.serviceId);
+            const svcPrice = (svc?.price || 0) * discountMultiplier;
 
-            return sum + ((svc?.price || 0) * (sel.quantity || 1));
+            return sum + (svcPrice * (sel.quantity || 1));
           }, 0);
 
-          return basePrice + distancePrice + servicesPrice;
+          return Math.round(basePrice + distancePrice + servicesPrice);
         })(),
         scheduledTime: (() => {
           const dateValue = methods.getValues('scheduledTime');
@@ -989,6 +976,7 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
                       tariffs={tariffs}
                       services={services}
                       _services={services}
+                      sale={activeSale || 0}
                       users={users}
                       // Информация о водителе
                       _selectedDriver={selectedDriver}

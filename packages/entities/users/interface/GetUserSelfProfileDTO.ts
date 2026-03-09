@@ -4,6 +4,7 @@ import type { DriverProfile } from './DriverProfile';
 import type { OperatorProfile } from './OperatorProfile';
 import type { PartnerProfile } from './PartnerProfile';
 import type { TerminalProfile } from './TerminalProfile';
+import type { CustomerProfile } from './CustomerProfile';
 
 /**
  * Базовый интерфейс для ответа GET /User/self/profile
@@ -65,6 +66,8 @@ export interface GetUserSelfProfileOperatorDTO extends GetUserSelfProfileBaseDTO
 export interface GetUserSelfProfilePartnerDTO extends GetUserSelfProfileBaseDTO {
   role: Role.Partner;
   profile: PartnerProfile;
+  /** Процент скидки партнера */
+  sale: number | null;
 }
 
 /**
