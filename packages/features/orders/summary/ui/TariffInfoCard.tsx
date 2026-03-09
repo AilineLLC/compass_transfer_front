@@ -12,16 +12,18 @@ import type { GetTariffDTO } from '@entities/tariffs/interface';
 
 interface TariffInfoCardProps {
   tariff: GetTariffDTO | null;
+  userRole: string;
+  sale: number;
 }
 
 /**
  * Компонент для отображения информации о тарифе в сводке заказа
  */
-export function TariffInfoCard({ tariff }: TariffInfoCardProps) {
+export function TariffInfoCard({ tariff, userRole, sale }: TariffInfoCardProps) {
   // Получение типа автомобиля в читаемом формате
   const getCarTypeName = (type?: string): string => {
     if (!type) return 'Не указан';
-    
+
     return CarTypeValues[type as CarType] || type;
   };
 
@@ -66,15 +68,15 @@ export function TariffInfoCard({ tariff }: TariffInfoCardProps) {
               <div className='grid grid-cols-2 gap-4 text-sm'>
                 <div>
                   <p className='text-gray-500'>Базовая цена</p>
-                  <p className='font-medium'>{Math.round(tariff.basePrice)} сом</p>
+                  <p className='font-medium'>{Math.round(tariff.basePrice * (1 - (sale || 0)))} сом</p>
                 </div>
                 <div>
                   <p className='text-gray-500'>Цена за минуту</p>
-                  <p className='font-medium'>{Math.round(tariff.minutePrice)} сом</p>
+                  <p className='font-medium'>{Math.round(tariff.minutePrice * (1 - (sale || 0)))} сом</p>
                 </div>
                 <div>
                   <p className='text-gray-500'>Цена за км</p>
-                  <p className='font-medium'>{Math.round(tariff.perKmPrice)} сом</p>
+                  <p className='font-medium'>{Math.round(tariff.perKmPrice * (1 - (sale || 0)))} сом</p>
                 </div>
                 <div>
                   <div>

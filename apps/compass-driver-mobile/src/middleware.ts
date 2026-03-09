@@ -56,7 +56,8 @@ export const config = {
      * - _next/static (статические файлы)
      * - _next/image (оптимизация изображений)
      * - favicon.ico
+     * - статические ресурсы из папки public
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|background|car|order|sounds|fonts|auto|.well-known).*)',
   ],
 };

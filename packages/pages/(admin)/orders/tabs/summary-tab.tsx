@@ -8,6 +8,7 @@ import { Button } from '@shared/ui/forms/button';
 import { Textarea } from '@shared/ui/forms/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/layout/card';
 import type { GetLocationDTO } from '@entities/locations/interface';
+import type { GetOrderServiceDTO } from '@entities/orders/interface';
 import type { GetServiceDTO } from '@entities/services/interface';
 import type { GetTariffDTO } from '@entities/tariffs/interface';
 import type { GetDriverDTO } from '@entities/users/interface';
@@ -27,7 +28,10 @@ interface SummaryTabProps {
   selectedServices: (UISelectedService | GetOrderServiceDTO)[];
   currentPrice: number;
   passengers: UIPassenger[];
-  
+  userRole?: 'admin' | 'operator' | 'partner' | 'driver';
+
+  sale?: number | null;
+
   // Данные для построения маршрута
   routeState: {
     startLocation?: GetLocationDTO | null;
@@ -36,17 +40,17 @@ interface SummaryTabProps {
     routePoints?: RoutePoint[];
   };
   routeDistance?: number;
-  
+
   // Методы формы
   methods: {
     setValue: (name: string, value: unknown) => void;
     getValues: (name?: string) => unknown;
     [key: string]: unknown;
   };
-  
+
   // Режим работы компонента
   _mode: 'create' | 'edit'; // Префикс _ для неиспользуемого параметра
-  
+
   // Управление ценой
   useCustomPrice?: boolean;
   setUseCustomPrice?: (value: boolean) => void;
@@ -54,11 +58,11 @@ interface SummaryTabProps {
   setCustomPrice?: (value: string) => void;
   _handleCustomPriceChange?: (value: string) => void;
   _toggleCustomPrice?: () => void;
-  
+
   // Управление включением доп.точек в стоимость
   includeIntermediateInPrice?: boolean;
   onIncludeIntermediateChange?: (include: boolean) => void;
-  
+
   // Информация о водителе (только для режима редактирования)
   _selectedDriver?: GetDriverDTO & {
     firstName?: string;
@@ -82,7 +86,7 @@ interface SummaryTabProps {
   _updateDriverCache?: (id: string, data: GetDriverDTO) => void;
   _orderStatus?: string;
   _setOrderStatus?: (status: string) => void;
-  
+
   // Для обратной совместимости с потребителями компонента
   _tariffs?: GetTariffDTO[];
   _services?: GetServiceDTO[];
@@ -106,15 +110,17 @@ export function SummaryTab({
   selectedServices,
   currentPrice,
   passengers,
-  
+  userRole,
+  sale,
+
   // Данные маршрута
   routeState,
   routeDistance,
-  
+
   // Форма и режим
   methods,
   _mode,
-  
+
   // Управление ценой
   useCustomPrice = false,
   setUseCustomPrice,
@@ -122,11 +128,11 @@ export function SummaryTab({
   setCustomPrice,
   _handleCustomPriceChange,
   _toggleCustomPrice,
-  
+
   // Управление доп.точками
   includeIntermediateInPrice = true,
   onIncludeIntermediateChange,
-  
+
   // Информация о водителе
   _selectedDriver,
   _onTabChange,
@@ -134,7 +140,7 @@ export function SummaryTab({
   _updateDriverCache,
   _orderStatus,
   _setOrderStatus,
-  
+
   // Параметры с префиксом _ не используются в компоненте
   _tariffs,
   _services,
@@ -149,10 +155,10 @@ export function SummaryTab({
   const [isDriverSheetOpen, setIsDriverSheetOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState('main');
   const [activeOrderType, setActiveOrderType] = useState('all');
-  
+
   // Локальное состояние для включения доп.точек в стоимость (если не передано извне)
   const [localIncludeIntermediate, setLocalIncludeIntermediate] = useState(true);
-  
+
   // Используем переданное состояние или локальное
   const currentIncludeIntermediate = includeIntermediateInPrice ?? localIncludeIntermediate;
   const handleIncludeIntermediateChange = onIncludeIntermediateChange ?? setLocalIncludeIntermediate;
@@ -238,7 +244,7 @@ export function SummaryTab({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Левая колонка */}
         <div>
-          <RouteInfoCard 
+          <RouteInfoCard
             startLocation={routeState.startLocation?.name || 'Не выбрано'}
             endLocation={routeState.endLocation?.name || 'Не выбрано'}
             intermediatePoints={routeState.intermediatePoints?.map(p => p.name) || []}
@@ -246,14 +252,18 @@ export function SummaryTab({
             includeIntermediateInPrice={currentIncludeIntermediate}
             onIncludeIntermediateChange={handleIncludeIntermediateChange}
           />
-          
-          <PriceInfoCard 
-            basePrice={formatPrice(Math.round(selectedTariff?.basePrice || 0))}
-            distancePrice={formatPrice(Math.round(selectedTariff ? 
-              (routeDistance || 0) / 1000 * (selectedTariff.perKmPrice || 0) : 
-              0))}
+
+          <PriceInfoCard
+            basePrice={formatPrice(selectedTariff?.basePrice ? Math.round(
+              userRole === 'partner' && sale ? Number(selectedTariff?.basePrice) * (1 - sale) : Number(selectedTariff?.basePrice)
+            ) : 0)}
+            distancePrice={formatPrice(selectedTariff?.perKmPrice ? Math.round(selectedTariff ?
+              (routeDistance || 0) / 1000 * (selectedTariff.perKmPrice * (userRole === 'partner' && sale ? 1 - sale : 1)) :
+              0) : 0)}
             totalPrice={formatPrice(Math.round(currentPrice))}
             formattedPrice={_customPrice || ''}
+            userRole={userRole}
+            sale={sale}
             isCustomPrice={useCustomPrice || false}
             handleCustomPriceChange={_handleCustomPriceChange || ((value) => setCustomPrice && setCustomPrice(value))}
             toggleCustomPrice={_toggleCustomPrice || handleCustomPriceToggle}
@@ -263,25 +273,37 @@ export function SummaryTab({
             totalPriceValue={useCustomPrice && _customPrice ? parseFloat(_customPrice.replace(/[^0-9.-]+/g, '')) : currentPrice} /* Передаем числовое значение итоговой цены */
             selectedServices={selectedServices.map(service => {
               // Ищем услугу в справочнике services по serviceId (для GetOrderServiceDTO) или id (для UISelectedService)
-              const serviceId = service.serviceId || service.id;
+              const serviceId = 'serviceId' in service ? service.serviceId : (service as any).id;
               const serviceInfo = _services && Array.isArray(_services) ? _services.find(s => s.id === serviceId) : null;
+              const originalPrice = 'price' in service ? Number((service as any).price || 0) : Number(serviceInfo?.price || 0);
 
               return {
                 serviceId: serviceId,
                 quantity: service.quantity || 1,
-                name: serviceInfo?.name || service.name || `Услуга ${serviceId}`,
-                price: serviceInfo?.price || service.price || 0
+                name: serviceInfo?.name || ('name' in service ? (service as any).name : '') || `Услуга ${serviceId}`,
+                price: userRole === 'partner' && sale ? Math.round(originalPrice * (1 - sale)) : originalPrice
               };
             })}
             servicesPrice={selectedServices.reduce((total, service) => {
               const quantity = service.quantity || 1;
-              // Берем цену из справочника services по serviceId (для GetOrderServiceDTO) или id (для UISelectedService)
-              const serviceId = service.serviceId || service.id;
+              // Берем цену из справочника услуг (services) или устанавливаем в 0
+              const serviceId = 'serviceId' in service ? service.serviceId : (service as any).id;
               const serviceInfo = _services && Array.isArray(_services) ? _services.find(s => s.id === serviceId) : null;
-              const price = serviceInfo?.price || service.price || 0;
+              const originalPrice = 'price' in service ? Number((service as any).price || 0) : Number(serviceInfo?.price || 0);
+              const price = userRole === 'partner' && sale ? Math.round(originalPrice * (1 - sale)) : originalPrice
 
               return total + (price * quantity);
             }, 0)}
+            fullPriceValue={Math.round(
+              (selectedTariff?.basePrice || 0) +
+              (selectedTariff?.perKmPrice ? (routeDistance || 0) / 1000 * selectedTariff.perKmPrice : 0) +
+              selectedServices.reduce((total, service) => {
+                const serviceId = 'serviceId' in service ? service.serviceId : (service as any).id;
+                const serviceInfo = _services && Array.isArray(_services) ? _services.find(s => s.id === serviceId) : null;
+                const originalPrice = 'price' in service ? Number((service as any).price || 0) : Number(serviceInfo?.price || 0);
+                return total + (originalPrice * (service.quantity || 1));
+              }, 0)
+            )}
           />
 
           {/* Заметки */}
@@ -299,8 +321,8 @@ export function SummaryTab({
 
         {/* Правая колонка */}
         <div>
-          <TariffInfoCard tariff={selectedTariff} />
-          
+          <TariffInfoCard tariff={selectedTariff} userRole={userRole} sale={sale} />
+
           {/* Информация о водителе (перенесено выше пассажиров) */}
           <Card className="mb-4">
             <CardHeader className="flex flex-row items-center justify-between">
@@ -309,10 +331,10 @@ export function SummaryTab({
                 Водитель
               </CardTitle>
               {_onTabChange && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => _onTabChange('driver')} 
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => _onTabChange('driver')}
                   className="text-sm text-blue-600 hover:text-blue-800"
                 >
                   {_selectedDriver ? 'Изменить' : 'Выбрать'}
@@ -326,8 +348,8 @@ export function SummaryTab({
                   <div className="flex items-center gap-3">
                     {_selectedDriver.avatarUrl ? (
                       <div className="w-12 h-12 rounded-full overflow-hidden">
-                        <Image 
-                          src={_selectedDriver.avatarUrl} 
+                        <Image
+                          src={_selectedDriver.avatarUrl}
                           alt={_selectedDriver.fullName || 'Водитель'}
                           width={48}
                           height={48}
@@ -336,8 +358,8 @@ export function SummaryTab({
                       </div>
                     ) : (
                       <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium">
-                        {_selectedDriver.fullName ? 
-                          _selectedDriver.fullName.split(' ').map(n => n[0]).join('').slice(0, 2) : 
+                        {_selectedDriver.fullName ?
+                          _selectedDriver.fullName.split(' ').map(n => n[0]).join('').slice(0, 2) :
                           'В'
                         }
                       </div>
@@ -347,23 +369,23 @@ export function SummaryTab({
                         {_selectedDriver.fullName || 'Неизвестный водитель'}
                       </p>
                       <p className="text-sm text-gray-600">{_selectedDriver.phoneNumber}</p>
-                      
+
                       {/* Тариф водителя */}
                       {(_selectedDriver as any).tariff && (
                         <p className="text-xs text-blue-600 font-medium">{(_selectedDriver as any).tariff.name}</p>
                       )}
                     </div>
-                    
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="text-blue-600 hover:text-blue-800" 
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-blue-600 hover:text-blue-800"
                       onClick={handleDriverDetailsClick}
                     >
                       <Info className="h-4 w-4" />
                     </Button>
                   </div>
-                  
+
                   {/* Информация о машине */}
                   {(_selectedDriver as any).car && (
                     <div className="pt-2 border-t border-gray-100">
@@ -377,7 +399,7 @@ export function SummaryTab({
                             {(_selectedDriver as any).car.plateNumber}
                           </p>
                         </div>
-                        
+
                         {(_selectedDriver as any).rating !== undefined && (_selectedDriver as any).rating !== null && (
                           <div className="flex items-center gap-1 text-sm bg-yellow-50 px-2 py-1 rounded">
                             <span className="text-yellow-500">★</span>

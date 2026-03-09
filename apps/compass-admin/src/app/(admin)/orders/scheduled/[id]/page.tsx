@@ -1,4 +1,6 @@
+import { Role } from '@entities/users';
 import { ScheduledOrderViewPage } from '@pages/(admin)/orders/view/scheduled';
+import { getUserFromCookie } from '@shared/lib/parse-cookie';
 import type { Metadata } from 'next';
 
 interface PageProps {
@@ -17,5 +19,24 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ScheduledOrderPage({ params }: PageProps) {
   const { id } = await params;
-  return <ScheduledOrderViewPage orderId={id} />;
+
+  const userRole = (await getUserFromCookie('role')) as Role | null;
+
+  // Преобразуем роль в строку для компонента
+  const roleString = (() => {
+    switch (userRole) {
+      case Role.Admin:
+        return 'admin';
+      case Role.Operator:
+        return 'operator';
+      case Role.Partner:
+        return 'partner';
+      case Role.Driver:
+        return 'driver';
+      default:
+        return 'operator';
+    }
+  })();
+
+  return <ScheduledOrderViewPage orderId={id} userRole={roleString} />;
 }
