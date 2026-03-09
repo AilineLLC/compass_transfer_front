@@ -24,10 +24,10 @@ jobs:
             docker compose -f docker/docker-compose.install.yml run --rm compass-install
 
             docker compose -f docker/docker-compose.admin.build.yml run --rm compass-admin
-            docker compose -f docker/docker-compose.admin.start.yml up -d --build --remove-orphans
+            docker compose -f docker/docker-compose.admin.start.yml up -d --build 
 
             docker compose -f docker/docker-compose.driver.build.yml run --rm compass-driver
-            docker compose -f docker/docker-compose.driver.start.yml up -d --build --remove-orphans
+            docker compose -f docker/docker-compose.driver.start.yml up -d --build
 
             docker compose -f docker/docker-compose.terminal.build.yml run --rm compass-terminal
-            docker compose -f docker/docker-compose.terminal.start.yml up -d --build --remove-orphans
+            docker compose -f docker/docker-compose.terminal.start.yml up -d --build 
