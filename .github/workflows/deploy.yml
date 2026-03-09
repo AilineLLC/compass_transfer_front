@@ -17,7 +17,7 @@ jobs:
           port: ${{ secrets.SSH_PORT}}
           script: |
             set -e
-            cd /opt/compass-frontend
+            cd /home/compass/compass-frontend
             git fetch --all
             git reset --hard origin/main
 
