@@ -18,13 +18,13 @@ jobs:
           script: |
             set -e
             cd /home/compass/compass-frontend
-
+          
             git fetch --all
             git reset --hard origin/main
-
-            docker compose -f docker/docker-compose.yml run --rm compass-install
-            docker compose -f docker/docker-compose.yml run --rm compass-admin-build
-            docker compose -f docker/docker-compose.yml run --rm compass-driver-build
-            docker compose -f docker/docker-compose.yml run --rm compass-terminal-build
-
-            docker compose -f docker/docker-compose.yml up -d --remove-orphans
+          
+            docker compose -p compass-frontend -f docker/docker-compose.yml run --rm compass-install
+            docker compose -p compass-frontend -f docker/docker-compose.yml run --rm compass-admin-build
+            docker compose -p compass-frontend -f docker/docker-compose.yml run --rm compass-driver-build
+            docker compose -p compass-frontend -f docker/docker-compose.yml run --rm compass-terminal-build
+          
+            docker compose -p compass-frontend -f docker/docker-compose.yml up -d --remove-orphans
