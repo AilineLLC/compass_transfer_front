@@ -1,4 +1,4 @@
-name: Deploy to Server (build+start)
+name: Deploy to Server
 
 on:
   push:
@@ -18,19 +18,23 @@ jobs:
           script: |
             set -e
             cd /home/compass/compass-frontend
+
+            export COMPOSE_PROJECT_NAME=compass-frontend
+            export COMPOSE_REMOVE_ORPHANS=true
+
             git fetch --all
             git reset --hard origin/main
 
-            docker compose -f docker/docker-compose.install.yml run --rm compass-install
+            docker compose -p compass-frontend -f docker/docker-compose.install.yml run --rm compass-install
 
-            docker compose -f docker/docker-compose.admin.build.yml build --no-cache
-            docker compose -f docker/docker-compose.admin.build.yml run --rm compass-admin
-            docker compose -f docker/docker-compose.admin.start.yml up -d --remove-orphans
+            docker compose -p compass-frontend -f docker/docker-compose.admin.build.yml build --no-cache
+            docker compose -p compass-frontend -f docker/docker-compose.admin.build.yml run --rm compass-admin
+            docker compose -p compass-frontend -f docker/docker-compose.admin.start.yml up -d --remove-orphans
 
-            docker compose -f docker/docker-compose.driver.build.yml build --no-cache
-            docker compose -f docker/docker-compose.driver.build.yml run --rm compass-driver
-            docker compose -f docker/docker-compose.driver.start.yml up -d --remove-orphans
+            docker compose -p compass-frontend -f docker/docker-compose.driver.build.yml build --no-cache
+            docker compose -p compass-frontend -f docker/docker-compose.driver.build.yml run --rm compass-driver
+            docker compose -p compass-frontend -f docker/docker-compose.driver.start.yml up -d --remove-orphans
 
-            docker compose -f docker/docker-compose.terminal.build.yml build --no-cache
-            docker compose -f docker/docker-compose.terminal.build.yml run --rm compass-terminal
-            docker compose -f docker/docker-compose.terminal.start.yml up -d --remove-orphans
+            docker compose -p compass-frontend -f docker/docker-compose.terminal.build.yml build --no-cache
+            docker compose -p compass-frontend -f docker/docker-compose.terminal.build.yml run --rm compass-terminal
+            docker compose -p compass-frontend -f docker/docker-compose.terminal.start.yml up -d --remove-orphans
