@@ -25,12 +25,12 @@ jobs:
 
             docker compose -f docker/docker-compose.admin.build.yml build --no-cache
             docker compose -f docker/docker-compose.admin.build.yml run --rm compass-admin
-            docker compose -f docker/docker-compose.admin.start.yml up -d
+            docker compose -f docker/docker-compose.admin.start.yml up -d --remove-orphans
 
             docker compose -f docker/docker-compose.driver.build.yml build --no-cache
             docker compose -f docker/docker-compose.driver.build.yml run --rm compass-driver
-            docker compose -f docker/docker-compose.driver.start.yml up -d
+            docker compose -f docker/docker-compose.driver.start.yml up -d --remove-orphans
 
             docker compose -f docker/docker-compose.terminal.build.yml build --no-cache
             docker compose -f docker/docker-compose.terminal.build.yml run --rm compass-terminal
-            docker compose -f docker/docker-compose.terminal.start.yml up -d
+            docker compose -f docker/docker-compose.terminal.start.yml up -d --remove-orphans
