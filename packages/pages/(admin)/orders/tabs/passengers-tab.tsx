@@ -70,7 +70,7 @@ export function PassengersTab({ users, passengers: initialPassengers, handlePass
   return (
     <div className={`flex flex-row gap-6 max-h-screen ${userRole !== 'partner' ? 'lg:flex-row' : ''}`}>
       {/* Левая колонка - Профиль выбранного клиента */}
-      <div className={`w-full flex-shrink-0 ${userRole !== 'partner' ? 'lg:flex-1 lg:sticky lg:top-0 lg:self-start' : ''}`}>
+      <div className={`w-full flex-shrink-0 ${userRole !== 'partner' ? 'lg:flex-1 lg:sticky lg:top-0 lg:self-start' : 'flex-1'}`}>
         <Card className='h-full'>
           <CardHeader>
             <CardTitle className='flex items-center gap-2'>
@@ -221,8 +221,8 @@ export function PassengersTab({ users, passengers: initialPassengers, handlePass
                   {passengers.some(p => p.email === selectedCustomer.email)
                     ? 'Уже добавлен как пассажир'
                     : !canAddMorePassengers
-                    ? `Достигнут лимит (${maxPassengers} мест)`
-                    : 'Добавить как пассажира'}
+                      ? `Достигнут лимит (${maxPassengers} мест)`
+                      : 'Добавить как пассажира'}
                 </Button>
               </div>
             ) : (
@@ -246,125 +246,124 @@ export function PassengersTab({ users, passengers: initialPassengers, handlePass
       {/* Правая колонка - Список пользователей и поиск (скрыта для партнеров) */}
       {userRole !== 'partner' && (
         <div className='w-full lg:flex-1 flex-shrink-0 flex flex-col'>
-        <Card className='flex-1 flex flex-col'>
-          <CardHeader className='gap-2'>
-            <CardTitle className='flex items-center gap-2'>
-              <Users className='h-5 w-5' />
-              Выбор пассажиров
-            </CardTitle>
-            <p className='text-sm text-muted-foreground'>Показаны только клиенты и контр-агенты</p>
-            {/* Поиск */}
-            <div className='relative'>
-              <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400' />
-              <Input
-                placeholder='Поиск по имени, email или телефону...'
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className='pl-10 pr-10'
-              />
-              {isSearching && (
-                <div className='absolute right-3 top-1/2 transform -translate-y-1/2'>
-                  <div className='animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full' />
-                </div>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className='flex-1 overflow-hidden p-0'>
-            <div className='space-y-3 h-full overflow-y-auto p-4'>
-              {filteredUsers.length > 0 ? (
-                filteredUsers.map(user => (
-                  <div
-                    key={user.id}
-                    onClick={() => setSelectedCustomer(user)}
-                    className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
-                      selectedCustomer?.id === user.id
+          <Card className='flex-1 flex flex-col'>
+            <CardHeader className='gap-2'>
+              <CardTitle className='flex items-center gap-2'>
+                <Users className='h-5 w-5' />
+                Выбор пассажиров
+              </CardTitle>
+              <p className='text-sm text-muted-foreground'>Показаны только клиенты и контр-агенты</p>
+              {/* Поиск */}
+              <div className='relative'>
+                <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400' />
+                <Input
+                  placeholder='Поиск по имени, email или телефону...'
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className='pl-10 pr-10'
+                />
+                {isSearching && (
+                  <div className='absolute right-3 top-1/2 transform -translate-y-1/2'>
+                    <div className='animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full' />
+                  </div>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className='flex-1 overflow-hidden p-0'>
+              <div className='space-y-3 h-full overflow-y-auto p-4'>
+                {filteredUsers.length > 0 ? (
+                  filteredUsers.map(user => (
+                    <div
+                      key={user.id}
+                      onClick={() => setSelectedCustomer(user)}
+                      className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${selectedCustomer?.id === user.id
                         ? 'border-blue-500 bg-blue-50'
                         : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className='flex items-center gap-3'>
-                      <div className='w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center'>
-                        <User className='h-5 w-5 text-gray-600' />
-                      </div>
-                      <div className='flex-1'>
-                        <div className='flex justify-between items-center gap-2 mb-1'>
-                          <h4 className='font-medium text-gray-900'>
-                            {user.fullName}
-                          </h4>
-                          <Badge
-                            variant={user.role === 'Partner' ? 'default' : 'secondary'}
-                            className='text-xs'
-                          >
-                            {user.role === 'Partner' ? 'Контр-агент' : 'Клиент'}
-                          </Badge>
+                        }`}
+                    >
+                      <div className='flex items-center gap-3'>
+                        <div className='w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center'>
+                          <User className='h-5 w-5 text-gray-600' />
                         </div>
+                        <div className='flex-1'>
+                          <div className='flex justify-between items-center gap-2 mb-1'>
+                            <h4 className='font-medium text-gray-900'>
+                              {user.fullName}
+                            </h4>
+                            <Badge
+                              variant={user.role === 'Partner' ? 'default' : 'secondary'}
+                              className='text-xs'
+                            >
+                              {user.role === 'Partner' ? 'Контр-агент' : 'Клиент'}
+                            </Badge>
+                          </div>
 
-                        {/* Для партнеров показываем информацию о компании */}
-                        {user.role === 'Partner' && 'profile' in user && user.profile && (
-                          <div className='text-sm text-gray-600 mb-2'>
-                            <div className='font-medium'>{(user as GetPartnerDTO).profile.companyName}</div>
-                            <div className='text-xs text-gray-500'>
-                              {(user as GetPartnerDTO).profile.companyType} • {(user as GetPartnerDTO).profile.legalAddress}
+                          {/* Для партнеров показываем информацию о компании */}
+                          {user.role === 'Partner' && 'profile' in user && user.profile && (
+                            <div className='text-sm text-gray-600 mb-2'>
+                              <div className='font-medium'>{(user as GetPartnerDTO).profile.companyName}</div>
+                              <div className='text-xs text-gray-500'>
+                                {(user as GetPartnerDTO).profile.companyType} • {(user as GetPartnerDTO).profile.legalAddress}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
 
-                        {/* Для клиентов показываем баллы лояльности */}
-                        {user.role === 'Customer' && 'loyaltyPoints' in user && user.loyaltyPoints !== undefined && (
-                          <div className='text-sm text-gray-600 mb-2'>
-                            <span className='inline-flex items-center gap-1'>
-                              ⭐ {(user as GetCustomerDTO).loyaltyPoints} баллов лояльности
-                              {'phantom' in user && user.phantom && (
-                                <span className='text-xs text-orange-500'>(Временный)</span>
-                              )}
-                            </span>
-                          </div>
-                        )}
+                          {/* Для клиентов показываем баллы лояльности */}
+                          {user.role === 'Customer' && 'loyaltyPoints' in user && user.loyaltyPoints !== undefined && (
+                            <div className='text-sm text-gray-600 mb-2'>
+                              <span className='inline-flex items-center gap-1'>
+                                ⭐ {(user as GetCustomerDTO).loyaltyPoints} баллов лояльности
+                                {'phantom' in user && user.phantom && (
+                                  <span className='text-xs text-orange-500'>(Временный)</span>
+                                )}
+                              </span>
+                            </div>
+                          )}
 
-                        <div className='flex justify-between items-center gap-4 text-sm text-gray-500'>
-                          {user.email && (
-                            <span className='flex items-center gap-1'>
-                              <Mail className='h-3 w-3' />
-                              {user.email}
-                            </span>
-                          )}
-                          {user.phoneNumber && (
-                            <span className='flex items-center gap-1'>
-                              <Phone className='h-3 w-3' />
-                              {user.phoneNumber}
-                            </span>
-                          )}
-                          {/* Для партнеров показываем контактный телефон из профиля */}
-                          {user.role === 'Partner' && 'profile' in user && user.profile?.contactPhone && (
-                            <span className='flex items-center gap-1'>
-                              <Phone className='h-3 w-3' />
-                              {(user as GetPartnerDTO).profile.contactPhone}
-                            </span>
-                          )}
+                          <div className='flex justify-between items-center gap-4 text-sm text-gray-500'>
+                            {user.email && (
+                              <span className='flex items-center gap-1'>
+                                <Mail className='h-3 w-3' />
+                                {user.email}
+                              </span>
+                            )}
+                            {user.phoneNumber && (
+                              <span className='flex items-center gap-1'>
+                                <Phone className='h-3 w-3' />
+                                {user.phoneNumber}
+                              </span>
+                            )}
+                            {/* Для партнеров показываем контактный телефон из профиля */}
+                            {user.role === 'Partner' && 'profile' in user && user.profile?.contactPhone && (
+                              <span className='flex items-center gap-1'>
+                                <Phone className='h-3 w-3' />
+                                {(user as GetPartnerDTO).profile.contactPhone}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
+                  ))
+                ) : (
+                  <div className='text-center py-8 text-gray-500'>
+                    <Search className='h-12 w-12 mx-auto mb-3 opacity-50' />
+                    <p>Пользователи не найдены</p>
+                    <p className='text-sm'>
+                      {searchQuery
+                        ? 'Попробуйте изменить поисковый запрос'
+                        : 'Нет доступных пользователей'}
+                    </p>
                   </div>
-                ))
-              ) : (
-                <div className='text-center py-8 text-gray-500'>
-                  <Search className='h-12 w-12 mx-auto mb-3 opacity-50' />
-                  <p>Пользователи не найдены</p>
-                  <p className='text-sm'>
-                    {searchQuery
-                      ? 'Попробуйте изменить поисковый запрос'
-                      : 'Нет доступных пользователей'}
-                  </p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 
       {/* Третья колонка - Список добавленных пассажиров */}
-      <div className='w-full lg:flex-1 flex-shrink-0'>
+      <div className={`${userRole !== 'partner' ? 'w-full lg:flex-1 flex-shrink-0' : 'w-1/3'}`}>
         <Card className='h-full'>
           <CardHeader>
             <CardTitle className='flex items-center justify-between'>
@@ -391,9 +390,8 @@ export function PassengersTab({ users, passengers: initialPassengers, handlePass
                 {passengers.map(passenger => (
                   <div
                     key={passenger.id}
-                    className={`p-4 border rounded-lg ${
-                      passenger.isMainPassenger ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-                    }`}
+                    className={`p-4 border rounded-lg ${passenger.isMainPassenger ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                      }`}
                   >
                     <div className='flex items-center gap-3 mb-3'>
                       <div className='w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center'>

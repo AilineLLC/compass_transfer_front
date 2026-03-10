@@ -96,6 +96,20 @@ export function ActiveOrderCard({ order, onStatusUpdate }: ActiveOrderCardProps)
     }
   }, [activeRide?.id, isUpdating, onStatusUpdate]);
 
+  const handleDriverReady = useCallback(async () => {
+    if (!activeRide?.id || isUpdating) return;
+
+    setIsUpdating(true);
+    try {
+      await ridesApi.driverReady(activeRide.id);
+      onStatusUpdate?.();
+    } catch {
+      toast.error('Ошибка при подтверждении готовности к поездке');
+    } finally {
+      setIsUpdating(false);
+    }
+  }, [activeRide?.id, isUpdating, onStatusUpdate]);
+
   const handleDriverArrived = useCallback(async () => {
     if (!activeRide?.id || isUpdating) return;
 
@@ -159,6 +173,11 @@ export function ActiveOrderCard({ order, onStatusUpdate }: ActiveOrderCardProps)
     // Сначала проверяем статус поездки (если есть)
     if (activeRide.status) {
       switch (activeRide.status) {
+        case 'Requested':
+          return [
+            { label: 'Готов к поездке', action: handleDriverReady, icon: Car, variant: 'default' as const },
+            { label: 'Отменить', action: handleRideCancelled, icon: Square, variant: 'destructive' as const }
+          ];
         case RideStatus.Accepted:
           return [
             { label: 'Еду к клиенту', action: handleHeadingToClient, icon: Car, variant: 'default' as const },
@@ -182,7 +201,13 @@ export function ActiveOrderCard({ order, onStatusUpdate }: ActiveOrderCardProps)
     // Проверяем статус заказа для определения состояния
     // Сначала проверяем подстатусы для более точного определения
     if (order.subStatus === OrderSubStatus.DriverAssigned) {
-      // Водитель только что принял заказ
+      // Водитель назначен, для запланированных - нужно подтвердить готовность
+      return [
+        { label: 'Готов к поездке', action: handleDriverReady, icon: Car, variant: 'default' as const },
+        { label: 'Отменить', action: handleRideCancelled, icon: Square, variant: 'destructive' as const }
+      ];
+    } else if (order.subStatus === OrderSubStatus.DriverReady) {
+      // Водитель готов - можно ехать к клиенту
       return [
         { label: 'Еду к клиенту', action: handleHeadingToClient, icon: Car, variant: 'default' as const },
         { label: 'Отменить', action: handleRideCancelled, icon: Square, variant: 'destructive' as const }

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { orderService, type GetOrderDTO } from '@shared/api/orders';
+import { orderService, driverActiveOrdersApi, type GetOrderDTO } from '@shared/api/orders';
 import { ActiveOrderCard } from '@features/active-ride';
 import { useDriverQueue } from '@features/driver-queue';
 import { LocationSelectionModal } from '@features/driver-queue/components/location-selection-modal';
@@ -50,6 +50,19 @@ export default function DriverDashboardPage() {
         // orderData = await orderService.getOrderById(queueData.id as string);
         console.log(orderData)
       }
+
+      // Фолбэк для запланированных поездок, которых нет в очереди
+      if (!orderData) {
+        try {
+          const activeOrdersResponse = await driverActiveOrdersApi.getMyActiveOrders();
+          if (activeOrdersResponse.data && activeOrdersResponse.data.length > 0) {
+            orderData = activeOrdersResponse.data[0];
+          }
+        } catch (activeOrderErr) {
+          console.error('Ошибка при получении активных заказов:', activeOrderErr);
+        }
+      }
+
       setCurrentOrder(orderData);
 
     } catch (err) {

@@ -2,6 +2,7 @@
 
 import { Clock, MapPin, Plane } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { ridesApi } from '@shared/api/rides/rides-api';
 import { Card } from '@shared/ui/layout';
 import type { ScheduledRidesResponse } from '@entities/rides/interface';
@@ -10,18 +11,20 @@ export function ScheduledRidesList() {
   const [scheduledRides, setScheduledRides] = useState<ScheduledRidesResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [openingOrderId, setOpeningOrderId] = useState<string | null>(null);
+
+  const router = useRouter();
 
   // Функция для получения запланированных поездок
   const fetchScheduledRides = async () => {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const allRidesResponse = await ridesApi.getMyAssignedRides();
-      
+
       // Показываем все поездки без фильтрации
       setScheduledRides(allRidesResponse);
-      
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка';
 
@@ -34,6 +37,23 @@ export function ScheduledRidesList() {
   useEffect(() => {
     fetchScheduledRides();
   }, []);
+
+  // При нажатии на поездку — переходим на главный экран,
+  // где DriverDashboardPage сам подхватит активный заказ
+  // (через driverActiveOrdersApi.getMyActiveOrders),
+  // как это делает IncomingOrderModal после acceptOrder.
+  const handleRideClick = (orderId: string | null) => {
+    if (!orderId) return;
+
+    setOpeningOrderId(orderId);
+
+    // Сигнализируем DriverDashboardPage обновить данные — точно так же,
+    // как это делает IncomingOrderModal после принятия заказа.
+    window.dispatchEvent(new CustomEvent('orderAccepted'));
+
+    // Переходим на главный экран, где отобразится ActiveOrderCard
+    router.push('/');
+  };
 
   if (isLoading) {
     return (
@@ -120,61 +140,72 @@ export function ScheduledRidesList() {
   };
 
   const isAirportLocation = (address: string) => {
-    return address?.toLowerCase().includes('аэропорт') || 
-           address?.toLowerCase().includes('airport') || 
-           address?.toLowerCase().includes('манас') ||
-           address?.toLowerCase().includes('manas');
+    return address?.toLowerCase().includes('аэропорт') ||
+      address?.toLowerCase().includes('airport') ||
+      address?.toLowerCase().includes('манас') ||
+      address?.toLowerCase().includes('manas');
   };
 
   return (
     <div className="space-y-4">
-      {scheduledRides.data.map((ride) => (
-        <Card key={ride.id} className="p-4 bg-white rounded-2xl shadow-sm border-0">
-          {/* Дата, время, рейс и статус */}
-          <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
-            <div className="flex items-center space-x-6 gap-4">
-              <div className="text-center">
-                <div className="text-lg font-semibold text-gray-900">
-                  {ride.scheduledTime ? formatDate(ride.scheduledTime) : '12.01.25'}
-                </div>
-                <div className="text-sm text-gray-500">Дата</div>
-              </div>
-              <div className="text-center">
-                <div className="text-lg font-semibold text-gray-900">
-                  {ride.scheduledTime ? formatTime(ride.scheduledTime) : '13:55'}
-                </div>
-                <div className="text-sm text-gray-500">Время</div>
-              </div>
-            </div>
-            <div className="flex items-center bg-green-100 px-3 py-1 rounded-full">
-              <div className="w-2 h-2 bg-green-500 rounded-full mr-2"/>
-              <span className="text-sm font-medium text-green-800">
-                {getStatusText(ride.status)}
-              </span>
-            </div>
-          </div>
+      {scheduledRides.data.map((ride) => {
+        const isOpening = openingOrderId === ride.orderId;
 
-          {/* Маршрут */}
-          <div className="space-y-2">
-            <div className="flex items-center">
-              {isAirportLocation(ride.fromAddress || '') ? (
-                <Plane className="w-5 h-5 mr-3 text-blue-600" />
-              ) : (
+        return (
+          <Card
+            key={ride.id}
+            className={`p-4 bg-white rounded-2xl shadow-sm border-0 transition-all ${ride.orderId
+                ? 'cursor-pointer hover:shadow-md active:scale-[0.98]'
+                : 'opacity-80'
+              } ${isOpening ? 'opacity-60 pointer-events-none' : ''}`}
+            onClick={() => handleRideClick(ride.orderId)}
+          >
+            {/* Дата, время, рейс и статус */}
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
+              <div className="flex items-center space-x-6 gap-4">
+                <div className="text-center">
+                  <div className="text-lg font-semibold text-gray-900">
+                    {ride.scheduledTime ? formatDate(ride.scheduledTime) : '12.01.25'}
+                  </div>
+                  <div className="text-sm text-gray-500">Дата</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-semibold text-gray-900">
+                    {ride.scheduledTime ? formatTime(ride.scheduledTime) : '13:55'}
+                  </div>
+                  <div className="text-sm text-gray-500">Время</div>
+                </div>
+              </div>
+              <div className="flex items-center bg-green-100 px-3 py-1 rounded-full">
+                <div className="w-2 h-2 bg-green-500 rounded-full mr-2" />
+                <span className="text-sm font-medium text-green-800">
+                  {isOpening ? 'Открытие...' : getStatusText(ride.status)}
+                </span>
+              </div>
+            </div>
+
+            {/* Маршрут */}
+            <div className="space-y-2">
+              <div className="flex items-center">
+                {isAirportLocation(ride.fromAddress || '') ? (
+                  <Plane className="w-5 h-5 mr-3 text-blue-600" />
+                ) : (
+                  <MapPin className="w-5 h-5 mr-3 text-gray-900" />
+                )}
+                <span className={`text-base ${isAirportLocation(ride.fromAddress || '') ? 'text-blue-600' : 'text-gray-900'}`}>
+                  {ride.fromAddress || 'Не указано"'}
+                </span>
+              </div>
+              <div className="flex items-center">
                 <MapPin className="w-5 h-5 mr-3 text-gray-900" />
-              )}
-              <span className={`text-base ${isAirportLocation(ride.fromAddress || '') ? 'text-blue-600' : 'text-gray-900'}`}>
-                {ride.fromAddress || 'Не указано"'}
-              </span>
+                <span className="text-base text-gray-900">
+                  {ride.toAddress || 'Не указано'}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center">
-              <MapPin className="w-5 h-5 mr-3 text-gray-900" />
-              <span className="text-base text-gray-900">
-                {ride.toAddress || 'Не указано'}
-              </span>
-            </div>
-          </div>
-        </Card>
-      ))}
+          </Card>
+        );
+      })}
     </div>
   );
 }
