@@ -24,6 +24,7 @@ import { useDrivers, type SidebarDriver } from '@widgets/sidebar/hooks';
 import { sidebarData } from '@widgets/sidebar/mock-data';
 import { DriverSheet } from './driver-sheet';
 import { DriversList } from './drivers-list';
+import { RefreshCw } from 'lucide-react';
 
 // Функция для фильтрации пунктов меню в зависимости от роли
 const filterMenuItemsByRole = (items: typeof sidebarData.navMain, userRole: Role) => {
@@ -36,7 +37,7 @@ const filterMenuItemsByRole = (items: typeof sidebarData.navMain, userRole: Role
     // Для роли Partner оставляем только "Дашбоард" и "Заказы"
     if (userRole === Role.Partner) {
       const allowedItems = ['Дашбоард', 'Заказы'];
-      
+
       return allowedItems.includes(item.title);
     }
 
@@ -233,7 +234,7 @@ export function AppSidebar({ currentUser, ...props }: AppSidebarProps) {
   const shouldShowDrivers = ![Role.Partner, Role.Driver, Role.Customer].includes(userRole);
 
   // Получаем данные водителей только если нужно их показывать
-  const { drivers, loading, error } = useDrivers(shouldShowDrivers);
+  const { drivers, loading, refetch, error } = useDrivers(shouldShowDrivers);
   const [selectedDriver, setSelectedDriver] = React.useState<SidebarDriver | null>(null);
   const [fullDriverData, setFullDriverData] = React.useState<GetDriverDTO | null>(null);
   const [activeDriverCategory, setActiveDriverCategory] = React.useState('main');
@@ -247,7 +248,7 @@ export function AppSidebar({ currentUser, ...props }: AppSidebarProps) {
     try {
       setLoadingDriverData(true);
       const driverData = await usersApi.getDriver(driverId);
-      
+
       setFullDriverData(driverData);
     } catch (error) {
       logger.error('Ошибка при загрузке данных драйвера:', error);
@@ -333,13 +334,21 @@ export function AppSidebar({ currentUser, ...props }: AppSidebarProps) {
       </SidebarHeader>
       <SidebarContent className='overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent group-data-[collapsible=icon]:scrollbar-hide group-data-[collapsible=icon]:overflow-y-auto group-data-[collapsible=icon]:overflow-x-hidden h-full'>
         <NavMain items={filteredNavMain} />
-        <NavDocuments items={filteredDocuments} />
+        <NavDocuments items={filteredDocuments} userRole={userRole} />
 
         {/* Группа водителей - показываем только для Admin, Operator, Terminal */}
         {shouldShowDrivers && (
           <div className='relative flex w-full min-w-0 flex-col p-2'>
             <div className='text-sidebar-foreground/70 ring-sidebar-ring flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium outline-hidden transition-[margin,opacity] duration-200 ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0'>
-              Водители
+              <span className='flex-1'>Водители</span>
+              <button
+                onClick={refetch}
+                disabled={loading}
+                className='ml-1 rounded p-0.5 hover:bg-sidebar-accent transition-colors disabled:opacity-50'
+                aria-label='Обновить список водителей'
+              >
+                <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''} hover:text-blue-400`} />
+              </button>
             </div>
             <div className='flex w-full min-w-0 flex-col gap-1'>
               <DriversList

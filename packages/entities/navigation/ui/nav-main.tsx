@@ -65,13 +65,13 @@ export function NavMain({ items }: { items: MenuItem[] }) {
 
   // Обработчик создания заказа
   const handleCreateOrder = () => {
-    if (userRole === Role.Partner) {
-      // Для ВСЕХ партнеров сразу переходим на запланированные заказы
-      router.push('/orders/create/scheduled');
-    } else {
-      // Для остальных ролей открываем модальное окно выбора типа заказа
-      setIsOrderTypeModalOpen(true);
-    }
+    router.push('/orders/create/scheduled');
+    // if (userRole === Role.Partner) {
+    //   // Для ВСЕХ партнеров сразу переходим на запланированные заказы
+    // } else {
+    //   // Для остальных ролей открываем модальное окно выбора типа заказа
+    //   setIsOrderTypeModalOpen(true);
+    // }
   };
 
   // Функция для фильтрации подпунктов меню в зависимости от роли пользователя

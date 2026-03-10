@@ -6,8 +6,10 @@ import { useUserRole } from '@shared/contexts/user-role-context';
 import { Role } from '@entities/users/enums';
 import { OrderTypeSelectionModal } from '@features/orders/ui/modal/order-type-selection-modal';
 import { TariffCards } from '@pages/(admin)/dashboard/operator/components/tariff-cards';
+import { useRouter } from 'next/navigation';
 
 export function TariffCardsView() {
+  const router = useRouter();
   const { userRole } = useUserRole();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTariff, setSelectedTariff] = useState<GetTariffDTOWithArchived | null>(null);
@@ -31,7 +33,8 @@ export function TariffCardsView() {
   const handleTariffClick = (tariff: GetTariffDTOWithArchived) => {
     // Сохраняем выбранный тариф и открываем модалку выбора типа заказа
     setSelectedTariff(tariff);
-    setIsModalOpen(true);
+    // setIsModalOpen(true);
+    router.push('/orders/create/scheduled');
   };
 
   const handleModalClose = () => {
