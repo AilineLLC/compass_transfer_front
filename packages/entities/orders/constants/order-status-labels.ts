@@ -26,6 +26,7 @@ export const orderStatusLabels: Record<OrderStatus, string> = {
 export const orderSubStatusLabels: Record<OrderSubStatus, string> = {
   'SearchingDriver': 'Поиск водителя',
   'DriverAssigned': 'Водитель назначен',
+  'DriverReady': 'Водитель готов',
   'DriverHeading': 'Водитель едет',
   'DriverArrived': 'Водитель прибыл',
   'RideStarted': 'Поездка началась',

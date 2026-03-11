@@ -303,7 +303,7 @@ export const driverActiveOrdersApi = {
   // Получение активных заказов водителя
   getMyActiveOrders: async (): Promise<OrderApiResponse> => {
     const params = new URLSearchParams();
-    
+
     params.append('Status', 'InProgress');
     params.append('Status', 'Scheduled');
     params.append('SortBy', 'CreatedAt');

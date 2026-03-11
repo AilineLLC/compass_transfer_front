@@ -1,10 +1,13 @@
 'use client';
 
-import { Clock, MapPin, Plane } from 'lucide-react';
+import { Clock, MapPin, Plane, RefreshCw } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ridesApi } from '@shared/api/rides/rides-api';
-import { Card } from '@shared/ui/layout';
+import { Card } from '@shared/ui/layout/card';
+import { Button } from '@shared/ui/forms/button';
+import { CheckCircle, Square } from 'lucide-react';
+import { toast } from '@shared/lib/conditional-toast';
 import type { ScheduledRidesResponse } from '@entities/rides/interface';
 
 export function ScheduledRidesList() {
@@ -38,12 +41,20 @@ export function ScheduledRidesList() {
     fetchScheduledRides();
   }, []);
 
+  const [isUpdating, setIsUpdating] = useState(false);
+
   // При нажатии на поездку — переходим на главный экран,
   // где DriverDashboardPage сам подхватит активный заказ
   // (через driverActiveOrdersApi.getMyActiveOrders),
   // как это делает IncomingOrderModal после acceptOrder.
-  const handleRideClick = (orderId: string | null) => {
+  const handleRideClick = (orderId: string | null, rideStatus: string, orderStatus: string) => {
     if (!orderId) return;
+
+    // Не позволяем переходить на завершенные, отмененные или просроченные
+    if (['Completed', 'Cancelled', 'Expired'].includes(orderStatus) ||
+      ['Completed', 'Cancelled'].includes(rideStatus)) {
+      return;
+    }
 
     setOpeningOrderId(orderId);
 
@@ -52,7 +63,39 @@ export function ScheduledRidesList() {
     window.dispatchEvent(new CustomEvent('orderAccepted'));
 
     // Переходим на главный экран, где отобразится ActiveOrderCard
-    router.push('/');
+    router.push('/?orderId=' + orderId);
+  };
+
+  const handleAcceptRide = async (e: React.MouseEvent, rideId: string) => {
+    e.stopPropagation(); // Не переходим в заказ при клике на кнопку
+    if (isUpdating) return;
+
+    setIsUpdating(true);
+    try {
+      await ridesApi.acceptScheduledRide(rideId);
+      toast.success('Запланированная поездка принята');
+      await fetchScheduledRides();
+    } catch {
+      toast.error('Ошибка при принятии запланированной поездки');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleCancelRide = async (e: React.MouseEvent, rideId: string) => {
+    e.stopPropagation(); // Не переходим в заказ при клике на кнопку
+    if (isUpdating) return;
+
+    setIsUpdating(true);
+    try {
+      await ridesApi.rideCancelled(rideId);
+      toast.success('Запланированная поездка отменена');
+      await fetchScheduledRides();
+    } catch {
+      toast.error('Ошибка при отмене поездки');
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   if (isLoading) {
@@ -113,8 +156,12 @@ export function ScheduledRidesList() {
         return 'Поиск водителя';
       case 'InProgress':
         return 'В процессе выполнения';
-      case 'Arrived':
+      case 'Completed':
         return 'Завершенный';
+      case 'Cancelled':
+        return 'Отменен';
+      case 'Expired':
+        return 'Истек';
       default:
         return status;
     }
@@ -150,15 +197,19 @@ export function ScheduledRidesList() {
     <div className="space-y-4">
       {scheduledRides.data.map((ride) => {
         const isOpening = openingOrderId === ride.orderId;
+        const isPastOrder = ['Completed', 'Cancelled', 'Expired'].includes(ride.orderStatus) ||
+          ['Completed', 'Cancelled'].includes(ride.status);
+        const isRequested = ride.status === 'Requested';
 
         return (
           <Card
             key={ride.id}
-            className={`p-4 bg-white rounded-2xl shadow-sm border-0 transition-all ${ride.orderId
+            className={`p-4 bg-white rounded-2xl shadow-sm border-0 transition-all ${isPastOrder ? 'opacity-50 grayscale cursor-not-allowed' :
+              ride.orderId
                 ? 'cursor-pointer hover:shadow-md active:scale-[0.98]'
                 : 'opacity-80'
               } ${isOpening ? 'opacity-60 pointer-events-none' : ''}`}
-            onClick={() => handleRideClick(ride.orderId)}
+            onClick={() => handleRideClick(ride.orderId, ride.status, ride.orderStatus)}
           >
             {/* Дата, время, рейс и статус */}
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
@@ -178,7 +229,7 @@ export function ScheduledRidesList() {
               </div>
               <div className="flex items-center bg-green-100 px-3 py-1 rounded-full">
                 <div className="w-2 h-2 bg-green-500 rounded-full mr-2" />
-                <span className="text-sm font-medium text-green-800">
+                <span className={`text-sm font-medium ${isPastOrder ? 'text-gray-600' : 'text-green-800'}`}>
                   {isOpening ? 'Открытие...' : getStatusText(ride.status)}
                 </span>
               </div>
@@ -203,6 +254,29 @@ export function ScheduledRidesList() {
                 </span>
               </div>
             </div>
+
+            {/* Кнопки Принять / Отменить для статуса Requested */}
+            {isRequested && !isPastOrder && (
+              <div className="mt-4 pt-3 border-t border-gray-100 flex gap-2">
+                <Button
+                  onClick={(e) => handleAcceptRide(e, ride.id)}
+                  className="flex-1 flex items-center justify-center gap-2"
+                  disabled={isUpdating}
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  Принять
+                </Button>
+                <Button
+                  onClick={(e) => handleCancelRide(e, ride.id)}
+                  variant="destructive"
+                  className="flex-1 flex items-center justify-center gap-2"
+                  disabled={isUpdating}
+                >
+                  <Square className="w-4 h-4" />
+                  Отменить
+                </Button>
+              </div>
+            )}
           </Card>
         );
       })}
