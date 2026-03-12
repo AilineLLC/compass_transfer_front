@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@shared/ui/data-display/avatar';
 import { useProfileData } from '@features/my-profile';
@@ -53,11 +54,16 @@ export function DriverMobileHeader() {
           </div>
         </div>
 
-        {/* Вместо локальной картинки (нет в репозитории) показываем компактный бейдж */}
-        <div className='flex-shrink-0 ml-1 pr-3'>
-          <div className='px-2 py-1 rounded-full bg-white/70 border text-[10px] text-[#92929D] whitespace-nowrap'>
-            HongQi E-QM5
-          </div>
+        {/* Изображение машины справа */}
+        <div className='flex-shrink-0 ml-1'>
+          <Image
+            src='/car/HongQi E-QM5.png'
+            alt='HongQi E-QM5'
+            width={123}
+            height={55}
+            className='object-contain object-right'
+            priority
+          />
         </div>
       </div>
     </header>
