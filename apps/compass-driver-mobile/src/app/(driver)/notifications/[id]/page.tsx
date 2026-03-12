@@ -10,6 +10,7 @@ import { ordersApi } from '@shared/api/orders/orders-api';
 import type { GetOrderDTO } from '@entities/orders/interface';
 import { useNotificationActions } from '@features/notifications/hooks/use-notification-actions';
 import { getNotificationCategory, NotificationCategory } from '@features/notifications/hooks/useNotifications';
+import { useNotificationsContext } from '@features/notifications';
 
 // Конфигурация категорий для отображения
 const CATEGORY_CONFIG = {
@@ -54,6 +55,7 @@ export default function NotificationDetailPage() {
       }
     },
   });
+  const { refreshUnreadCount } = useNotificationsContext();
 
   // Загрузка уведомления и данных заказа
   useEffect(() => {
@@ -76,6 +78,7 @@ export default function NotificationDetailPage() {
         if (!notificationData.isRead) {
           await toggleReadStatus(notificationData);
         }
+        await refreshUnreadCount();
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Ошибка загрузки данных';
         setError(errorMessage);
