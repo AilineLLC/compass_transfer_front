@@ -34,7 +34,7 @@ export function NotificationsProvider({ children }: NotificationsProviderProps) 
       const result = await notificationsApi.getMyNotifications({
         size: 50, // Загружаем больше для точного подсчета
       });
-
+      
       const allNotifications = result.data || [];
       const unreadNotifications = allNotifications.filter(n => !n.isRead);
       
