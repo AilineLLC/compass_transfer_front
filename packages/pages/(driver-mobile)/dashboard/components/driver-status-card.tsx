@@ -1,7 +1,6 @@
 
 'use client';
 
-import Image from 'next/image';
 import React from 'react';
 import { Button } from '@shared/ui/forms/button';
 import { type QueueStatusResponse } from '@shared/api/driver-queue';
@@ -95,17 +94,9 @@ export function DriverStatusCard({
 
   return (
     <div className='bg-[#F9F9F9] h-full flex flex-col relative rounded-2xl'>
-      {/* Фоновое изображение - показываем только когда НЕ в очереди */}
+      {/* Фон без внешних ассетов (изображения отсутствуют в репозитории) */}
       {!isInQueue && (
-        <div className='absolute inset-0'>
-          <Image
-            src='/background/backgroundDriver.png'
-            alt='Driver Background'
-            fill
-            className='object-cover rounded-2xl'
-            priority
-          />
-        </div>
+        <div className='absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-50 via-white to-slate-50' />
       )}
 
       {/* Контент поверх фона */}
