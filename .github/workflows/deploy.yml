@@ -27,4 +27,4 @@ jobs:
             docker compose -p compass-frontend -f docker/docker-compose.yml run --rm compass-driver-build
             docker compose -p compass-frontend -f docker/docker-compose.yml run --rm compass-terminal-build
           
-            docker compose -p compass-frontend -f docker/docker-compose.yml up -d --remove-orphans
+            docker compose -p compass-frontend -f docker/docker-compose.yml up -d --force-recreate --remove-orphans
