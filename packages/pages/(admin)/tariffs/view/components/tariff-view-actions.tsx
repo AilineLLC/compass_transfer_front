@@ -90,7 +90,7 @@ export function TariffViewActions({
           )}
 
           {/* Кнопка "Удалить" */}
-          {canDelete && (
+          {/* {canDelete && (
             <Button
               variant='destructive'
               onClick={() => setIsDeleteModalOpen(true)}
@@ -99,7 +99,7 @@ export function TariffViewActions({
               <Trash2 className='mr-2 h-4 w-4' />
               Удалить
             </Button>
-          )}
+          )} */}
         </CardContent>
       </Card>
 
