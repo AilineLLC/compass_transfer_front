@@ -484,13 +484,6 @@ export function ActiveOrderCard({ order, onStatusUpdate }: ActiveOrderCardProps)
               </div>
             )}
 
-            {order.description && (
-              <div>
-                <span className="text-xs text-gray-500 uppercase tracking-wide">Описание:</span>
-                <p className="text-sm text-gray-700 mt-1">{order.description}</p>
-              </div>
-            )}
-
             {(order.airFlight || order.flyReis) && (
               <div className="bg-yellow-50 p-2 rounded border-l-4 border-l-yellow-500">
                 <span className="text-xs text-yellow-600 uppercase tracking-wide font-medium">Информация о рейсах:</span>
@@ -504,6 +497,12 @@ export function ActiveOrderCard({ order, onStatusUpdate }: ActiveOrderCardProps)
                     <p className="text-sm text-yellow-800">
                       <span className="font-medium">Вылет:</span> <span className="font-mono">{order.flyReis}</span>
                     </p>
+                  )}
+                  {order.description && (
+                    <div>
+                      <span className="font-medium text-sm text-yellow-800">Описание:</span>
+                      <p className="text-xs text-yellow-800 mt-1">{order.description}</p>
+                    </div>
                   )}
                 </div>
               </div>
