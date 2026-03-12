@@ -60,10 +60,10 @@ build_admin:
     NODE_ENV: 'production'
     HOSTNAME: 'compass.local'
     PORT: '3027'
-    NEXT_PUBLIC_API_URL: 'http://karaoketest.ru/api'
-    NEXT_PUBLIC_DOMAIN: '.karaoketest.ru'
+    NEXT_PUBLIC_API_URL: 'https://api.compasstransfer.kg'
+    NEXT_PUBLIC_DOMAIN: '.compasstransfer.kg'
     AUTH_COOKIE_NAME: '.AspNetCore.Identity.Application'
-    NEXT_PUBLIC_WS_BASE_URL: 'ws://karaoketest.ru/hubs/wshub'
+    NEXT_PUBLIC_WS_BASE_URL: 'wss://api.compasstransfer.kg/hubs/wshub'
   script:
     - echo "🏗️ Сборка Admin приложения (порт 3027)"
     - cd apps/compass-admin
@@ -111,10 +111,10 @@ build_driver:
     NODE_ENV: 'production'
     HOSTNAME: 'compass.local'
     PORT: '3028'
-    NEXT_PUBLIC_API_URL: 'http://testingkg.su/api'
+    NEXT_PUBLIC_API_URL: 'https://api.testingkg.su'
     NEXT_PUBLIC_DOMAIN: '.testingkg.su'
     AUTH_COOKIE_NAME: '.AspNetCore.Identity.Application'
-    NEXT_PUBLIC_WS_BASE_URL: 'ws://testingkg.su/hubs/wshub'
+    NEXT_PUBLIC_WS_BASE_URL: 'wss://api.testingkg.su/hubs/wshub'
   script:
     - echo "🏗️ Сборка Driver приложения (порт 3028)"
     - cd apps/compass-driver
@@ -162,10 +162,10 @@ build_terminal:
     NODE_ENV: 'production'
     HOSTNAME: 'compass.local'
     PORT: '3029'
-    NEXT_PUBLIC_API_URL: 'http://daimnemas.su/api'
+    NEXT_PUBLIC_API_URL: 'https://api.daimnemas.su'
     NEXT_PUBLIC_DOMAIN: '.daimnemas.su'
     AUTH_COOKIE_NAME: '.AspNetCore.Identity.Application'
-    NEXT_PUBLIC_WS_BASE_URL: 'ws://daimnemas.su/hubs/wshub'
+    NEXT_PUBLIC_WS_BASE_URL: 'wss://api.daimnemas.su/hubs/wshub'
   script:
     - echo "🏗️ Сборка Terminal приложения (порт 3029)"
     - cd apps/compass-terminal
@@ -219,13 +219,14 @@ deploy_admin:
     - echo "🚀 Деплой Admin приложения (порт 3027)"
     - echo "Синхронизация файлов..."
     - rsync -avz --delete apps/compass-admin/.next/ $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/admin/.next/
+    - rsync -avz --delete apps/compass-admin/public/ $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/admin/public/
     - rsync -avz apps/compass-admin/.env.production $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/admin/
     - echo "Перезапуск PM2 процесса..."
     - ssh $DEPLOY_USER@$DEPLOY_HOST "cd $DEPLOY_PATH/admin && pm2 restart compass-admin || pm2 start npm --name compass-admin -- start"
     - echo "✅ Admin приложение задеплоено на порт 3027"
   environment:
     name: production-admin
-    url: http://karaoketest.ru
+    url: https://compasstransfer.kg
   only:
     - main
   when: manual
@@ -255,13 +256,14 @@ deploy_driver:
     - echo "🚀 Деплой Driver приложения (порт 3028)"
     - echo "Синхронизация файлов..."
     - rsync -avz --delete apps/compass-driver/.next/ $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/driver/.next/
+    - rsync -avz --delete apps/compass-driver/public/ $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/driver/public/
     - rsync -avz apps/compass-driver/.env.production $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/driver/
     - echo "Перезапуск PM2 процесса..."
     - ssh $DEPLOY_USER@$DEPLOY_HOST "cd $DEPLOY_PATH/driver && pm2 restart compass-driver || pm2 start npm --name compass-driver -- start"
     - echo "✅ Driver приложение задеплоено на порт 3028"
   environment:
     name: production-driver
-    url: http://testingkg.su
+    url: https://testingkg.su
   only:
     - main
   when: manual
@@ -298,6 +300,8 @@ deploy_terminal:
     # 2. синхронизация
     - rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no -o IdentitiesOnly=yes" \
       apps/compass-terminal/.next/ "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/terminal/.next/"
+    - rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no -o IdentitiesOnly=yes" \
+      apps/compass-terminal/public/ "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/terminal/public/"
     - rsync -avz -e "ssh -o StrictHostKeyChecking=no -o IdentitiesOnly=yes" \
       apps/compass-terminal/.env.production "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/terminal/"
     # 3. перезапуск PM2
@@ -332,12 +336,15 @@ deploy_all:
     - echo "🚀 Деплой всех приложений Compass 2.0"
     - echo "Синхронизация Admin..."
     - rsync -avz --delete apps/compass-admin/.next/ $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/admin/.next/
+    - rsync -avz --delete apps/compass-admin/public/ $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/admin/public/
     - rsync -avz apps/compass-admin/.env.production $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/admin/
     - echo "Синхронизация Driver..."
     - rsync -avz --delete apps/compass-driver/.next/ $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/driver/.next/
+    - rsync -avz --delete apps/compass-driver/public/ $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/driver/public/
     - rsync -avz apps/compass-driver/.env.production $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/driver/
     - echo "Синхронизация Terminal..."
     - rsync -avz --delete apps/compass-terminal/.next/ $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/terminal/.next/
+    - rsync -avz --delete apps/compass-terminal/public/ $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/terminal/public/
     - rsync -avz apps/compass-terminal/.env.production $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/terminal/
     - echo "Перезапуск всех PM2 процессов..."
     - ssh $DEPLOY_USER@$DEPLOY_HOST "pm2 restart compass-admin compass-driver compass-terminal || echo 'Некоторые процессы не найдены'"

@@ -1,6 +1,16 @@
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
 const withNextIntl = createNextIntlPlugin(); // Заголовки безопасности, которые будут применяться ко всем маршрутам
+
+function normalizeApiOrigin(raw?: string) {
+  if (!raw) return undefined;
+  const trimmed = raw.trim().replace(/\/+$/, '');
+  return trimmed.replace(/\/api$/i, '');
+}
+
+const API_ORIGIN =
+  normalizeApiOrigin(process.env.API_ORIGIN) ??
+  normalizeApiOrigin(process.env.NEXT_PUBLIC_API_URL);
 const securityHeaders = [
   {
     key: 'X-DNS-Prefetch-Control',
@@ -90,30 +100,12 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      {
-        // Добавляем заголовки CORS для запросов к внешнему API
-        source: '/Auth/:path*',
-        headers: [
-          { key: 'Access-Control-Allow-Credentials', value: 'true' },
-          { key: 'Access-Control-Allow-Origin', value: 'https://compass-api.karaoketest.ru:80' },
-          { key: 'Access-Control-Allow-Methods', value: 'GET,DELETE,PATCH,POST,PUT' },
-          {
-            key: 'Access-Control-Allow-Headers',
-            value:
-              'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version',
-          },
-        ],
-      },
     ];
   },
 
   async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: 'https://compass-api.karaoketest.ru:80/:path*',
-      },
-    ];
+    if (!API_ORIGIN) return [];
+    return [{ source: '/api/:path*', destination: `${API_ORIGIN}/:path*` }];
   },
 
   experimental: {
