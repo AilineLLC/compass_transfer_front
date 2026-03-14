@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/layout/card
 import { type ServiceClass, type CarType } from '@entities/tariffs/enums';
 import { type GetTariffDTO } from '@entities/tariffs/interface';
 import { TariffCard } from './TariffCard';
+import { Role } from '@entities/users/enums';
 
 interface TariffsListProps {
   tariffs: GetTariffDTO[];
@@ -22,6 +23,7 @@ interface TariffsListProps {
   getServiceClassLabel: (serviceClass: ServiceClass) => string;
   getCarTypeLabel: (carType: CarType) => string;
   getTariffBadgeColor: (serviceClass: ServiceClass | undefined) => string;
+  userRole: 'admin' | 'operator' | 'partner' | 'driver';
 }
 
 export function TariffsList({
@@ -39,6 +41,7 @@ export function TariffsList({
   getServiceClassLabel,
   getCarTypeLabel,
   getTariffBadgeColor,
+  userRole,
 }: TariffsListProps) {
   if (!tariffs || tariffs.length === 0) {
     return (
@@ -47,7 +50,7 @@ export function TariffsList({
       </div>
     );
   }
-
+  console.log('userRole', userRole);
   if (filteredTariffs.length === 0) {
     return (
       <div className="space-y-6">
@@ -73,15 +76,19 @@ export function TariffsList({
                 )}
 
                 {/* Кнопка фильтра архивных */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onToggleArchived}
-                  className="flex items-center gap-2"
-                >
-                  <Filter className="h-4 w-4" />
-                  {showArchived ? 'Скрыть архивные' : 'Показать архивные'}
-                </Button>
+                {
+                  userRole !== 'partner' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={onToggleArchived}
+                      className="flex items-center gap-2"
+                    >
+                      <Filter className="h-4 w-4" />
+                      {showArchived ? 'Скрыть архивные' : 'Показать архивные'}
+                    </Button>
+                  )
+                }
               </div>
             </div>
           </CardHeader>
@@ -123,15 +130,19 @@ export function TariffsList({
             )}
 
             {/* Кнопка фильтра архивных */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onToggleArchived}
-              className="flex items-center gap-2"
-            >
-              <Filter className="h-4 w-4" />
-              {showArchived ? 'Скрыть архивные' : 'Показать архивные'}
-            </Button>
+            {
+              userRole !== 'partner' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onToggleArchived}
+                  className="flex items-center gap-2"
+                >
+                  <Filter className="h-4 w-4" />
+                  {showArchived ? 'Скрыть архивные' : 'Показать архивные'}
+                </Button>
+              )
+            }
           </div>
         </div>
       </CardHeader>

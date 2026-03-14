@@ -1,6 +1,7 @@
 'use client';
 
 import { type GetTariffDTO } from '@entities/tariffs/interface';
+import { Role } from '@entities/users/enums';
 import { useOrderTariffs, TariffsList } from '@features/orders/tariffs';
 
 interface TariffPricingTabProps {
@@ -9,6 +10,7 @@ interface TariffPricingTabProps {
   setSelectedTariff: (tariff: GetTariffDTO | null) => void;
   onRefreshTariffs?: () => void;
   isRefreshingTariffs?: boolean;
+  userRole: 'admin' | 'operator' | 'partner' | 'driver';
   initialTariffId?: string; // ID тарифа для предварительного выбора
 }
 
@@ -18,6 +20,7 @@ export function TariffPricingTab({
   setSelectedTariff,
   onRefreshTariffs,
   isRefreshingTariffs = false,
+  userRole,
   initialTariffId
 }: TariffPricingTabProps) {
   // Используем хук для логики работы с тарифами
@@ -59,6 +62,7 @@ export function TariffPricingTab({
         onRefreshTariffs={onRefreshTariffs}
         isRefreshingTariffs={isRefreshingTariffs}
         formatPrice={formatPrice}
+        userRole={userRole}
         getServiceClassLabel={getServiceClassLabel}
         getCarTypeLabel={getCarTypeLabel}
         getTariffBadgeColor={getTariffBadgeColor}
