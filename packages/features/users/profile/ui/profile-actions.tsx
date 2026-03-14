@@ -95,14 +95,14 @@ export function ProfileActions({
             </Button>
           )}
 
-          <Button
+          {/* <Button
             onClick={handleSendMessage}
             className='w-full justify-start gap-2'
             variant='outline'
           >
             <MessageCircle className='h-4 w-4' />
             Написать сообщение
-          </Button>
+          </Button> */}
 
           {!hideLogout && (
             <LogoutButton variant='destructive' className='w-full justify-start' />

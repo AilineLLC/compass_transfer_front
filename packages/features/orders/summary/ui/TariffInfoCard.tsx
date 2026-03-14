@@ -12,7 +12,7 @@ import type { GetTariffDTO } from '@entities/tariffs/interface';
 
 interface TariffInfoCardProps {
   tariff: GetTariffDTO | null;
-  userRole: string;
+  userRole: 'admin' | 'operator' | 'partner' | 'driver';
   sale: number;
 }
 

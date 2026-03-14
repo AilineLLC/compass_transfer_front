@@ -69,10 +69,10 @@ export const useLocations = () => {
         params['Size'] = 20;
       }
 
-      if (query.trim()) {
-        params['Address'] = query.trim();
-        params['AddressOp'] = 'Contains';
-      }
+      // if (query.trim()) {
+      //   params['Address'] = query.trim();
+      //   params['AddressOp'] = 'Contains';
+      // }
 
       // Координатный прямоугольник
       if (bounds) {

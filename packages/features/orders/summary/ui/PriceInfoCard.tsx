@@ -141,7 +141,7 @@ export function PriceInfoCard({
           )}
 
           {/* Кастомная цена (теперь для всех режимов) */}
-          {showCustomPrice && (
+          {userRole !== 'partner' && showCustomPrice && (
             <div className="mt-4 pt-4 border-t border-gray-100">
               <div className="flex items-center space-x-2">
                 <Checkbox
