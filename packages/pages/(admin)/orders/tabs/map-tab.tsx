@@ -1,11 +1,13 @@
 'use client';
 
 import { Car, MapPin } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { RoutePoint, ActiveDriverDTO } from '@shared/components/map/types';
 import { Button } from '@shared/ui/forms/button';
 import type { GetRideDTO } from '@entities/orders/interface';
 import type { GetDriverDTO } from '@entities/users/interface';
+import { OrderStatus } from '@entities/orders/enums';
+import { useDeleteRide } from '@entities/orders/hooks';
 import { DriverPanel } from '@features/orders/components/DriverPanel';
 import { LocationSelectionModal } from '@features/orders/components/LocationSelectionModal';
 import { useOrderLocations, RoutePointsList, LocationMap } from '@features/orders/locations';
@@ -17,6 +19,7 @@ interface MapTabProps {
   additionalStops?: string[];
   mode?: 'create' | 'edit';
   rides?: GetRideDTO[]; // Данные поездок для режима редактирования
+  orderStatus?: string; // Статус заказа для проверки (удалять ride только если Expired)
 
   // Внешнее состояние маршрута (для сохранения между табами)
   routePoints?: RoutePoint[];
@@ -50,6 +53,7 @@ export function MapTab({
   additionalStops = [],
   mode = 'create',
   rides,
+  orderStatus,
   // Внешнее состояние
   routePoints: externalRoutePoints,
   setRoutePoints: setExternalRoutePoints,
@@ -76,6 +80,14 @@ export function MapTab({
   // Состояние для управления видимостью маркеров
   const [showDrivers, setShowDrivers] = useState<boolean>(true);
   const [showLocations, setShowLocations] = useState<boolean>(true);
+
+  // Ref для отслеживания была ли уже выполнена очистка ride при редактировании
+  const hasCleanedRideRef = useRef(false);
+
+  // Хук для удаления ride при отмене выбора водителя
+  const { deleteRide, isLoading: isDeletingRide } = useDeleteRide({
+    showToast: true,
+  });
 
   const {
     routePoints,
@@ -162,6 +174,52 @@ export function MapTab({
     }
   }, [routeLoading, onRouteLoadingChange]);
 
+  // При открытии редактирования заказа - автоматически удаляем существующую ride только если статус Expired
+  useEffect(() => {
+    const autoDeleteRideOnEdit = async () => {
+      // Проверяем был ли уже выполнен эффект
+      if (hasCleanedRideRef.current) {
+        return;
+      }
+
+      // Удаляем ride только если режим редактирования, есть rides и статус Expired
+      if (mode === 'edit' && rides && rides.length > 0 && orderStatus === OrderStatus.Expired) {
+        try {
+          hasCleanedRideRef.current = true;
+          const rideId = rides[0].id;
+          if (rideId) {
+            await deleteRide(rideId);
+            // Очищаем выбранного водителя
+            handleDriverSelect(null);
+          }
+        } catch (error) {
+          // Ошибка обрабатывается в хуке useDeleteRide
+          console.error('Ошибка при автоматическом удалении ride:', error);
+        }
+      }
+    };
+
+    autoDeleteRideOnEdit();
+  }, []); // Пустой массив - срабатывает только один раз при монтировании
+
+  // Обработчик удаления водителя с удалением ride при ручной отмене
+  const handleRemoveDriver = async () => {
+    try {
+      // Удаляем ride только если статус Expired
+      if (mode === 'edit' && rides && rides.length > 0 && orderStatus === OrderStatus.Expired) {
+        const rideId = rides[0].id;
+        if (rideId) {
+          await deleteRide(rideId);
+        }
+      }
+      // В любом случае очищаем выбранного водителя
+      handleDriverSelect(null);
+    } catch (error) {
+      // Ошибка обрабатывается в хуке useDeleteRide
+      console.error('Ошибка при удалении водителя:', error);
+    }
+  };
+
   // Преобразование точек маршрута теперь выполняется в компоненте LocationMap
 
   // Показываем индикатор загрузки
@@ -193,22 +251,22 @@ export function MapTab({
       {/* Правая колонка - Карта */}
       <div className='flex-[2] w-full lg:w-1/2 relative'>
         {/* Кнопки управления видимостью */}
-        <div className="absolute top-6 right-6 z-[500] flex gap-2">
-          <Button 
-            variant={showDrivers ? "default" : "outline"} 
-            size="icon"
-            onClick={() => setShowDrivers(!showDrivers)} 
-            title={showDrivers ? "Скрыть водителей" : "Показать водителей"}
+        <div className='absolute top-6 right-6 z-[500] flex gap-2'>
+          <Button
+            variant={showDrivers ? 'default' : 'outline'}
+            size='icon'
+            onClick={() => setShowDrivers(!showDrivers)}
+            title={showDrivers ? 'Скрыть водителей' : 'Показать водителей'}
           >
-            <Car className={showDrivers ? "text-white" : "text-gray-500"} />
+            <Car className={showDrivers ? 'text-white' : 'text-gray-500'} />
           </Button>
-          <Button 
-            variant={showLocations ? "default" : "outline"} 
-            size="icon"
-            onClick={() => setShowLocations(!showLocations)} 
-            title={showLocations ? "Скрыть локации" : "Показать локации"}
+          <Button
+            variant={showLocations ? 'default' : 'outline'}
+            size='icon'
+            onClick={() => setShowLocations(!showLocations)}
+            title={showLocations ? 'Скрыть локации' : 'Показать локации'}
           >
-            <MapPin className={showLocations ? "text-white" : "text-gray-500"} />
+            <MapPin className={showLocations ? 'text-white' : 'text-gray-500'} />
           </Button>
         </div>
 
@@ -231,19 +289,26 @@ export function MapTab({
           userRole={userRole}
           onBoundsChange={handleMapBoundsChange}
           onLocationToggle={handleLocationToggle}
-          onDriverSelect={isInstantOrder ? undefined : (driver: string | ActiveDriverDTO) => {
-            if (typeof driver === 'string') {
-              // Отмена водителя (пустая строка)
-              handleDriverSelect(null);
-            } else {
-              // Выбор водителя - нужно преобразовать ActiveDriverDTO в GetDriverDTO
-              const fullDriverData = getDriverById(driver.id);
+          onDriverSelect={
+            isInstantOrder
+              ? undefined
+              : (driver: string | ActiveDriverDTO) => {
+                  if (typeof driver === 'string') {
+                    // Отмена водителя (пустая строка)
+                    handleDriverSelect(null);
+                  } else {
+                    // Выбор водителя - нужно преобразовать ActiveDriverDTO в GetDriverDTO
+                    const fullDriverData = getDriverById(driver.id);
 
-              if (fullDriverData) {
-                handleDriverSelect(fullDriverData as unknown as GetDriverDTO, driver.currentLocation);
-              }
-            }
-          }}
+                    if (fullDriverData) {
+                      handleDriverSelect(
+                        fullDriverData as unknown as GetDriverDTO,
+                        driver.currentLocation,
+                      );
+                    }
+                  }
+                }
+          }
           onRouteDistanceChange={handleRouteDistanceChange}
           getDriverById={getDriverById}
           loadDriverData={loadDriverData}
@@ -252,8 +317,14 @@ export function MapTab({
         {userRole !== 'partner' && (
           <DriverPanel
             selectedDriver={selectedDriver as GetDriverDTO | null}
-            onDriverSelect={handleDriverSelect as (driver: GetDriverDTO | null, location?: { latitude: number; longitude: number }, fromSearchPanel?: boolean) => void}
-            onClose={() => handleDriverSelect(null)}
+            onDriverSelect={
+              handleDriverSelect as (
+                driver: GetDriverDTO | null,
+                location?: { latitude: number; longitude: number },
+                fromSearchPanel?: boolean,
+              ) => void
+            }
+            onClose={handleRemoveDriver}
             activeDrivers={drivers}
             getDriverById={(id: string) => {
               const driver = (allDrivers as GetDriverDTO[]).find((d: GetDriverDTO) => d.id === id);

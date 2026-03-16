@@ -11,7 +11,10 @@ import { Card, CardContent } from '@shared/ui/layout/card';
 import { SidebarHeader } from '@shared/ui/layout/sidebar';
 import { orderNumberToString } from '@shared/utils/orderNumberConverter';
 import type { GetLocationDTO } from '@entities/locations/interface';
-import { orderStatusLabels, orderSubStatusLabels } from '@entities/orders/constants/order-status-labels';
+import {
+  orderStatusLabels,
+  orderSubStatusLabels,
+} from '@entities/orders/constants/order-status-labels';
 import { OrderStatus, OrderSubStatus, OrderSubStatusValues } from '@entities/orders/enums';
 import {
   useScheduledOrderSubmit,
@@ -50,7 +53,12 @@ interface OrderPageProps {
   userRole?: 'admin' | 'operator' | 'partner' | 'driver';
 }
 
-export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'operator' }: OrderPageProps) {
+export function ScheduledOrderPage({
+  mode,
+  id,
+  initialTariffId,
+  userRole = 'operator',
+}: OrderPageProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('pricing');
   const [visitedTabs, setVisitedTabs] = useState<Set<string>>(new Set(['pricing'])); // Отслеживаем посещенные табы
@@ -59,12 +67,13 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
   const isEditMode = mode === 'edit' && !!id;
 
   // Хук для загрузки заказа при редактировании
-  const { order: existingOrder, isLoading: isLoadingOrder, refetch: _refetchOrder } = useScheduledOrderById(
-    isEditMode ? id : null,
-    {
-      enabled: isEditMode,
-    },
-  );
+  const {
+    order: existingOrder,
+    isLoading: isLoadingOrder,
+    refetch: _refetchOrder,
+  } = useScheduledOrderById(isEditMode ? id : null, {
+    enabled: isEditMode,
+  });
 
   // Загружаем профиль текущего пользователя для получения скидки (только при создании заказа партнером)
   const { data: selfProfile } = useSelfProfile({
@@ -74,7 +83,9 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
   // Определяем актуальную скидку
   const activeSale = isEditMode
     ? existingOrder?.sale
-    : (userRole === 'partner' && selfProfile?.role === 'Partner' ? (selfProfile as any).sale : 0);
+    : userRole === 'partner' && selfProfile?.role === 'Partner'
+      ? (selfProfile as any).sale
+      : 0;
 
   // Функция для проверки валидности таба
   const isTabValid = (tabId: string): boolean => {
@@ -85,7 +96,12 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
         // Проверяем что заполнены дата и время И время валидно (не в прошлом)
         const scheduledTime = methods.getValues('scheduledTime');
 
-        return !!scheduledTime && typeof scheduledTime === 'string' && scheduledTime.trim() !== '' && scheduleValid;
+        return (
+          !!scheduledTime &&
+          typeof scheduledTime === 'string' &&
+          scheduledTime.trim() !== '' &&
+          scheduleValid
+        );
       case 'passengers':
         // Проверяем что есть хотя бы один пассажир
         const passengers = methods.getValues('passengers');
@@ -128,33 +144,33 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
       switch (activeTab) {
         case 'pricing':
           toast.error('Выберите тариф', {
-            description: 'Для продолжения необходимо выбрать тариф'
+            description: 'Для продолжения необходимо выбрать тариф',
           });
           break;
         case 'passengers':
           toast.error('Добавьте пассажиров', {
-            description: 'Для продолжения необходимо добавить хотя бы одного пассажира'
+            description: 'Для продолжения необходимо добавить хотя бы одного пассажира',
           });
           break;
         case 'schedule':
           if (!scheduleValid) {
             toast.error('Время в прошлом', {
-              description: 'Выберите время минимум через 5 минут от текущего времени'
+              description: 'Выберите время минимум через 5 минут от текущего времени',
             });
           } else {
             toast.error('Заполните расписание', {
-              description: 'Для продолжения необходимо указать дату и время поездки'
+              description: 'Для продолжения необходимо указать дату и время поездки',
             });
           }
           break;
         case 'map':
           if (routeLoading) {
             toast.error('Маршрут загружается', {
-              description: 'Дождитесь завершения расчета маршрута'
+              description: 'Дождитесь завершения расчета маршрута',
             });
           } else {
             toast.error('Постройте маршрут', {
-              description: 'Для продолжения необходимо выбрать точки отправления и назначения'
+              description: 'Для продолжения необходимо выбрать точки отправления и назначения',
             });
           }
           break;
@@ -163,7 +179,7 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
           break;
         default:
           toast.error('Заполните обязательные поля', {
-            description: 'Для продолжения необходимо заполнить все обязательные поля'
+            description: 'Для продолжения необходимо заполнить все обязательные поля',
           });
       }
 
@@ -302,7 +318,9 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
   // Состояние для статуса заказа (для редактирования)
   const [orderStatus, setOrderStatus] = useState<OrderStatus>(OrderStatus.Pending);
   const [originalOrderStatus, setOriginalOrderStatus] = useState<OrderStatus>(OrderStatus.Pending);
-  const [orderSubStatus, setOrderSubStatus] = useState<OrderSubStatus>(OrderSubStatus.SearchingDriver);
+  const [orderSubStatus, setOrderSubStatus] = useState<OrderSubStatus>(
+    OrderSubStatus.SearchingDriver,
+  );
 
   const methods = useMemo(
     () => ({
@@ -329,38 +347,35 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
   );
 
   // Создаем объект routeState для совместимости с существующими компонентами
-  const routeState = useMemo(
-    () => {
-      // Находим начальную, конечную и промежуточные точки из маршрутных точек
-      const startPoint = routePoints.find(p => p.type === 'start');
-      const endPoint = routePoints.find(p => p.type === 'end');
-      const intermediatePoints = routePoints
-        .filter(p => p.type === 'intermediate' && p.location)
-        .map(p => p.location as GetLocationDTO);
+  const routeState = useMemo(() => {
+    // Находим начальную, конечную и промежуточные точки из маршрутных точек
+    const startPoint = routePoints.find(p => p.type === 'start');
+    const endPoint = routePoints.find(p => p.type === 'end');
+    const intermediatePoints = routePoints
+      .filter(p => p.type === 'intermediate' && p.location)
+      .map(p => p.location as GetLocationDTO);
 
-      return {
-        routeLocations: routeLocations || [],
-        flatLocations: routeLocations || [],
-        routePoints: routePoints, // Используем реальные точки маршрута
+    return {
+      routeLocations: routeLocations || [],
+      flatLocations: routeLocations || [],
+      routePoints: routePoints, // Используем реальные точки маршрута
 
-        // Добавляем правильные объекты локаций для передачи в RouteInfoCard
-        startLocation: startPoint?.location || null,
-        endLocation: endPoint?.location || null,
-        intermediatePoints: intermediatePoints,
+      // Добавляем правильные объекты локаций для передачи в RouteInfoCard
+      startLocation: startPoint?.location || null,
+      endLocation: endPoint?.location || null,
+      intermediatePoints: intermediatePoints,
 
-        addLocationSmart: (_location: GetLocationDTO) => {
-          // Функция для добавления локации
-        },
-        selectLocationForPoint: (_location: GetLocationDTO, _pointIndex: number) => {
-          // Функция для выбора локации для точки
-        },
-        removeRoutePoint: (_index: number) => {
-          // Функция для удаления точки маршрута
-        },
-      };
-    },
-    [routeLocations, routePoints],
-  );
+      addLocationSmart: (_location: GetLocationDTO) => {
+        // Функция для добавления локации
+      },
+      selectLocationForPoint: (_location: GetLocationDTO, _pointIndex: number) => {
+        // Функция для выбора локации для точки
+      },
+      removeRoutePoint: (_index: number) => {
+        // Функция для удаления точки маршрута
+      },
+    };
+  }, [routeLocations, routePoints]);
 
   // Состояния формы заказа
   const [selectedTariff, setSelectedTariff] = useState<GetTariffDTO | null>(null);
@@ -386,14 +401,19 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
     if (selectedTariff) {
       // Итоговая цена = базовая цена за маршрут + стоимость услуг
       // Используем централизованное округление для точности
-      const fullTotal = selectedTariff.basePrice +
-        (routeDistance > 0 ? (Math.round((routeDistance / 1000) * 10) / 10) * selectedTariff.perKmPrice : 0) +
+      const fullTotal =
+        selectedTariff.basePrice +
+        (routeDistance > 0
+          ? (Math.round((routeDistance / 1000) * 10) / 10) * selectedTariff.perKmPrice
+          : 0) +
         selectedServices.reduce((total, service) => {
           const serviceInfo = services.find(s => s.id === service.serviceId);
-          return total + ((serviceInfo?.price || 0) * (service.quantity || 1));
+          return total + (serviceInfo?.price || 0) * (service.quantity || 1);
         }, 0);
 
-      const finalDiscountedPrice = activeSale ? Math.round(fullTotal * (1 - activeSale)) : Math.round(fullTotal);
+      const finalDiscountedPrice = activeSale
+        ? Math.round(fullTotal * (1 - activeSale))
+        : Math.round(fullTotal);
 
       // ВСЕГДА используем итоговую цену со скидкой (контрактная цена)
       // для отображения в итоговом блоке и для сравнения с initialPrice из базы
@@ -402,7 +422,16 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
       // Если нет тарифа, цена = 0
       setCurrentPrice(0);
     }
-  }, [selectedTariff, routeDistance, selectedServices, services, includeIntermediateInPrice, routePoints, userRole, activeSale]);
+  }, [
+    selectedTariff,
+    routeDistance,
+    selectedServices,
+    services,
+    includeIntermediateInPrice,
+    routePoints,
+    userRole,
+    activeSale,
+  ]);
 
   const handlePassengersChange = (newPassengers: PassengerDTO[]) => {
     // Обновляем форму с новыми пассажирами
@@ -415,7 +444,12 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
     (
       startLocationId: string,
       endLocationId: string,
-      routePoints: { id: string; location: GetLocationDTO | null; type: 'start' | 'end' | 'intermediate'; label: string }[],
+      routePoints: {
+        id: string;
+        location: GetLocationDTO | null;
+        type: 'start' | 'end' | 'intermediate';
+        label: string;
+      }[],
     ) => {
       // Извлекаем ID промежуточных точек
       const additionalStops = routePoints
@@ -490,14 +524,16 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
   // Состояние для отслеживания, что данные уже загружены
   const [isOrderDataLoaded, setIsOrderDataLoaded] = useState(false);
 
-
   // Отладочная информация
   useEffect(() => {
-    if (isEditMode) { }
+    if (isEditMode) {
+    }
   }, [isEditMode, id, isLoadingOrder, existingOrder]);
 
   // Получаем номер заказа для отображения в заголовке
-  const orderNumber = existingOrder?.orderNumber ? orderNumberToString(existingOrder.orderNumber) : '';
+  const orderNumber = existingOrder?.orderNumber
+    ? orderNumberToString(existingOrder.orderNumber)
+    : '';
 
   // Заполняем данные заказа при загрузке (только один раз)
   useEffect(() => {
@@ -641,12 +677,21 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
   } = useScheduledOrderSubmit({
     orderId: isEditMode ? id : undefined, // Передаем ID для режима редактирования
     shouldUpdatePassengers: isEditMode, // Обновляем пассажиров только при редактировании
-    passengers: isEditMode ? (methods.getValues('passengers') as Array<{ customerId: string; firstName: string; lastName: string; isMainPassenger: boolean }>)?.map((p) => ({
-      customerId: p.customerId,
-      firstName: p.firstName,
-      lastName: p.lastName,
-      isMainPassenger: p.isMainPassenger,
-    })) : undefined,
+    passengers: isEditMode
+      ? (
+          methods.getValues('passengers') as Array<{
+            customerId: string;
+            firstName: string;
+            lastName: string;
+            isMainPassenger: boolean;
+          }>
+        )?.map(p => ({
+          customerId: p.customerId,
+          firstName: p.firstName,
+          lastName: p.lastName,
+          isMainPassenger: p.isMainPassenger,
+        }))
+      : undefined,
     onSuccess: _order => {
       // Не переходим сразу к списку заказов, если нужно назначить водителя
       // Переход происходит после назначения водителя или если водитель не выбран
@@ -664,10 +709,7 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
   const _isUpdatingOrder = isSubmittingOrder;
 
   // Хук для назначения водителя на запланированный заказ
-  const {
-    assignDriver,
-    isLoading: isAssigningDriver,
-  } = useScheduledRideSubmit({
+  const { assignDriver, isLoading: isAssigningDriver } = useScheduledRideSubmit({
     onSuccess: () => {
       // После назначения водителя переходим к списку заказов
       router.push('/orders');
@@ -693,13 +735,12 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
         tariffId: selectedTariff?.id || '',
         routeId: null,
         startLocationId: routePointsWithLocations[0]?.location?.id || null,
-        endLocationId: routePointsWithLocations[routePointsWithLocations.length - 1]?.location?.id || null,
-        additionalStops: routePointsWithLocations
-          .slice(1, -1)
-          .map(point => point.location!.id),
+        endLocationId:
+          routePointsWithLocations[routePointsWithLocations.length - 1]?.location?.id || null,
+        additionalStops: routePointsWithLocations.slice(1, -1).map(point => point.location!.id),
         services: selectedServices
-          .filter((service) => !!service.serviceId) // Фильтруем сервисы без ID
-          .map((service) => ({
+          .filter(service => !!service.serviceId) // Фильтруем сервисы без ID
+          .map(service => ({
             serviceId: service.serviceId,
             quantity: service.quantity || 1,
             notes: service.notes || null,
@@ -718,7 +759,7 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
 
           // Для initialPrice ВСЕГДА применяем скидку, если она есть (sale > 0)
           // Так как это финальная цена сделки
-          const discountMultiplier = activeSale ? (1 - activeSale) : 1;
+          const discountMultiplier = activeSale ? 1 - activeSale : 1;
 
           const basePrice = (selectedTariff.basePrice || 0) * discountMultiplier;
           const perKmPrice = (selectedTariff.perKmPrice || 0) * discountMultiplier;
@@ -727,7 +768,7 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
             const svc = services.find(s => s.id === sel.serviceId);
             const svcPrice = (svc?.price || 0) * discountMultiplier;
 
-            return sum + (svcPrice * (sel.quantity || 1));
+            return sum + svcPrice * (sel.quantity || 1);
           }, 0);
 
           return Math.round(basePrice + distancePrice + servicesPrice);
@@ -746,7 +787,9 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
         })(),
         passengers: (() => {
           const passengersData = methods.getValues('passengers');
-          const passengers = Array.isArray(passengersData) ? passengersData as PassengerDTO[] : [];
+          const passengers = Array.isArray(passengersData)
+            ? (passengersData as PassengerDTO[])
+            : [];
 
           return passengers.map((passenger: PassengerDTO) => ({
             customerId: passenger.customerId || null,
@@ -764,12 +807,16 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
         airFlight: (() => {
           const value = methods.getValues('airFlight');
 
-          return value && typeof value === 'string' ? value.toUpperCase().replace(/[^A-Z0-9\s-]/g, '') : null;
+          return value && typeof value === 'string'
+            ? value.toUpperCase().replace(/[^A-Z0-9\s-]/g, '')
+            : null;
         })(),
         flyReis: (() => {
           const value = methods.getValues('flyReis');
 
-          return value && typeof value === 'string' ? value.toUpperCase().replace(/[^A-Z0-9\s-]/g, '') : null;
+          return value && typeof value === 'string'
+            ? value.toUpperCase().replace(/[^A-Z0-9\s-]/g, '')
+            : null;
         })(),
         notes: (() => {
           const value = methods.getValues('notes');
@@ -967,7 +1014,9 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
 
                   const TabComponent = activeTabData.component;
 
-                  const TabComponentAny = TabComponent as React.ComponentType<Record<string, unknown>>;
+                  const TabComponentAny = TabComponent as React.ComponentType<
+                    Record<string, unknown>
+                  >;
 
                   return (
                     <TabComponentAny
@@ -1010,14 +1059,14 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
                       onScheduleChange={
                         activeTab === 'schedule'
                           ? (scheduledTime: string) =>
-                            methods.setValue('scheduledTime', scheduledTime)
+                              methods.setValue('scheduledTime', scheduledTime)
                           : undefined
                       }
-                      onValidityChange={
-                        activeTab === 'schedule' ? setScheduleValid : undefined
-                      }
+                      onValidityChange={activeTab === 'schedule' ? setScheduleValid : undefined}
                       initialScheduledTime={
-                        activeTab === 'schedule' ? methods.getValues('scheduledTime') as string : undefined
+                        activeTab === 'schedule'
+                          ? (methods.getValues('scheduledTime') as string)
+                          : undefined
                       }
                       // Обработчики для MapTab
                       onRoutePointsChange={mapTabRoutePointsChange}
@@ -1037,13 +1086,15 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
                       startLocationId={methods.getValues('startLocationId') as string}
                       endLocationId={methods.getValues('endLocationId') as string}
                       additionalStops={(() => {
-                        const stops = isEditMode && existingOrder?.additionalStops
-                          ? existingOrder.additionalStops
-                          : methods.getValues('additionalStops') as string[] || [];
+                        const stops =
+                          isEditMode && existingOrder?.additionalStops
+                            ? existingOrder.additionalStops
+                            : (methods.getValues('additionalStops') as string[]) || [];
 
                         return stops;
                       })()}
                       rides={existingOrder?.rides} // Передаем rides для режима редактирования
+                      orderStatus={existingOrder?.status} // Передаем статус для проверки удаления ride
                       methods={methods}
                       // Кастомная цена
                       useCustomPrice={useCustomPrice}
@@ -1064,8 +1115,15 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
                       // Переключение табов (только для SummaryTab)
                       onTabChange={activeTab === 'summary' ? setActiveTab : undefined}
                       // Функции для работы с водителями (для MapTab и SummaryTab)
-                      getDriverById={getDriverById as unknown as (id: string) => Record<string, unknown> | null}
-                      updateDriverCache={updateDriverCache as unknown as (id: string, data: Record<string, unknown>) => void}
+                      getDriverById={
+                        getDriverById as unknown as (id: string) => Record<string, unknown> | null
+                      }
+                      updateDriverCache={
+                        updateDriverCache as unknown as (
+                          id: string,
+                          data: Record<string, unknown>,
+                        ) => void
+                      }
                     />
                   );
                 })()}
@@ -1093,14 +1151,15 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
                     <button
                       onClick={() => isAccessible && goToTab(tab.id)}
                       disabled={!isAccessible}
-                      className={`relative flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all ${isActive
-                        ? 'bg-primary border-primary text-primary-foreground shadow-sm'
-                        : isCompleted
-                          ? 'bg-green-500 border-green-500 text-white'
-                          : isAccessible
-                            ? 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
-                            : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
-                        }`}
+                      className={`relative flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all ${
+                        isActive
+                          ? 'bg-primary border-primary text-primary-foreground shadow-sm'
+                          : isCompleted
+                            ? 'bg-green-500 border-green-500 text-white'
+                            : isAccessible
+                              ? 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
+                              : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
+                      }`}
                     >
                       {isCompleted ? (
                         <Check className='h-4 w-4' />
@@ -1112,10 +1171,11 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
                     {/* Линия между кружками */}
                     {index < tabs.length - 1 && (
                       <div
-                        className={`w-12 h-0.5 mx-2 transition-colors ${index < tabs.findIndex(t => t.id === activeTab)
-                          ? 'bg-green-500'
-                          : 'bg-gray-200'
-                          }`}
+                        className={`w-12 h-0.5 mx-2 transition-colors ${
+                          index < tabs.findIndex(t => t.id === activeTab)
+                            ? 'bg-green-500'
+                            : 'bg-gray-200'
+                        }`}
                       />
                     )}
                   </div>
@@ -1172,6 +1232,6 @@ export function ScheduledOrderPage({ mode, id, initialTariffId, userRole = 'oper
           </div>
         </div>
       </div>
-    </div >
+    </div>
   );
 }
