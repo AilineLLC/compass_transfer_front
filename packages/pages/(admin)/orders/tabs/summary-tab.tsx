@@ -321,11 +321,7 @@ export function SummaryTab({
 
         {/* Правая колонка */}
         <div>
-          {
-            userRole !== 'partner' && (
-              <TariffInfoCard tariff={selectedTariff} userRole={userRole as 'admin' | 'operator' | 'partner' | 'driver'} sale={sale || 0} />
-            )
-          }
+          <TariffInfoCard tariff={selectedTariff} userRole={userRole as 'admin' | 'operator' | 'partner' | 'driver'} sale={sale || 0} />
 
           {/* Информация о водителе (перенесено выше пассажиров) */}
           <Card className="mb-4">

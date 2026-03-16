@@ -50,7 +50,7 @@ export function TariffsList({
       </div>
     );
   }
-  console.log('userRole', userRole);
+  
   if (filteredTariffs.length === 0) {
     return (
       <div className="space-y-6">
@@ -159,6 +159,7 @@ export function TariffsList({
               onViewDetails={onViewTariffDetails}
               canViewDetails={canViewTariffDetails}
               formatPrice={formatPrice}
+              userRole={userRole}
               getServiceClassLabel={getServiceClassLabel}
               getCarTypeLabel={getCarTypeLabel}
               getTariffBadgeColor={getTariffBadgeColor}

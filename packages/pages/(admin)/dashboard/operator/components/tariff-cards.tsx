@@ -22,7 +22,7 @@ export function TariffCards({ onTariffClick, onFirstTariffLoaded, userRole }: Ta
   const [selectedTariffIndex, setSelectedTariffIndex] = useState(0);
   const isFirstLoadRef = useRef(true);
   const sliderRef = useRef<HTMLDivElement>(null);
-
+  
   useEffect(() => {
     const loadTariffs = async () => {
       try {
@@ -206,16 +206,19 @@ export function TariffCards({ onTariffClick, onFirstTariffLoaded, userRole }: Ta
                 </p>
 
                 {/* Характеристики */}
-                <div className='flex items-center gap-4 mb-4'>
-                  <div className='flex items-center gap-1'>
-                    <Clock className='h-4 w-4' />
-                    <span className='text-sm'>{tariff.minutePrice} сом/мин</span>
+                {
+                  userRole !== 'partner' && 
+                  <div className='flex items-center gap-4 mb-4'>
+                    <div className='flex items-center gap-1'>
+                      <Clock className='h-4 w-4' />
+                      <span className='text-sm'>{tariff.minutePrice} сом/мин</span>
+                    </div>
+                    <div className='flex items-center gap-1'>
+                      <DollarSign className='h-4 w-4' />
+                      <span className='text-sm'>{tariff.perKmPrice} сом/км</span>
+                    </div>
                   </div>
-                  <div className='flex items-center gap-1'>
-                    <DollarSign className='h-4 w-4' />
-                    <span className='text-sm'>{tariff.perKmPrice} сом/км</span>
-                  </div>
-                </div>
+                }
 
                 {/* Кнопка действия */}
                 <div className='flex'>

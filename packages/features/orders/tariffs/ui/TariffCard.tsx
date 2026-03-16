@@ -9,6 +9,7 @@ import { type GetTariffDTO } from '@entities/tariffs/interface';
 interface TariffCardProps {
   tariff: GetTariffDTO;
   isSelected: boolean;
+  userRole: string;
   onSelect: (tariff: GetTariffDTO) => void;
   onViewDetails?: (tariffId: string, event: React.MouseEvent) => void;
   canViewDetails?: boolean;
@@ -22,6 +23,7 @@ export function TariffCard({
   tariff,
   isSelected,
   onSelect,
+  userRole,
   onViewDetails,
   canViewDetails = false,
   formatPrice,
@@ -96,10 +98,13 @@ export function TariffCard({
               <span className="text-muted-foreground block">Базовая цена:</span>
               <p className="font-semibold text-primary">{formatPrice(tariff.basePrice)}</p>
             </div>
-            <div>
-              <span className="text-muted-foreground block">За км:</span>
-              <p className="font-semibold">{formatPrice(tariff.perKmPrice)}</p>
-            </div>
+            {
+              userRole !== 'partner' && 
+              <div>
+                <span className="text-muted-foreground block">За км:</span>
+                <p className="font-semibold">{formatPrice(tariff.perKmPrice)}</p>
+              </div>
+            }
             <div>
               <span className="text-muted-foreground block">Бесплатное ожидание:</span>
               <div className="flex items-center gap-1">
@@ -107,10 +112,13 @@ export function TariffCard({
                 <span className="font-semibold">{tariff.freeWaitingTimeMinutes} мин</span>
               </div>
             </div>
-            <div>
-              <span className="text-muted-foreground block">За минуту:</span>
-              <p className="font-semibold">{formatPrice(tariff.minutePrice)}</p>
-            </div>
+            {
+              userRole !== 'partner' && 
+              <div>
+                <span className="text-muted-foreground block">За минуту:</span>
+                <p className="font-semibold">{formatPrice(tariff.minutePrice)}</p>
+              </div>
+            }
           </div>
 
           <div className="pt-2 space-y-2">

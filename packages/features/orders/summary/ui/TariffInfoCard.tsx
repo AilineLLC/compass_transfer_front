@@ -70,14 +70,19 @@ export function TariffInfoCard({ tariff, userRole, sale }: TariffInfoCardProps) 
                   <p className='text-gray-500'>Базовая цена</p>
                   <p className='font-medium'>{Math.round(tariff.basePrice * (1 - (sale || 0)))} сом</p>
                 </div>
-                <div>
-                  <p className='text-gray-500'>Цена за минуту</p>
-                  <p className='font-medium'>{Math.round(tariff.minutePrice * (1 - (sale || 0)))} сом</p>
-                </div>
-                <div>
-                  <p className='text-gray-500'>Цена за км</p>
-                  <p className='font-medium'>{Math.round(tariff.perKmPrice * (1 - (sale || 0)))} сом</p>
-                </div>
+                {
+                  userRole !== 'partner' && 
+                  <>
+                    <div>
+                      <p className='text-gray-500'>Цена за минуту</p>
+                      <p className='font-medium'>{Math.round(tariff.minutePrice * (1 - (sale || 0)))} сом</p>
+                    </div>
+                    <div>
+                      <p className='text-gray-500'>Цена за км</p>
+                      <p className='font-medium'>{Math.round(tariff.perKmPrice * (1 - (sale || 0)))} сом</p>
+                    </div>
+                  </>
+                }
                 <div>
                   <div>
                     <p className='text-gray-500'>Бесплатное время ожидания</p>
