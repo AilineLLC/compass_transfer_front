@@ -74,6 +74,8 @@ export function ScheduledRidesList() {
     try {
       await ridesApi.acceptScheduledRide(rideId);
       toast.success('Запланированная поездка принята');
+      // Уведомляем дашборд, чтобы он подхватил принятый заказ в ActiveOrderCard
+      window.dispatchEvent(new CustomEvent('orderAccepted'));
       await fetchScheduledRides();
     } catch {
       toast.error('Ошибка при принятии запланированной поездки');

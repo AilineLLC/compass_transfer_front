@@ -34,6 +34,7 @@ import {
   SummaryTab,
 } from '../../tabs';
 import { useSelfProfile } from '@entities/users/hooks/useSelfProfile';
+import { usersApi } from '@shared/api/users';
 
 // Интерфейс для точки маршрута в форме заказа
 interface OrderRoutePoint {
@@ -495,7 +496,7 @@ export function ScheduledOrderPage({
   );
 
   // Функция для определения, нужно ли назначать водителя в режиме редактирования
-  const _shouldAssignDriverInEditMode = useCallback(() => {
+  const shouldAssignDriverInEditMode = useCallback(() => {
     if (!isEditMode) {
       return false;
     }
@@ -512,6 +513,7 @@ export function ScheduledOrderPage({
 
     return false;
   }, [isEditMode, originalDriver, selectedDriver]);
+
 
   const handleServicesChange = (newServices: GetOrderServiceDTO[]) => {
     setSelectedServices(newServices);
@@ -588,8 +590,7 @@ export function ScheduledOrderPage({
           const enhancedPassengers = existingOrder.passengers.map(passenger => ({
             ...passenger,
             lastName: passenger.lastName || '',
-            phone: '', // Будет заполнено из userData при загрузке
-            email: '', // Будет заполнено из userData при загрузке
+            phone: passenger.phone || '',
           }));
 
           methods.setValue('passengers', enhancedPassengers);
@@ -636,7 +637,16 @@ export function ScheduledOrderPage({
             setSelectedDriver(driverData);
             setOriginalDriver(driverData);
           } else {
-            // Если данных водителя нет в кэше, загружаем их
+            // Данных водителя нет в кэше — загружаем с сервера
+            usersApi.getDriver(firstRide.driverId)
+              .then(fetchedDriver => {
+                updateDriverCache(firstRide.driverId, fetchedDriver);
+                setSelectedDriver(fetchedDriver);
+                setOriginalDriver(fetchedDriver);
+              })
+              .catch(err => {
+                logger.error('Ошибка загрузки водителя:', err);
+              });
           }
         }
       }
@@ -683,12 +693,14 @@ export function ScheduledOrderPage({
             customerId: string;
             firstName: string;
             lastName: string;
+            phone?: string | null;
             isMainPassenger: boolean;
           }>
         )?.map(p => ({
           customerId: p.customerId,
           firstName: p.firstName,
           lastName: p.lastName,
+          phone: p.phone || null,
           isMainPassenger: p.isMainPassenger,
         }))
       : undefined,
@@ -835,16 +847,21 @@ export function ScheduledOrderPage({
 
       const resultOrder = await submitOrder(finalOrderData);
 
-      // Назначаем водителя, если он выбран
-      if (selectedDriver) {
-        const carId = selectedDriver.activeCar?.id || selectedDriver.activeCarId;
+      // Назначаем водителя если:
+      // - режим создания и водитель выбран
+      // - режим редактирования и водитель изменился (новый или заменён)
+      const shouldAssignDriver =
+        selectedDriver && (!isEditMode || shouldAssignDriverInEditMode());
+
+      if (shouldAssignDriver) {
+        const carId = selectedDriver!.activeCar?.id || selectedDriver!.activeCarId;
 
         if (!carId) {
           throw new Error('У выбранного водителя нет активного автомобиля');
         }
 
         const rideData = {
-          driverId: selectedDriver.id,
+          driverId: selectedDriver!.id,
           carId: carId,
           waypoints: [],
         };
@@ -862,6 +879,10 @@ export function ScheduledOrderPage({
         } else {
           throw new Error('Не удалось получить ID заказа для назначения водителя');
         }
+      } else {
+        // Водитель не изменился — ride не пересоздаём, просто переходим к списку заказов.
+        // Toast об успешном сохранении уже показан в useScheduledOrderSubmit.
+        router.push('/orders');
       }
     } catch (error) {
       // Ошибка сохранения заказа обрабатывается в хуках, но логируем для отладки

@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { orderService, driverActiveOrdersApi, type GetOrderDTO } from '@shared/api/orders';
+import { orderService, type GetOrderDTO } from '@shared/api/orders';
+import { driverQueueApi } from '@shared/api/driver-queue';
+import { ridesApi } from '@shared/api/rides/rides-api';
 import { ActiveOrderCard } from '@features/active-ride';
 import { useDriverQueue } from '@features/driver-queue';
 import { LocationSelectionModal } from '@features/driver-queue/components/location-selection-modal';
@@ -34,57 +36,81 @@ export default function DriverDashboardPage() {
     }
   }, [joinQueue]);
 
+  // Вспомогательная функция для загрузки активного заказа с прямыми API-вызовами
+  // (не зависит от stale-состояния queueData)
+  const fetchOrderDirectly = useCallback(async (): Promise<GetOrderDTO | null> => {
+    let orderData: GetOrderDTO | null = null;
+
+    // Шаг 1: свежий статус очереди напрямую через API
+    try {
+      const freshQueueData = await driverQueueApi.getQueueStatus();
+      if (freshQueueData?.orderId) {
+        orderData = await orderService.getOrderById(freshQueueData.orderId);
+      } else if (freshQueueData && 'id' in freshQueueData) {
+        orderData = freshQueueData as unknown as GetOrderDTO;
+      }
+    } catch {
+      // Очередь недоступна, переходим к следующему шагу
+    }
+
+    // Шаг 2: фолбэк через назначенные поездки.
+    // getMyAssignedRides надёжнее — в ответе всегда есть ride.status.
+    // Показываем заказ только если поездка принята водителем (Accepted/Arrived/InProgress).
+    // Requested = назначен но НЕ принят → не показываем в ActiveOrderCard.
+    if (!orderData) {
+      try {
+        const assignedRidesResponse = await ridesApi.getMyAssignedRides();
+        const acceptedStatuses = ['Accepted', 'Arrived', 'InProgress'];
+        const completedStatuses = ['Completed', 'Cancelled', 'Expired'];
+
+        const activeRide = assignedRidesResponse.data.find(ride =>
+          acceptedStatuses.includes(ride.status) &&
+          !completedStatuses.includes(ride.orderStatus)
+        );
+
+        if (activeRide?.orderId) {
+          orderData = await orderService.getOrderById(activeRide.orderId);
+        }
+      } catch {
+        // Ошибка фолбэка — заказа нет
+      }
+    }
+
+    // Шаг 3: не показываем завершённые/отменённые заказы
+    if (orderData && ['Completed', 'Cancelled', 'Expired'].includes(orderData.status)) {
+      orderData = null;
+    }
+
+    return orderData;
+  }, []);
+
   // Функция для получения активного заказа на основе данных из очереди
   const fetchActiveOrder = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
-
-      let orderData: GetOrderDTO | null = null;
-
-      if (queueData?.orderId) {
-        orderData = await orderService.getOrderById(queueData.orderId);
-      } else if (queueData && 'id' in queueData) {
-        // Если в 404 ответе есть данные заказа напрямую, используем их
-        orderData = queueData as unknown as GetOrderDTO;
-        // orderData = await orderService.getOrderById(queueData.id as string);
-        console.log(orderData)
-      }
-
-      // Фолбэк для запланированных поездок, которых нет в очереди
-      if (!orderData) {
-        try {
-          const activeOrdersResponse = await driverActiveOrdersApi.getMyActiveOrders();
-          if (activeOrdersResponse.data && activeOrdersResponse.data.length > 0) {
-            orderData = activeOrdersResponse.data[0];
-          }
-        } catch (activeOrderErr) {
-          console.error('Ошибка при получении активных заказов:', activeOrderErr);
-        }
-      }
-
+      const orderData = await fetchOrderDirectly();
       setCurrentOrder(orderData);
-
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка';
       setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
-  }, [queueData]);
+  }, [fetchOrderDirectly]);
 
-  // Функция для обновления после действий водителя (обновляет и очередь, и заказ)
+  // Функция для обновления после действий водителя.
+  // Делает прямые API-вызовы, чтобы избежать гонки состояний с устаревшим queueData.
   const handleStatusUpdate = useCallback(async () => {
     try {
-      // Сначала обновляем данные очереди
-      await refetchQueue();
-
-      // Затем обновляем заказ
-      await fetchActiveOrder();
+      const orderData = await fetchOrderDirectly();
+      setCurrentOrder(orderData);
+      // Обновляем состояние хука очереди в фоне
+      refetchQueue();
     } catch (err) {
       console.error('Ошибка при обновлении статуса:', err);
     }
-  }, [refetchQueue, fetchActiveOrder]);
+  }, [fetchOrderDirectly, refetchQueue]);
 
   useEffect(() => {
     fetchActiveOrder();
@@ -115,7 +141,7 @@ export default function DriverDashboardPage() {
       window.removeEventListener('openLocationModal', handleOpenLocationModal);
       window.removeEventListener('openDriverLocationModal', handleOpenDriverLocationModal);
     };
-  }, [fetchActiveOrder]);
+  }, [handleStatusUpdate]);
 
   // Функции для модалки локации
   const [currentLocation, setCurrentLocation] = useState('На линии');
@@ -139,13 +165,8 @@ export default function DriverDashboardPage() {
   ];
 
   const updateLocation = async (newLocation: string) => {
-    try {
-      setCurrentLocation(newLocation);
-      setIsDriverLocationModalOpen(false);
-      console.log('Location updated to:', newLocation);
-    } catch (error) {
-      console.error('Error updating location:', error);
-    }
+    setCurrentLocation(newLocation);
+    setIsDriverLocationModalOpen(false);
   };
 
   if (isLoading) {

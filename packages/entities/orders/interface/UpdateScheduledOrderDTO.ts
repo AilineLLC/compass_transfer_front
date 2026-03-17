@@ -40,4 +40,16 @@ export interface UpdateScheduledOrderDTO {
 
   /** Подстатус заказа */
   subStatus: string;
+
+  /** Описание заказа */
+  description?: string | null;
+
+  /** Номер рейса (прилёт) */
+  airFlight?: string | null;
+
+  /** Номер рейса (вылет) */
+  flyReis?: string | null;
+
+  /** Комментарии к заказу */
+  notes?: string | null;
 }

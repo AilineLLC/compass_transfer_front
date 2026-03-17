@@ -26,9 +26,25 @@ export interface OrderFilters {
   services?: string[];
   customerId?: string;
   airFlight?: string;
-  airFlightOp?: 'Equals' | 'NotEquals' | 'Contains' | 'NotContains' | 'StartsWith' | 'EndsWith' | 'IsEmpty' | 'IsNotEmpty';
+  airFlightOp?:
+    | 'Equals'
+    | 'NotEquals'
+    | 'Contains'
+    | 'NotContains'
+    | 'StartsWith'
+    | 'EndsWith'
+    | 'IsEmpty'
+    | 'IsNotEmpty';
   flyReis?: string;
-  flyReisOp?: 'Equals' | 'NotEquals' | 'Contains' | 'NotContains' | 'StartsWith' | 'EndsWith' | 'IsEmpty' | 'IsNotEmpty';
+  flyReisOp?:
+    | 'Equals'
+    | 'NotEquals'
+    | 'Contains'
+    | 'NotContains'
+    | 'StartsWith'
+    | 'EndsWith'
+    | 'IsEmpty'
+    | 'IsNotEmpty';
   sortBy?: string;
   sortOrder?: 'Asc' | 'Desc';
 }
@@ -114,7 +130,9 @@ export const ordersApi = {
       processedFilters.orderNumber = orderNumberToInteger(processedFilters.orderNumber);
     }
 
-    const result = await apiGet<OrderApiResponse>('/Order/my/creator', { params: processedFilters });
+    const result = await apiGet<OrderApiResponse>('/Order/my/creator', {
+      params: processedFilters,
+    });
 
     if (result.error) {
       throw new Error(result.error.message);
@@ -181,7 +199,10 @@ export const orderService = {
 
   // Обновление мгновенного заказа
   updateInstantOrder: async (id: string, data: unknown): Promise<{ id: string }> => {
-    const result = await apiPut<{ id: string }>(`/Order/instant/${id}`, data as Record<string, unknown>);
+    const result = await apiPut<{ id: string }>(
+      `/Order/instant/${id}`,
+      data as Record<string, unknown>,
+    );
 
     if (result.error) {
       throw new Error(result.error.message);
@@ -192,7 +213,10 @@ export const orderService = {
 
   // Создание запланированного заказа
   createScheduledOrder: async (data: unknown): Promise<{ id: string }> => {
-    const result = await apiPost<{ id: string }>('/Order/scheduled', data as Record<string, unknown>);
+    const result = await apiPost<{ id: string }>(
+      '/Order/scheduled',
+      data as Record<string, unknown>,
+    );
 
     if (result.error) {
       throw new Error(result.error.message);
@@ -203,7 +227,10 @@ export const orderService = {
 
   // Обновление запланированного заказа
   updateScheduledOrder: async (id: string, data: unknown): Promise<{ id: string }> => {
-    const result = await apiPut<{ id: string }>(`/Order/scheduled/${id}`, data as Record<string, unknown>);
+    const result = await apiPut<{ id: string }>(
+      `/Order/scheduled/${id}`,
+      data as Record<string, unknown>,
+    );
 
     if (result.error) {
       throw new Error(result.error.message);
@@ -225,7 +252,10 @@ export const orderService = {
 
   // Создание мгновенного заказа через терминал
   createInstantOrderByTerminal: async (data: unknown): Promise<{ id: string }> => {
-    const result = await apiPost<{ id: string }>('/Order/instant/by-terminal', data as Record<string, unknown>);
+    const result = await apiPost<{ id: string }>(
+      '/Order/instant/by-terminal',
+      data as Record<string, unknown>,
+    );
 
     if (result.error) {
       throw new Error(result.error.message);
@@ -236,7 +266,10 @@ export const orderService = {
 
   // Создание поездки для запланированного заказа
   createScheduledRide: async (orderId: string, data: unknown): Promise<{ id: string }> => {
-    const result = await apiPost<{ id: string }>(`/Order/scheduled/${orderId}/ride`, data as Record<string, unknown>);
+    const result = await apiPost<{ id: string }>(
+      `/Order/scheduled/${orderId}/ride`,
+      data as Record<string, unknown>,
+    );
 
     if (result.error) {
       throw new Error(result.error.message);
@@ -263,7 +296,14 @@ export interface AcceptOrderResponse {
   driverId: string;
   carId: string;
   id: string;
-  status: 'Requested' | 'Searching' | 'Accepted' | 'Arrived' | 'InProgress' | 'Completed' | 'Cancelled';
+  status:
+    | 'Requested'
+    | 'Searching'
+    | 'Accepted'
+    | 'Arrived'
+    | 'InProgress'
+    | 'Completed'
+    | 'Cancelled';
   driverArrivedAt: string | null;
   startedAt: string | null;
   endedAt: string | null;
@@ -316,7 +356,9 @@ export const driverActiveOrdersApi = {
       throw new Error(result.error.message);
     }
 
-    return result.data || { data: [], totalCount: 0, pageSize: 10, hasPrevious: false, hasNext: false };
+    return (
+      result.data || { data: [], totalCount: 0, pageSize: 10, hasPrevious: false, hasNext: false }
+    );
   },
 };
 

@@ -1,12 +1,11 @@
 'use client';
 
 import { Car, MapPin } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import type { RoutePoint, ActiveDriverDTO } from '@shared/components/map/types';
 import { Button } from '@shared/ui/forms/button';
 import type { GetRideDTO } from '@entities/orders/interface';
 import type { GetDriverDTO } from '@entities/users/interface';
-import { OrderStatus } from '@entities/orders/enums';
 import { useDeleteRide } from '@entities/orders/hooks';
 import { DriverPanel } from '@features/orders/components/DriverPanel';
 import { LocationSelectionModal } from '@features/orders/components/LocationSelectionModal';
@@ -19,7 +18,6 @@ interface MapTabProps {
   additionalStops?: string[];
   mode?: 'create' | 'edit';
   rides?: GetRideDTO[]; // Данные поездок для режима редактирования
-  orderStatus?: string; // Статус заказа для проверки (удалять ride только если Expired)
 
   // Внешнее состояние маршрута (для сохранения между табами)
   routePoints?: RoutePoint[];
@@ -53,7 +51,6 @@ export function MapTab({
   additionalStops = [],
   mode = 'create',
   rides,
-  orderStatus,
   // Внешнее состояние
   routePoints: externalRoutePoints,
   setRoutePoints: setExternalRoutePoints,
@@ -81,11 +78,8 @@ export function MapTab({
   const [showDrivers, setShowDrivers] = useState<boolean>(true);
   const [showLocations, setShowLocations] = useState<boolean>(true);
 
-  // Ref для отслеживания была ли уже выполнена очистка ride при редактировании
-  const hasCleanedRideRef = useRef(false);
-
-  // Хук для удаления ride при отмене выбора водителя
-  const { deleteRide, isLoading: isDeletingRide } = useDeleteRide({
+  // Хук для удаления ride при нажатии X в DriverPanel
+  const { deleteRide } = useDeleteRide({
     showToast: true,
   });
 
@@ -174,39 +168,11 @@ export function MapTab({
     }
   }, [routeLoading, onRouteLoadingChange]);
 
-  // При открытии редактирования заказа - автоматически удаляем существующую ride только если статус Expired
-  useEffect(() => {
-    const autoDeleteRideOnEdit = async () => {
-      // Проверяем был ли уже выполнен эффект
-      if (hasCleanedRideRef.current) {
-        return;
-      }
-
-      // Удаляем ride только если режим редактирования, есть rides и статус Expired
-      if (mode === 'edit' && rides && rides.length > 0 && orderStatus === OrderStatus.Expired) {
-        try {
-          hasCleanedRideRef.current = true;
-          const rideId = rides[0].id;
-          if (rideId) {
-            await deleteRide(rideId);
-            // Очищаем выбранного водителя
-            handleDriverSelect(null);
-          }
-        } catch (error) {
-          // Ошибка обрабатывается в хуке useDeleteRide
-          console.error('Ошибка при автоматическом удалении ride:', error);
-        }
-      }
-    };
-
-    autoDeleteRideOnEdit();
-  }, []); // Пустой массив - срабатывает только один раз при монтировании
-
-  // Обработчик удаления водителя с удалением ride при ручной отмене
+  // Обработчик удаления водителя через кнопку X в DriverPanel
+  // Удаляет ride при любом статусе заказа в режиме редактирования
   const handleRemoveDriver = async () => {
     try {
-      // Удаляем ride только если статус Expired
-      if (mode === 'edit' && rides && rides.length > 0 && orderStatus === OrderStatus.Expired) {
+      if (mode === 'edit' && rides && rides.length > 0) {
         const rideId = rides[0].id;
         if (rideId) {
           await deleteRide(rideId);
@@ -215,12 +181,9 @@ export function MapTab({
       // В любом случае очищаем выбранного водителя
       handleDriverSelect(null);
     } catch (error) {
-      // Ошибка обрабатывается в хуке useDeleteRide
       console.error('Ошибка при удалении водителя:', error);
     }
   };
-
-  // Преобразование точек маршрута теперь выполняется в компоненте LocationMap
 
   // Показываем индикатор загрузки
   if (!isReady) {

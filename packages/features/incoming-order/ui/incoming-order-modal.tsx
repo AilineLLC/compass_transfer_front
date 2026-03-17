@@ -81,9 +81,6 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
         setIsModalOpen(true);
         setTimeLeft(10); // Сбрасываем таймер на 10 секунд
         playSound();
-
-        // Проверим состояние через небольшую задержку
-        setTimeout(() => { }, 100);
       } else {
         // Неправильная структура уведомления - игнорируем
       }
@@ -170,10 +167,7 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
     if (isModalOpen && timeLeft > 0) {
       interval = setInterval(() => {
         setTimeLeft((prev) => {
-          console.log(`Таймер: ${prev} секунд осталось`);
           if (prev <= 1) {
-            // Время вышло - автоматически закрываем модальное окно
-            console.log('Время вышло, закрываем модальное окно');
             handleClose();
 
             return 0;

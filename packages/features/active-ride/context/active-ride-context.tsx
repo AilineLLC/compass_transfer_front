@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { driverQueueApi } from '@shared/api/driver-queue';
-import { orderService, driverActiveOrdersApi, type GetOrderDTO } from '@shared/api/orders';
+import { orderService, type GetOrderDTO } from '@shared/api/orders';
 import { ridesApi } from '@shared/api/rides/rides-api';
 import { logger } from '@shared/lib/logger';
 import type { ScheduledRidesResponse } from '@entities/rides/interface';
@@ -49,54 +49,51 @@ export function ActiveRideProvider({ children }: { children: React.ReactNode }) 
       // 1. Через статус очереди (если водитель в очереди и получил orderId)
       // 2. Через API активных заказов (если водитель не в очереди, но имеет активный заказ)
       let orderData: GetOrderDTO | null = null;
-      
+
+      // Шаг 1: Пробуем получить orderId через статус очереди
       try {
-        // Сначала пробуем получить orderId из очереди
-        logger.info('🔍 ActiveRideProvider: Запрашиваем статус очереди...');
         const queueStatus = await driverQueueApi.getQueueStatus();
-        
-        logger.info('🔍 ActiveRideProvider: Ответ DriverQueue/self:', {
-          queueStatus: queueStatus,
-          hasOrderId: !!queueStatus?.orderId,
-          orderId: queueStatus?.orderId || null
-        });
 
         if (queueStatus?.orderId) {
-          logger.info('🔍 ActiveRideProvider: Получаем заказ по orderId:', queueStatus.orderId);
           orderData = await orderService.getOrderById(queueStatus.orderId);
-          logger.info('✅ ActiveRideProvider: Получен активный заказ из очереди', { 
+          logger.info('✅ ActiveRideProvider: Получен активный заказ из очереди', {
             orderId: queueStatus.orderId,
-            orderData: orderData 
           });
-        } else {
-          logger.info('ℹ️ ActiveRideProvider: В статусе очереди нет orderId');
         }
       } catch (queueError) {
-        // Если водитель не в очереди (404), пробуем получить активные заказы
-        logger.info('ℹ️ ActiveRideProvider: Водитель не в очереди, проверяем активные заказы');
-        try {
-          const activeOrdersResponse = await driverActiveOrdersApi.getMyActiveOrders();
+        logger.info('ℹ️ ActiveRideProvider: Ошибка статуса очереди, переходим к API активных заказов');
+      }
 
-          logger.info('🔍 ActiveRideProvider: Ответ API активных заказов:', {
-            response: activeOrdersResponse,
-            hasData: !!activeOrdersResponse.data,
-            dataLength: activeOrdersResponse.data?.length || 0,
-            firstOrder: activeOrdersResponse.data?.[0] || null
-          });
-          
-          if (activeOrdersResponse.data && activeOrdersResponse.data.length > 0) {
-            orderData = activeOrdersResponse.data[0]; // Берем первый активный заказ
-            logger.info('✅ ActiveRideProvider: Получен активный заказ через API', { 
+      // Шаг 2: Если заказ не найден через очередь — ищем среди уже загруженных поездок.
+      // Accepted/Arrived/InProgress = водитель принял поездку.
+      // Requested = назначен но НЕ принят → не показываем в ActiveOrderCard.
+      if (!orderData) {
+        try {
+          const acceptedStatuses = ['Accepted', 'Arrived', 'InProgress'];
+          const completedStatuses = ['Completed', 'Cancelled', 'Expired'];
+
+          const activeRide = allRidesResponse.data.find(ride =>
+            acceptedStatuses.includes(ride.status) &&
+            !completedStatuses.includes(ride.orderStatus)
+          );
+
+          if (activeRide?.orderId) {
+            orderData = await orderService.getOrderById(activeRide.orderId);
+            logger.info('✅ ActiveRideProvider: Получен активный заказ через назначенные поездки', {
               orderId: orderData?.id,
-              orderStatus: orderData?.status,
-              orderType: orderData?.type 
+              rideStatus: activeRide.status,
             });
           } else {
-            logger.info('ℹ️ ActiveRideProvider: Активных заказов не найдено');
+            logger.info('ℹ️ ActiveRideProvider: Принятых активных поездок не найдено');
           }
-        } catch (orderError) {
-          logger.error('❌ ActiveRideProvider: Ошибка получения активных заказов:', orderError);
+        } catch (rideOrderError) {
+          logger.error('❌ ActiveRideProvider: Ошибка получения заказа по поездке:', rideOrderError);
         }
+      }
+
+      // Шаг 3: Не показываем завершённые/отменённые заказы
+      if (orderData && ['Completed', 'Cancelled', 'Expired'].includes(orderData.status)) {
+        orderData = null;
       }
 
       // Разделяем поездки на активные (InProgress, Arrived) и запланированные (Accepted, Requested, Searching)

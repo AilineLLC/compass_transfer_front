@@ -237,6 +237,7 @@ export class OrdersApi {
       customerId: string | null;
       firstName: string;
       lastName: string | null;
+      phone?: string | null;
       isMainPassenger: boolean;
     }>,
   ): Promise<void> {
@@ -246,6 +247,7 @@ export class OrdersApi {
         customerId: string | null;
         firstName: string;
         lastName: string | null;
+        phone?: string | null;
         isMainPassenger: boolean;
       }>
     >(`/Order/${orderId}/passengers`, passengers);

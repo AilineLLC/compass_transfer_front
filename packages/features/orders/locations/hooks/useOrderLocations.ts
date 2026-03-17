@@ -177,18 +177,16 @@ export const useOrderLocations = ({
           // Загружаем данные водителя
           const driverData = await usersApi.getDriver(driverId);
 
-          // Проверяем, есть ли координаты у водителя
-          if (driverData && driverData.currentLocation) {
-            const { latitude, longitude } = driverData.currentLocation;
-
-            // Устанавливаем водителя как выбранного
+          if (driverData) {
+            // Устанавливаем водителя как выбранного — всегда, независимо от координат
             setSelectedDriver(driverData);
 
-            // Перемещаем карту к водителю
-            setDynamicMapCenter({ latitude, longitude });
-
-            // Открываем popup водителя
-            setOpenDriverPopupId(driverId);
+            // Перемещаем карту к водителю только если есть координаты
+            if (driverData.currentLocation) {
+              const { latitude, longitude } = driverData.currentLocation;
+              setDynamicMapCenter({ latitude, longitude });
+              setOpenDriverPopupId(driverId);
+            }
           }
         } catch {
           // Тихо обрабатываем ошибку - водитель может быть недоступен

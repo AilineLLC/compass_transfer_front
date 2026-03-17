@@ -8,7 +8,6 @@ import type { GetOrderDTO, UpdateScheduledOrderDTO } from '../interface';
  * Преобразует данные создания заказа в данные для обновления
  */
 function convertToUpdateData(data: CreateScheduledOrderRequest, orderId: string): UpdateScheduledOrderDTO {
-  // Создаем базовый объект с обязательными полями
   const updateData: UpdateScheduledOrderDTO = {
     orderId,
     tariffId: data.tariffId,
@@ -21,7 +20,12 @@ function convertToUpdateData(data: CreateScheduledOrderRequest, orderId: string)
     scheduledTime: data.scheduledTime,
     passengers: [], // Пассажиры обновляются отдельным запросом
     status: (data.status as string) || (OrderStatus.Pending as string),
-    subStatus: (data as any).subStatus || 'SearchingDriver'
+    subStatus: (data as any).subStatus || 'SearchingDriver',
+    // Поля, которые ранее дропались при обновлении
+    description: data.description ?? null,
+    airFlight: data.airFlight ?? null,
+    flyReis: data.flyReis ?? null,
+    notes: data.notes ?? null,
   };
 
   return updateData;
@@ -51,6 +55,7 @@ export interface UseScheduledOrderSubmitOptions {
     customerId: string | null;
     firstName: string;
     lastName: string | null;
+    phone?: string | null;
     isMainPassenger: boolean;
   }>;
 }

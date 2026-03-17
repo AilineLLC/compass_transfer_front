@@ -1,4 +1,3 @@
-
 'use client';
 
 import Image from 'next/image';
@@ -20,9 +19,8 @@ export function DriverStatusCard({
   isInQueue,
   isLoading,
   error,
-  leaveQueue
+  leaveQueue,
 }: DriverStatusCardProps) {
-
   const handleToggleQueue = async () => {
     if (isInQueue) {
       await leaveQueue();
@@ -37,11 +35,11 @@ export function DriverStatusCard({
 
     return date.toLocaleTimeString('ru-RU', {
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
-  const queue = queueData?.position || 0
+  const queue = queueData?.position || 0;
 
   // Показываем loading состояние пока не получили ответ от API
   if (isLoading) {
@@ -74,9 +72,7 @@ export function DriverStatusCard({
               <p className='text-red-600 text-sm sm:text-base font-medium mb-4'>
                 Ошибка загрузки данных
               </p>
-              <p className='text-gray-500 text-xs sm:text-sm'>
-                {error}
-              </p>
+              <p className='text-gray-500 text-xs sm:text-sm'>{error}</p>
             </div>
           </div>
 
@@ -110,7 +106,6 @@ export function DriverStatusCard({
 
       {/* Контент поверх фона */}
       <div className='relative z-10 flex flex-col h-full p-3 sm:p-4'>
-
         {/* Центральная часть - растягивается с возможностью скролла */}
         <div className='flex-1 flex flex-col items-center justify-center px-2 sm:px-4 overflow-y-auto'>
           {isInQueue ? (
@@ -123,7 +118,7 @@ export function DriverStatusCard({
                     className='w-full h-full'
                     viewBox='0 0 100 100'
                     style={{
-                      animation: 'spin 2s linear infinite'
+                      animation: 'spin 2s linear infinite',
                     }}
                   >
                     {/* Градиент */}
@@ -135,14 +130,7 @@ export function DriverStatusCard({
                     </defs>
 
                     {/* Фоновый круг */}
-                    <circle
-                      cx='50'
-                      cy='50'
-                      r='40'
-                      fill='none'
-                      stroke='#e5e7eb'
-                      strokeWidth='10'
-                    />
+                    <circle cx='50' cy='50' r='40' fill='none' stroke='#e5e7eb' strokeWidth='10' />
 
                     {/* Анимированная дуга */}
                     <circle
@@ -169,14 +157,15 @@ export function DriverStatusCard({
 
               {/* Текст "Ожидайте вы на очереди" */}
               <div className='text-center mb-4'>
-                <p className='text-gray-700 text-sm sm:text-base font-medium'>Ожидайте вы на очереди</p>
-
+                <p className='text-gray-700 text-sm sm:text-base font-medium'>
+                  Ожидайте вы на очереди
+                </p>
               </div>
             </div>
           ) : (
             /* Пустое место для машины из фонового изображения */
-            <div className='w-full h-full' >
-              <div className="h-8 flex justify-between">
+            <div className='w-full h-full'>
+              <div className='h-8 flex justify-between'>
                 <p className='text-[14px] text-[#92929D]'>Активные заявки</p>
                 <div>
                   <p className='text=[#000000] text-[10px]'>Местонахождение</p>
@@ -188,7 +177,7 @@ export function DriverStatusCard({
         </div>
 
         {/* Нижняя секция */}
-        <div className='mt-auto px-1 sm:px-2 pb-1 sm:pb-2'>
+        {/* <div className='mt-auto px-1 sm:px-2 pb-1 sm:pb-2'>
           <Button
             onClick={handleToggleQueue}
             disabled={isLoading}
@@ -208,7 +197,7 @@ export function DriverStatusCard({
               'Готов к заказу'
             )}
           </Button>
-        </div>
+        </div> */}
       </div>
     </div>
   );

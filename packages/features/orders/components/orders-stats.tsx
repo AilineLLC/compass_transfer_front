@@ -27,9 +27,10 @@ export function OrdersStats({ className, activeStatus }: OrderStatsProps) {
       setError(null);
 
       // Для партнеров используем API для статистики созданных ими заказов
-      const data = userRole === Role.Partner
-        ? await ordersApi.getMyCreatorOrderStats()
-        : await ordersApi.getOrderStats();
+      const data =
+        userRole === Role.Partner
+          ? await ordersApi.getMyCreatorOrderStats()
+          : await ordersApi.getOrderStats();
 
       setStats(data);
     } catch (err) {
@@ -97,14 +98,14 @@ export function OrdersStats({ className, activeStatus }: OrderStatsProps) {
   // Функция для получения цвета обводки активного статуса
   const getActiveRingColor = (status: keyof OrderStatsResponse) => {
     const ringColors = {
-      pending: 'ring-1 ring-yellow-400',
+      pending: 'ring-yellow-400',
       scheduled: 'ring-1 ring-blue-400',
       inProgress: 'ring-1 ring-green-400',
       completed: 'ring-1 ring-emerald-400',
       cancelled: 'ring-1 ring-red-400',
       expired: 'ring-1 ring-orange-400',
     };
-    
+
     return ringColors[status];
   };
 
@@ -123,9 +124,12 @@ export function OrdersStats({ className, activeStatus }: OrderStatsProps) {
     return (
       <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 ${className || ''}`}>
         {Array.from({ length: 6 }).map((_, index) => (
-          <div key={index} className="bg-gray-50 border border-gray-200 rounded-lg p-4 animate-pulse">
-            <div className="h-8 bg-gray-200 rounded mb-2" />
-            <div className="h-4 bg-gray-200 rounded" />
+          <div
+            key={index}
+            className='bg-gray-50 border border-gray-200 rounded-lg p-4 animate-pulse'
+          >
+            <div className='h-8 bg-gray-200 rounded mb-2' />
+            <div className='h-4 bg-gray-200 rounded' />
           </div>
         ))}
       </div>
@@ -135,7 +139,7 @@ export function OrdersStats({ className, activeStatus }: OrderStatsProps) {
   if (error) {
     return (
       <div className={`text-center py-4 ${className || ''}`}>
-        <p className="text-red-600">Ошибка загрузки статистики: {error}</p>
+        <p className='text-red-600'>Ошибка загрузки статистики: {error}</p>
       </div>
     );
   }
@@ -146,27 +150,26 @@ export function OrdersStats({ className, activeStatus }: OrderStatsProps) {
 
   return (
     <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 ${className || ''}`}>
-      {(Object.keys(stats) as Array<keyof OrderStatsResponse>).map((status) => (
-        <div
-          key={status}
-          onClick={() => handleStatClick(status)}
-          className={`
-            flex flex-row items-center justify-start gap-2 border rounded-lg p-1 cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-105
-            ${orderStatsColors[status]}
-            ${isActiveStatus(status) ? `ring-4 ${getActiveRingColor(status)} ring-offset-2 shadow-xl` : ''}
-            ${status === 'expired' && stats[status] > 0 ? 'animate-pulse [animation-duration:3s]' : ''}
-          `}
-        >
-          <div className="flex items-center justify-center w-8 h-8 border border-gray-400 border-current rounded-full">
-            <span className="text-lg font-bold">
-              {stats[status].toLocaleString('ru-RU')}
-            </span>
-          </div>
-          <div className="text-xs font-medium text-center">
-            {orderStatsLabels[status]}
-          </div>
-        </div>
-      ))}
+      {(Object.keys(stats) as Array<keyof OrderStatsResponse>).map(
+        status =>
+          status !== 'pending' && ( // Убираем "Ожидание" из статистики
+            <div
+              key={status}
+              onClick={() => handleStatClick(status)}
+              className={`
+              flex flex-row items-center justify-start gap-2 border rounded-lg p-1 cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-105
+              ${orderStatsColors[status]}
+              ${isActiveStatus(status) ? `ring-4 ${getActiveRingColor(status)} ring-offset-2 shadow-xl` : ''}
+              ${status === 'expired' && stats[status] > 0 ? 'animate-pulse [animation-duration:3s]' : ''}
+            `}
+            >
+              <div className='flex items-center justify-center w-8 h-8 border border-gray-400 border-current rounded-full'>
+                <span className='text-lg font-bold'>{stats[status].toLocaleString('ru-RU')}</span>
+              </div>
+              <div className='text-xs font-medium text-center'>{orderStatsLabels[status]}</div>
+            </div>
+          ),
+      )}
     </div>
   );
 }
