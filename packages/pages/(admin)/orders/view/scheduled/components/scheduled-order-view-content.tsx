@@ -80,7 +80,7 @@ export function ScheduledOrderViewContent({ order, userRole }: ScheduledOrderVie
   const findServiceByName = (serviceName: string) => {
     return services.find(service => service.name === serviceName);
   };
-
+  console.log(userRole)
   return (
     <div className='space-y-6'>
       {/* Расписание */}
@@ -224,20 +224,26 @@ export function ScheduledOrderViewContent({ order, userRole }: ScheduledOrderVie
                   <div className='text-sm text-muted-foreground'>Базовая цена</div>
                   <div className='font-medium'>{tariff.basePrice * (1 - (order?.sale || 0))} сом</div>
                 </div>
-                <div>
-                  <div className='text-sm text-muted-foreground'>Цена за минуту</div>
-                  <div className='font-medium'>{tariff.minutePrice * (1 - (order?.sale || 0))} сом</div>
-                </div>
+                {
+                  userRole !== 'partner' && 
+                  <div>
+                    <div className='text-sm text-muted-foreground'>Цена за минуту</div>
+                    <div className='font-medium'>{tariff.minutePrice * (1 - (order?.sale || 0))} сом</div>
+                  </div>
+                }
               </div>
               <div className='grid grid-cols-2 gap-4'>
                 <div>
                   <div className='text-sm text-muted-foreground'>Минимальная цена</div>
                   <div className='font-medium'>{tariff.minimumPrice} сом</div>
                 </div>
-                <div>
-                  <div className='text-sm text-muted-foreground'>Цена за км</div>
-                  <div className='font-medium'>{tariff.perKmPrice * (1 - (order?.sale || 0))} сом</div>
-                </div>
+                {
+                  userRole !== 'partner' && 
+                  <div>
+                    <div className='text-sm text-muted-foreground'>Цена за км</div>
+                    <div className='font-medium'>{tariff.perKmPrice * (1 - (order?.sale || 0))} сом</div>
+                  </div>
+                }
               </div>
               <div>
                 <div className='text-sm text-muted-foreground'>Бесплатное время ожидания</div>
@@ -359,7 +365,7 @@ export function ScheduledOrderViewContent({ order, userRole }: ScheduledOrderVie
           <CardContent>
             <div className='space-y-3'>
               {order.rides.map((ride, index) => (
-                <RideDetailCard key={ride.id} rideId={ride.id} rideIndex={index} />
+                <RideDetailCard key={ride.id} orderId={order.id} rideId={ride.id} rideIndex={index} />
               ))}
             </div>
           </CardContent>

@@ -115,9 +115,9 @@ export function TariffCard({
             {
               userRole !== 'partner' && 
               <div>
-                <span className="text-muted-foreground block">За минуту:</span>
-                <p className="font-semibold">{formatPrice(tariff.minutePrice)}</p>
-              </div>
+                  <span className="text-muted-foreground block">За минуту:</span>
+                  <p className="font-semibold">{formatPrice(tariff.minutePrice)}</p>
+                </div>
             }
           </div>
 

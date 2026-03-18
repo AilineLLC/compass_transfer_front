@@ -13,13 +13,13 @@ import { Role } from '@entities/users/enums';
 
 interface ColumnVisibility {
   orderNumber: boolean;
-  type: boolean;
+  startLocation: boolean;
+  endLocation: boolean;
   status: boolean;
   subStatus: boolean;
   initialPrice: boolean;
   finalPrice: boolean;
   createdAt: boolean;
-  completedAt: boolean;
   scheduledTime: boolean;
   airFlight: boolean;
   flyReis: boolean;
@@ -113,13 +113,13 @@ export function useOrdersTable(initialFilters?: {
 
     return {
       orderNumber: true,
-      type: true,
+      startLocation: true,
+      endLocation: true,
       status: true,
       subStatus: true,
       initialPrice: true,
       finalPrice: true,
       createdAt: true,
-      completedAt: true,
       scheduledTime: true,
       airFlight: false,
       flyReis: false,

@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@shared/ui/navigation/dropdown-menu';
 import { useUserRole } from '@shared/contexts';
-import { type GetOrderDTO, type OrderStatus, type OrderSubStatus, type OrderType, orderTypeLabels, orderStatusLabels, orderSubStatusLabels, orderStatusColors, getOrderEditRoute, getOrderViewRoute } from '@entities/orders';
+import { type GetOrderDTO, type OrderStatus, type OrderSubStatus, type OrderType, orderStatusLabels, orderSubStatusLabels, orderStatusColors, getOrderEditRoute, getOrderViewRoute } from '@entities/orders';
 import { Role } from '@entities/users/enums';
 import { useDeleteOrder } from '@features/orders/hooks/use-delete-order';
 import { useUsdRate } from '@shared/hooks';
@@ -23,13 +23,13 @@ import { formatPriceWithUsd } from '@shared/utils/format-price-with-usd';
 
 interface ColumnVisibility {
   orderNumber: boolean;
-  type: boolean;
+  startLocation: boolean;
+  endLocation: boolean;
   status: boolean;
   subStatus: boolean;
   initialPrice: boolean;
   finalPrice: boolean;
   createdAt: boolean;
-  completedAt: boolean;
   scheduledTime: boolean;
   airFlight: boolean;
   flyReis: boolean;
@@ -130,17 +130,17 @@ export function OrdersTableContent({
         <TableHeader>
           <TableRow>
             {columnVisibility.orderNumber && <SortableHeader field='orderNumber' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Номер заказа</SortableHeader>}
-            {columnVisibility.type && <SortableHeader field='type' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Тип</SortableHeader>}
+            {columnVisibility.startLocation && <TableHead>Откуда</TableHead>}
+            {columnVisibility.endLocation && <TableHead>Куда</TableHead>}
             {columnVisibility.status && <SortableHeader field='status' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Статус</SortableHeader>}
             {columnVisibility.subStatus && <SortableHeader field='subStatus' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Подстатус</SortableHeader>}
             {columnVisibility.initialPrice && <SortableHeader field='initialPrice' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Начальная цена</SortableHeader>}
             {columnVisibility.finalPrice && <SortableHeader field='finalPrice' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Итоговая цена</SortableHeader>}
             {columnVisibility.createdAt && <SortableHeader field='createdAt' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Создан</SortableHeader>}
-            {columnVisibility.completedAt && <SortableHeader field='completedAt' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Завершен</SortableHeader>}
             {columnVisibility.scheduledTime && <SortableHeader field='scheduledTime' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Запланирован</SortableHeader>}
             {columnVisibility.airFlight && <TableHead>Рейс (прилет)</TableHead>}
             {columnVisibility.flyReis && <TableHead>Рейс (вылет)</TableHead>}
-            {columnVisibility.actions && <TableHead className='w-[120px]'>Действия</TableHead>}
+            {columnVisibility.actions && <TableHead className='w-[50px]'>Действия</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -149,11 +149,14 @@ export function OrdersTableContent({
               {columnVisibility.orderNumber && (
                 <TableCell className='font-medium'>{orderNumberToString(order.orderNumber)}</TableCell>
               )}
-              {columnVisibility.type && (
-                <TableCell>
-                  <Badge variant='outline'>
-                    {orderTypeLabels[order.type as OrderType] || order.type}
-                  </Badge>
+              {columnVisibility.startLocation && (
+                <TableCell className='max-w-[160px] truncate' title={order.startLocation?.name || '—'}>
+                  {order.startLocation?.name || '—'}
+                </TableCell>
+              )}
+              {columnVisibility.endLocation && (
+                <TableCell className='max-w-[160px] truncate' title={order.endLocation?.name || '—'}>
+                  {order.endLocation?.name || '—'}
                 </TableCell>
               )}
               {columnVisibility.status && (
@@ -180,11 +183,6 @@ export function OrdersTableContent({
               )}
               {columnVisibility.createdAt && (
                 <TableCell>{formatDate(order.createdAt)}</TableCell>
-              )}
-              {columnVisibility.completedAt && (
-                <TableCell>
-                  {order.completedAt ? formatDate(order.completedAt) : '—'}
-                </TableCell>
               )}
               {columnVisibility.scheduledTime && (
                 <TableCell>

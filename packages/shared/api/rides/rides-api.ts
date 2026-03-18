@@ -82,6 +82,21 @@ export const ridesApi = {
     return result.data;
   },
 
+
+  async getRideByOrderId(orderId: string): Promise<GetRideDTO> {
+    const result = await apiClient.get<GetRideDTO>(`/Ride/for-order/${orderId}`);
+
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+
+    if (!result.data) {
+      throw new Error('Нет данных в ответе API');
+    }
+
+    return result.data;
+  },
+
   /**
    * Получить поездки конкретного пользователя
    */

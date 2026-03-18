@@ -16,6 +16,7 @@ import type { GetCarDTO } from '@entities/cars/interface';
 interface RideDetailCardProps {
   rideId: string;
   rideIndex: number;
+  orderId: string;
 }
 
 const rideStatusLabels: Record<string, string> = {
@@ -28,13 +29,13 @@ const rideStatusLabels: Record<string, string> = {
   'Cancelled': 'Отменена',
 };
 
-export function RideDetailCard({ rideId, rideIndex }: RideDetailCardProps) {
+export function RideDetailCard({ rideId, rideIndex, orderId }: RideDetailCardProps) {
   const [ride, setRide] = useState<GetRideDTO | null>(null);
   const [driver, setDriver] = useState<GetUserBasicDTO | null>(null);
   const [car, setCar] = useState<GetCarDTO | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  
   useEffect(() => {
     const loadRideData = async () => {
       try {

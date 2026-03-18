@@ -22,13 +22,13 @@ import { OrdersExportModal } from './orders-export-modal';
 
 interface ColumnVisibility {
   orderNumber: boolean;
-  type: boolean;
+  startLocation: boolean;
+  endLocation: boolean;
   status: boolean;
   subStatus: boolean;
   initialPrice: boolean;
   finalPrice: boolean;
   createdAt: boolean;
-  completedAt: boolean;
   scheduledTime: boolean;
   actions: boolean;
 }
@@ -304,13 +304,13 @@ export function OrdersTableFilters({
                 <DropdownMenuContent align='start' className='w-48'>
                   {[
                     { key: 'orderNumber', label: 'Номер заказа' },
-                    { key: 'type', label: 'Тип' },
+                    { key: 'startLocation', label: 'Откуда' },
+                    { key: 'endLocation', label: 'Куда' },
                     { key: 'status', label: 'Статус' },
                     { key: 'subStatus', label: 'Подстатус' },
                     { key: 'initialPrice', label: 'Начальная цена' },
                     { key: 'finalPrice', label: 'Итоговая цена' },
                     { key: 'createdAt', label: 'Создан' },
-                    { key: 'completedAt', label: 'Завершен' },
                     { key: 'scheduledTime', label: 'Запланирован' },
                     { key: 'airFlight', label: 'Рейс (прилет)' },
                     { key: 'flyReis', label: 'Рейс (вылет)' },
