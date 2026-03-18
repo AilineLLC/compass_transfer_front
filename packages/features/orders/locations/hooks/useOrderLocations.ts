@@ -139,7 +139,7 @@ export const useOrderLocations = ({
   const setOpenDriverPopupId = setExternalOpenDriverPopupId ?? setLocalOpenDriverPopupId;
 
   // Хуки для работы с локациями и водителями
-  const { fetchAllLocations } = useLocations();
+  const { fetchAllLocations, fetchLocationById } = useLocations();
   const { drivers, updateMapBounds } = useActiveDrivers();
 
   // Инициализация водителей (без загрузки локаций)
@@ -223,10 +223,27 @@ export const useOrderLocations = ({
     fetchDrivers();
   }, []);
 
-  // Инициализируем точки маршрута ОДИН РАЗ при загрузке данных в режиме редактирования
+  // Инициализируем точки маршрута ОДИН РАЗ при загрузке данных в режиме редактирования.
+  // Используем fetchLocationById как основной путь — работает для любых локаций
+  // (активных, неактивных, не попавших в общий список).
+  // mapLocations используем как кэш: если локация там есть — не делаем лишний запрос.
   useEffect(() => {
-    if (mode === 'edit' && mapLocations.length > 0 && !isInitializedRef.current) {
-      // Создаем базовые точки
+    if (mode !== 'edit') return;
+    if (isInitializedRef.current) return;
+    if (!startLocationId && !endLocationId && !(additionalStops?.length)) return;
+
+    // Если внешние точки уже содержат локации — помечаем как инициализированные и не перезаписываем
+    if (
+      externalRoutePoints &&
+      externalRoutePoints.find(p => p.type === 'start')?.location &&
+      externalRoutePoints.find(p => p.type === 'end')?.location
+    ) {
+      isInitializedRef.current = true;
+      return;
+    }
+
+    let cancelled = false;
+    const initialize = async () => {
       const newRoutePoints: RoutePoint[] = [
         {
           id: '1',
@@ -248,29 +265,33 @@ export const useOrderLocations = ({
         },
       ];
 
-      // Устанавливаем начальную локацию
-      if (startLocationId) {
-        const startLocation = mapLocations.find(loc => loc.id === startLocationId);
+      // Вспомогательная функция: сначала ищем в кэше, иначе фетчим по ID
+      const resolveLocation = async (id: string): Promise<GetLocationDTO | null> => {
+        const cached = mapLocations.find(loc => loc.id === id);
+        if (cached) return cached;
+        return fetchLocationById(id);
+      };
 
-        if (startLocation) {
-          newRoutePoints[0] = { ...newRoutePoints[0], location: startLocation };
-        }
+      // Загружаем начальную и конечную локации параллельно
+      const [startLocation, endLocation] = await Promise.all([
+        startLocationId ? resolveLocation(startLocationId) : null,
+        endLocationId ? resolveLocation(endLocationId) : null,
+      ]);
+
+      if (startLocation) {
+        newRoutePoints[0] = { ...newRoutePoints[0], location: startLocation };
+      }
+      if (endLocation) {
+        newRoutePoints[1] = { ...newRoutePoints[1], location: endLocation };
       }
 
-      // Устанавливаем конечную локацию
-      if (endLocationId) {
-        const endLocation = mapLocations.find(loc => loc.id === endLocationId);
-
-        if (endLocation) {
-          newRoutePoints[1] = { ...newRoutePoints[1], location: endLocation };
-        }
-      }
-
-      // Добавляем промежуточные остановки
+      // Загружаем промежуточные остановки
       if (additionalStops && additionalStops.length > 0) {
-        additionalStops.forEach((stopId, index) => {
-          const stopLocation = mapLocations.find(loc => loc.id === stopId);
+        const stopLocations = await Promise.all(
+          additionalStops.map(stopId => resolveLocation(stopId))
+        );
 
+        stopLocations.forEach((stopLocation, index) => {
           if (stopLocation) {
             const intermediatePoint: RoutePoint = {
               id: `intermediate-${index}`,
@@ -281,17 +302,25 @@ export const useOrderLocations = ({
               longitude: stopLocation.longitude,
               name: stopLocation.name,
             };
-
-            // Вставляем промежуточные точки перед конечной
             newRoutePoints.splice(newRoutePoints.length - 1, 0, intermediatePoint);
           }
         });
       }
 
-      setRoutePoints(newRoutePoints);
-      isInitializedRef.current = true; // Помечаем как инициализированное
-    }
-  }, [mode, mapLocations, startLocationId, endLocationId, additionalStops, setRoutePoints]);
+      if (!cancelled) {
+        setRoutePoints(newRoutePoints);
+        isInitializedRef.current = true;
+      }
+    };
+
+    initialize().catch(() => {
+      // тихо игнорируем — компонент мог анмаунтиться
+    });
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, startLocationId, endLocationId, additionalStops, fetchLocationById]);
+  // mapLocations намеренно не в зависимостях: используем актуальное значение через замыкание.
+  // Инициализация срабатывает как только появляются ID локаций, не ожидая mapLocations.
 
   // Сбрасываем флаг инициализации только при смене режима
   useEffect(() => {

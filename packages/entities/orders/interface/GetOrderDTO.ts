@@ -1,5 +1,6 @@
 import type { OrderType, OrderStatus, OrderSubStatus } from '@entities/orders/enums';
 import type { GetRideDTO } from '@entities/rides/interface/GetRideDTO';
+import type { GetLocationDTO } from '@entities/locations/interface';
 import type { GetOrderServiceDTO } from './GetOrderServiceDTO';
 import type { GetPassengerDTO } from './GetPassengerDTO';
 
@@ -74,14 +75,24 @@ export interface GetOrderDTO {
   routeId?: string | null;
 
   /**
-   * Начальная точка
+   * Начальная точка (ID)
    */
   startLocationId: string;
 
   /**
-   * Конечная точка
+   * Начальная точка (полный объект, возвращается сервером)
+   */
+  startLocation?: GetLocationDTO | null;
+
+  /**
+   * Конечная точка (ID)
    */
   endLocationId: string;
+
+  /**
+   * Конечная точка (полный объект, возвращается сервером)
+   */
+  endLocation?: GetLocationDTO | null;
 
   /**
    * Промежуточные точки

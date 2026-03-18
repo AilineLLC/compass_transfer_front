@@ -52,8 +52,8 @@ export function ActiveOrderCard({ order, onStatusUpdate }: ActiveOrderCardProps)
   const activeRide = order.rides && order.rides.length > 0 ? order.rides[0] : null;
 
   // Загружаем данные локаций
-  const startLocation = useLocation(order.startLocationId);
-  const endLocation = useLocation(order.endLocationId);
+  const startLocation = useLocation(order.startLocation?.id || order.startLocationId);
+  const endLocation = useLocation(order.endLocation?.id || order.endLocationId);
 
   // Для дополнительных остановок используем отдельные хуки
   const additionalStop1 = useLocation(order.additionalStops[0] || null);

@@ -574,13 +574,11 @@ export function ScheduledOrderPage({
         methods.setValue('flyReis', existingOrder.flyReis || '');
         methods.setValue('notes', existingOrder.notes || '');
 
-        // Локации маршрута
-        if (existingOrder.startLocationId) {
-          methods.setValue('startLocationId', existingOrder.startLocationId);
-        }
-        if (existingOrder.endLocationId) {
-          methods.setValue('endLocationId', existingOrder.endLocationId);
-        }
+        // Локации маршрута (сервер может вернуть как объект startLocation, так и ID startLocationId)
+        const startLocId = existingOrder.startLocation?.id || existingOrder.startLocationId;
+        const endLocId = existingOrder.endLocation?.id || existingOrder.endLocationId;
+        if (startLocId) methods.setValue('startLocationId', startLocId);
+        if (endLocId) methods.setValue('endLocationId', endLocId);
         if (existingOrder.additionalStops && existingOrder.additionalStops.length > 0) {
           methods.setValue('additionalStops', existingOrder.additionalStops);
         }
@@ -1104,16 +1102,25 @@ export function ScheduledOrderPage({
                       onRouteDistanceChange={setRouteDistance}
                       onRouteLoadingChange={setRouteLoading}
                       // Данные локаций заказа для MapTab
-                      startLocationId={methods.getValues('startLocationId') as string}
-                      endLocationId={methods.getValues('endLocationId') as string}
-                      additionalStops={(() => {
-                        const stops =
-                          isEditMode && existingOrder?.additionalStops
-                            ? existingOrder.additionalStops
-                            : (methods.getValues('additionalStops') as string[]) || [];
-
-                        return stops;
-                      })()}
+                      startLocationId={
+                        (isEditMode
+                          ? existingOrder?.startLocation?.id || existingOrder?.startLocationId
+                          : undefined) ||
+                        (methods.getValues('startLocationId') as string) ||
+                        ''
+                      }
+                      endLocationId={
+                        (isEditMode
+                          ? existingOrder?.endLocation?.id || existingOrder?.endLocationId
+                          : undefined) ||
+                        (methods.getValues('endLocationId') as string) ||
+                        ''
+                      }
+                      additionalStops={
+                        isEditMode && existingOrder?.additionalStops
+                          ? existingOrder.additionalStops
+                          : (methods.getValues('additionalStops') as string[]) || []
+                      }
                       rides={existingOrder?.rides} // Передаем rides для режима редактирования
                       orderStatus={existingOrder?.status} // Передаем статус для проверки удаления ride
                       methods={methods}

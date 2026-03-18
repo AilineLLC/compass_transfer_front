@@ -22,8 +22,8 @@ interface InstantOrderViewContentProps {
 
 export function InstantOrderViewContent({ order }: InstantOrderViewContentProps) {
   // Запросы для получения данных
-  const { location: startLocation, isLoading: startLocationLoading } = useLocation(order.startLocationId || '');
-  const { location: endLocation, isLoading: endLocationLoading } = useLocation(order.endLocationId || '');
+  const { location: startLocation, isLoading: startLocationLoading } = useLocation(order.startLocation?.id || order.startLocationId || '');
+  const { location: endLocation, isLoading: endLocationLoading } = useLocation(order.endLocation?.id || order.endLocationId || '');
   const { user: creator, isLoading: creatorLoading } = useUserById(order.creatorId || '');
   const { tariff, isLoading: tariffLoading } = useTariffById(order.tariffId || '');
   const { services, isLoading: servicesLoading } = useServices();

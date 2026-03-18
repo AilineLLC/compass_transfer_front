@@ -3,7 +3,6 @@
 import { ArrowLeft, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useCallback, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { RoutePoint } from '@shared/components/map/types';
 import { useOrderData } from '@shared/hooks/useOrderData';
@@ -31,19 +30,6 @@ interface InstantOrderPageProps {
 
 export function InstantOrderPage({ mode, id, userRole = 'operator', initialTariffId }: InstantOrderPageProps) {
   const router = useRouter();
-
-  // React Hook Form для совместимости с MapTab
-  const methods = useForm<{
-    startLocationId: string;
-    endLocationId: string;
-    additionalStops: string[];
-  }>({
-    defaultValues: {
-      startLocationId: '',
-      endLocationId: '',
-      additionalStops: [],
-    }
-  });
 
   // Загрузка данных заказа для режима редактирования
   const {
@@ -90,9 +76,9 @@ export function InstantOrderPage({ mode, id, userRole = 'operator', initialTarif
   const [customPrice, setCustomPrice] = useState<string>('');
 
   // Состояние для данных маршрута
-  const [_startLocationId, setStartLocationId] = useState<string | null>(null);
-  const [_endLocationId, setEndLocationId] = useState<string | null>(null);
-  const [_additionalStops, setAdditionalStops] = useState<string[]>([]);
+  const [startLocId, setStartLocId] = useState<string>('');
+  const [endLocId, setEndLocId] = useState<string>('');
+  const [additionalStopsIds, setAdditionalStopsIds] = useState<string[]>([]);
   const [routeDistance, setRouteDistance] = useState<number>(0);
   const [routeLoading, setRouteLoading] = useState<boolean>(false);
 
@@ -140,7 +126,20 @@ export function InstantOrderPage({ mode, id, userRole = 'operator', initialTarif
     error,
   } = useOrderData();
 
-  // Инициализация состояний из данных заказа при загрузке
+  // Инициализация локаций маршрута из данных заказа (не зависит от тарифов)
+  useEffect(() => {
+    if (mode === 'edit' && orderData) {
+      const startId = orderData.startLocation?.id || orderData.startLocationId;
+      const endId = orderData.endLocation?.id || orderData.endLocationId;
+      if (startId) setStartLocId(startId);
+      if (endId) setEndLocId(endId);
+      if (orderData.additionalStops) {
+        setAdditionalStopsIds(orderData.additionalStops);
+      }
+    }
+  }, [mode, orderData]);
+
+  // Инициализация тарифа и цены из данных заказа при загрузке
   useEffect(() => {
     if (mode === 'edit' && orderData && tariffs.length > 0) {
       // 1. Устанавливаем выбранный тариф
@@ -157,34 +156,10 @@ export function InstantOrderPage({ mode, id, userRole = 'operator', initialTarif
       // 3. Устанавливаем цену
       if (orderData.initialPrice) {
         setCurrentPrice(orderData.initialPrice);
-        // Устанавливаем кастомную цену из initialPrice (уже в сомах)
         setCustomPrice(orderData.initialPrice.toString());
       }
-
-      // 4. Устанавливаем локации маршрута
-      if (orderData.startLocationId) {
-        setStartLocationId(orderData.startLocationId);
-        methods.setValue('startLocationId', orderData.startLocationId); // ДЛЯ MapTab!
-      }
-
-      if (orderData.endLocationId) {
-        setEndLocationId(orderData.endLocationId);
-        methods.setValue('endLocationId', orderData.endLocationId); // ДЛЯ MapTab!
-      }
-
-      if (orderData.additionalStops) {
-        setAdditionalStops(orderData.additionalStops);
-        methods.setValue('additionalStops', orderData.additionalStops); // ДЛЯ MapTab!
-      }
-
-      // 5. Принудительно обновляем routePoints для инициализации в MapTab
-      // Это заставит useOrderLocations перезапустить инициализацию
-      if (routePoints.length === 0) {
-        // Сбрасываем routePoints, чтобы useOrderLocations заново их инициализировал
-        setRoutePoints([]);
-      }
     }
-  }, [mode, orderData, tariffs, routePoints.length, methods]);
+  }, [mode, orderData, tariffs]);
 
   // Автоматическое управление кастомной ценой в зависимости от разности с рассчитанной
   useEffect(() => {
@@ -224,9 +199,9 @@ export function InstantOrderPage({ mode, id, userRole = 'operator', initialTarif
     const endPoint = newRoutePoints.find(p => p.type === 'end');
     const intermediatePoints = newRoutePoints.filter(p => p.type === 'intermediate');
 
-    setStartLocationId(startPoint?.location?.id || null);
-    setEndLocationId(endPoint?.location?.id || null);
-    setAdditionalStops(intermediatePoints.map(p => p.location?.id).filter(Boolean) as string[]);
+    setStartLocId(startPoint?.location?.id || '');
+    setEndLocId(endPoint?.location?.id || '');
+    setAdditionalStopsIds(intermediatePoints.map(p => p.location?.id).filter(Boolean) as string[]);
   }, []);
 
   // Функции валидации табов
@@ -514,9 +489,9 @@ export function InstantOrderPage({ mode, id, userRole = 'operator', initialTarif
                         <MapTab
                           mode={mode}
                           onRouteChange={handleRouteChange}
-                          startLocationId={methods.getValues('startLocationId')}
-                          endLocationId={methods.getValues('endLocationId')}
-                          additionalStops={methods.getValues('additionalStops')}
+                          startLocationId={startLocId}
+                          endLocationId={endLocId}
+                          additionalStops={additionalStopsIds}
                           // Состояние маршрута для сохранения между табами
                           routePoints={routePoints}
                           setRoutePoints={setRoutePoints}

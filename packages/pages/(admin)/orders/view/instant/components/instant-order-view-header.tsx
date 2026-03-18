@@ -13,8 +13,8 @@ interface InstantOrderViewHeaderProps {
 
 export function InstantOrderViewHeader({ order }: InstantOrderViewHeaderProps) {
   // Запросы для получения локаций
-  const { location: startLocation, isLoading: startLocationLoading } = useLocation(order.startLocationId || '');
-  const { location: endLocation, isLoading: endLocationLoading } = useLocation(order.endLocationId || '');
+  const { location: startLocation, isLoading: startLocationLoading } = useLocation(order.startLocation?.id || order.startLocationId || '');
+  const { location: endLocation, isLoading: endLocationLoading } = useLocation(order.endLocation?.id || order.endLocationId || '');
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('ru-RU', {
