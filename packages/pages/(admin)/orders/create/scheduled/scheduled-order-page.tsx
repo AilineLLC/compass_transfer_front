@@ -2,7 +2,7 @@
 
 import { ArrowLeft, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { useOrderData } from '@shared/hooks/useOrderData';
 import { logger } from '@shared/lib/logger';
@@ -623,35 +623,42 @@ export function ScheduledOrderPage({
       // Отмечаем, что данные загружены
       setIsOrderDataLoaded(true);
 
-      // 5. Загружаем и устанавливаем водителя (если есть)
-      if (existingOrder.rides && existingOrder.rides.length > 0) {
-        const firstRide = existingOrder.rides[0];
-
-        if (firstRide.driverId) {
-          // Загружаем данные водителя по ID
-          const driverData = getDriverById(firstRide.driverId);
-
-          if (driverData) {
-            setSelectedDriver(driverData);
-            setOriginalDriver(driverData);
-          } else {
-            // Данных водителя нет в кэше — загружаем с сервера
-            usersApi.getDriver(firstRide.driverId)
-              .then(fetchedDriver => {
-                updateDriverCache(firstRide.driverId, fetchedDriver);
-                setSelectedDriver(fetchedDriver);
-                setOriginalDriver(fetchedDriver);
-              })
-              .catch(err => {
-                logger.error('Ошибка загрузки водителя:', err);
-              });
-          }
-        }
-      }
-
-      // TODO: 6. Загрузить и установить локации по ID
+      // TODO: 5. Загрузить и установить локации по ID
     }
   }, [existingOrder, isOrderDataLoaded, tariffs, services, methods, getDriverById]);
+
+  // Загружаем водителя сразу как только доступен existingOrder — независимо от тарифов/услуг
+  const isDriverLoadedRef = useRef(false);
+  useEffect(() => {
+    if (!isEditMode || !existingOrder) return;
+    if (isDriverLoadedRef.current) return;
+
+    const rides = existingOrder.rides;
+    if (!rides || rides.length === 0) return;
+
+    const driverId = rides[0].driverId;
+    if (!driverId) return;
+
+    isDriverLoadedRef.current = true;
+
+    const cached = getDriverById(driverId);
+    if (cached) {
+      setSelectedDriver(cached);
+      setOriginalDriver(cached);
+      return;
+    }
+
+    usersApi.getDriver(driverId)
+      .then(fetchedDriver => {
+        updateDriverCache(driverId, fetchedDriver);
+        setSelectedDriver(fetchedDriver);
+        setOriginalDriver(fetchedDriver);
+      })
+      .catch(err => {
+        logger.error('Ошибка загрузки водителя:', err);
+        isDriverLoadedRef.current = false; // разрешаем повтор при ошибке
+      });
+  }, [isEditMode, existingOrder, getDriverById, updateDriverCache]);
 
   // Автоматическое управление кастомной ценой в зависимости от разности с рассчитанной
   useEffect(() => {

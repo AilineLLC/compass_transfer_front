@@ -27,7 +27,6 @@ export function RoutePointsList({
   onAddIntermediatePoint
 }: RoutePointsListProps) {
 
-  console.log(routePoints)
   return (
     <Card>
       <CardHeader>
