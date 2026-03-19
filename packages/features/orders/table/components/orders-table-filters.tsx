@@ -1,13 +1,29 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Filter, Columns, ChevronDown, X, Save, Download, Check, RotateCw } from 'lucide-react';
+import {
+  Search,
+  Filter,
+  Columns,
+  ChevronDown,
+  X,
+  Save,
+  Download,
+  Check,
+  RotateCw,
+} from 'lucide-react';
 import { Badge } from '@shared/ui/data-display/badge';
 import { Button } from '@shared/ui/forms/button';
 import { Checkbox } from '@shared/ui/forms/checkbox';
 import { Input } from '@shared/ui/forms/input';
 import { Label } from '@shared/ui/forms/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/forms/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@shared/ui/forms/select';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,7 +31,10 @@ import {
   DropdownMenuTrigger,
 } from '@shared/ui/navigation/dropdown-menu';
 import { type OrderStatus, OrderStatusValues } from '@entities/orders/enums/OrderStatus.enum';
-import { type OrderSubStatus, OrderSubStatusValues } from '@entities/orders/enums/OrderSubStatus.enum';
+import {
+  type OrderSubStatus,
+  OrderSubStatusValues,
+} from '@entities/orders/enums/OrderSubStatus.enum';
 import { type OrderType, OrderTypeValues } from '@entities/orders/enums/OrderType.enum';
 import { orderTypeLabels, orderStatusLabels, orderSubStatusLabels } from '@entities/orders';
 import { OrdersExportModal } from './orders-export-modal';
@@ -59,8 +78,6 @@ interface OrdersTableFiltersProps {
   hasSavedFilters?: boolean;
   justSavedFilters?: boolean;
 }
-
-
 
 export function OrdersTableFilters({
   searchTerm,
@@ -122,10 +139,8 @@ export function OrdersTableFilters({
     setFlyReisInput('');
   };
 
-  const activeFiltersCount = [
-    airFlightInput,
-    flyReisInput,
-  ].filter(Boolean).length +
+  const activeFiltersCount =
+    [airFlightInput, flyReisInput].filter(Boolean).length +
     typeFilter.length +
     statusFilter.length +
     subStatusFilter.length;
@@ -140,7 +155,7 @@ export function OrdersTableFilters({
             <Input
               placeholder='Точный номер заказа...'
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
               className='pl-10 w-full md:w-80'
             />
           </div>
@@ -160,21 +175,22 @@ export function OrdersTableFilters({
             </DropdownMenuTrigger>
             <DropdownMenuContent align='start' className='w-56'>
               <div className='p-2 space-y-2'>
-                {OrderTypeValues.map((type) => {
+                {OrderTypeValues.map(type => {
                   const isChecked = typeFilter.includes(type);
                   return (
                     <div key={type} className='flex items-center space-x-2'>
                       <Checkbox
                         id={`main-type-${type}`}
                         checked={isChecked}
-                        onCheckedChange={(checked) => handleTypeChange(type, !!checked)}
+                        onCheckedChange={checked => handleTypeChange(type, !!checked)}
                       />
-                      <Label htmlFor={`main-type-${type}`} className='text-sm cursor-pointer flex-1'>
+                      <Label
+                        htmlFor={`main-type-${type}`}
+                        className='text-sm cursor-pointer flex-1'
+                      >
                         {orderTypeLabels[type]}
                       </Label>
-                      {isChecked && (
-                        <Check className='h-4 w-4 text-green-600' />
-                      )}
+                      {isChecked && <Check className='h-4 w-4 text-green-600' />}
                     </div>
                   );
                 })}
@@ -182,7 +198,10 @@ export function OrdersTableFilters({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Select value={pageSize.toString()} onValueChange={(value) => handlePageSizeChange(Number(value))}>
+          <Select
+            value={pageSize.toString()}
+            onValueChange={value => handlePageSizeChange(Number(value))}
+          >
             <SelectTrigger className='w-full md:w-32'>
               <SelectValue placeholder='Размер' />
             </SelectTrigger>
@@ -247,7 +266,7 @@ export function OrdersTableFilters({
       {typeFilter.length > 0 && (
         <div className='flex flex-wrap gap-2'>
           <span className='text-sm text-muted-foreground'>Типы заказов:</span>
-          {typeFilter.map((type) => (
+          {typeFilter.map(type => (
             <Badge
               key={type}
               variant='secondary'
@@ -269,27 +288,38 @@ export function OrdersTableFilters({
             <div className='flex items-center gap-2'>
               {onSaveFilters && (
                 <div className='flex items-center gap-3'>
-                  <span className={`text-sm font-medium ${justSavedFilters ? 'text-green-600' :
-                    hasSavedFilters ? 'text-blue-600' :
-                      'text-gray-500'
-                    }`}>
-                    {justSavedFilters ? 'Сохранено!' : hasSavedFilters ? 'Запоминание Фильтров включено' : 'Запоминание фильтров отключено'}
+                  <span
+                    className={`text-sm font-medium ${
+                      justSavedFilters
+                        ? 'text-green-600'
+                        : hasSavedFilters
+                          ? 'text-blue-600'
+                          : 'text-gray-500'
+                    }`}
+                  >
+                    {justSavedFilters
+                      ? 'Сохранено!'
+                      : hasSavedFilters
+                        ? 'Запоминание Фильтров включено'
+                        : 'Запоминание фильтров отключено'}
                   </span>
 
                   <Button
                     variant='ghost'
                     size='sm'
                     onClick={hasSavedFilters ? onClearSavedFilters : onSaveFilters}
-                    title={hasSavedFilters ? 'Отключить автоматические фильтры' : 'Включить автоматическое применение фильтров'}
-                    className={`h-8 w-8 p-0 transition-all duration-200 ${hasSavedFilters ? 'text-red-500 hover:text-red-600 hover:bg-red-50' :
-                      'text-blue-500 hover:text-blue-600 hover:bg-blue-50'
-                      }`}
+                    title={
+                      hasSavedFilters
+                        ? 'Отключить автоматические фильтры'
+                        : 'Включить автоматическое применение фильтров'
+                    }
+                    className={`h-8 w-8 p-0 transition-all duration-200 ${
+                      hasSavedFilters
+                        ? 'text-red-500 hover:text-red-600 hover:bg-red-50'
+                        : 'text-blue-500 hover:text-blue-600 hover:bg-blue-50'
+                    }`}
                   >
-                    {hasSavedFilters ? (
-                      <X className='h-4 w-4' />
-                    ) : (
-                      <Save className='h-4 w-4' />
-                    )}
+                    {hasSavedFilters ? <X className='h-4 w-4' /> : <Save className='h-4 w-4' />}
                   </Button>
                 </div>
               )}
@@ -339,14 +369,13 @@ export function OrdersTableFilters({
             </div>
           </div>
           <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-
             <div>
               <Label htmlFor='airFlight'>Номер рейса (прилет)</Label>
               <Input
                 id='airFlight'
                 placeholder='Введите номер рейса прилета...'
                 value={airFlightInput}
-                onChange={(e) => setAirFlightInput(e.target.value)}
+                onChange={e => setAirFlightInput(e.target.value)}
               />
             </div>
 
@@ -356,7 +385,7 @@ export function OrdersTableFilters({
                 id='flyReis'
                 placeholder='Введите номер рейса вылета (только A-Z, 0-9, пробел, дефис)...'
                 value={flyReisInput}
-                onChange={(e) => setFlyReisInput(e.target.value)}
+                onChange={e => setFlyReisInput(e.target.value)}
               />
             </div>
           </div>
@@ -367,14 +396,14 @@ export function OrdersTableFilters({
             <div>
               <Label className='text-sm font-medium'>Статус заказа</Label>
               <div className='mt-2 space-y-2 max-h-40 overflow-y-auto'>
-                {OrderStatusValues.map((status) => {
+                {OrderStatusValues.map(status => {
                   const isChecked = statusFilter.includes(status);
                   return (
                     <div key={status} className='flex items-center space-x-2'>
                       <Checkbox
                         id={`status-${status}`}
                         checked={isChecked}
-                        onCheckedChange={(checked) => handleStatusChange(status, !!checked)}
+                        onCheckedChange={checked => handleStatusChange(status, !!checked)}
                       />
                       <Label htmlFor={`status-${status}`} className='text-sm flex-1 cursor-pointer'>
                         {orderStatusLabels[status]}
@@ -389,21 +418,22 @@ export function OrdersTableFilters({
             <div>
               <Label className='text-sm font-medium'>Подстатус заказа</Label>
               <div className='mt-2 space-y-2 max-h-40 overflow-y-auto'>
-                {OrderSubStatusValues.map((subStatus) => {
+                {OrderSubStatusValues.map(subStatus => {
                   const isChecked = subStatusFilter.includes(subStatus);
                   return (
                     <div key={subStatus} className='flex items-center space-x-2'>
                       <Checkbox
                         id={`subStatus-${subStatus}`}
                         checked={isChecked}
-                        onCheckedChange={(checked) => handleSubStatusChange(subStatus, !!checked)}
+                        onCheckedChange={checked => handleSubStatusChange(subStatus, !!checked)}
                       />
-                      <Label htmlFor={`subStatus-${subStatus}`} className='text-sm flex-1 cursor-pointer'>
+                      <Label
+                        htmlFor={`subStatus-${subStatus}`}
+                        className='text-sm flex-1 cursor-pointer'
+                      >
                         {orderSubStatusLabels[subStatus]}
                       </Label>
-                      {isChecked && (
-                        <Check className='h-4 w-4 text-green-600' />
-                      )}
+                      {isChecked && <Check className='h-4 w-4 text-green-600' />}
                     </div>
                   );
                 })}

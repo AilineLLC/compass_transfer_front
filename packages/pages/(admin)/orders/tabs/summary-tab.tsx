@@ -64,23 +64,25 @@ interface SummaryTabProps {
   onIncludeIntermediateChange?: (include: boolean) => void;
 
   // Информация о водителе (только для режима редактирования)
-  _selectedDriver?: GetDriverDTO & {
-    firstName?: string;
-    lastName?: string;
-    middleName?: string;
-    phoneNumber?: string;
-    avatarUrl?: string;
-    car?: {
-      brand: string;
-      model: string;
-      color: string;
-      plateNumber: string;
-    };
-    tariff?: {
-      name: string;
-    };
-    rating?: number | null;
-  } | null;
+  _selectedDriver?:
+    | (GetDriverDTO & {
+        firstName?: string;
+        lastName?: string;
+        middleName?: string;
+        phoneNumber?: string;
+        avatarUrl?: string;
+        car?: {
+          brand: string;
+          model: string;
+          color: string;
+          plateNumber: string;
+        };
+        tariff?: {
+          name: string;
+        };
+        rating?: number | null;
+      })
+    | null;
   _onTabChange?: (tab: string) => void;
   _getDriverById?: (id: string) => GetDriverDTO | null;
   _updateDriverCache?: (id: string, data: GetDriverDTO) => void;
@@ -161,7 +163,8 @@ export function SummaryTab({
 
   // Используем переданное состояние или локальное
   const currentIncludeIntermediate = includeIntermediateInPrice ?? localIncludeIntermediate;
-  const handleIncludeIntermediateChange = onIncludeIntermediateChange ?? setLocalIncludeIntermediate;
+  const handleIncludeIntermediateChange =
+    onIncludeIntermediateChange ?? setLocalIncludeIntermediate;
 
   // Функция для открытия sheet с информацией о водителе
   const handleDriverDetailsClick = () => {
@@ -193,7 +196,7 @@ export function SummaryTab({
   const formatPrice = (price: number): string => {
     return new Intl.NumberFormat('ru-RU', {
       style: 'currency',
-      currency: 'RUB',
+      currency: 'KGS',
       minimumFractionDigits: 0,
     }).format(price);
   };
@@ -220,28 +223,26 @@ export function SummaryTab({
   };
 
   return (
-    <div className="p-4">
+    <div className='p-4'>
       {/* Предупреждение о невыбранном маршруте */}
       {showRouteWarningModal && (
-        <Card className="mb-4 bg-yellow-50 border-yellow-100">
-          <CardContent className="p-4 flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-yellow-500" />
-            <div className="flex-1">
-              <p className="text-yellow-800">
-                Расстояние маршрута не определено. Пожалуйста, выберите корректные начальную и конечную точки в разделе &quot;Маршрут&quot;.
+        <Card className='mb-4 bg-yellow-50 border-yellow-100'>
+          <CardContent className='p-4 flex items-center gap-2'>
+            <AlertTriangle className='h-5 w-5 text-yellow-500' />
+            <div className='flex-1'>
+              <p className='text-yellow-800'>
+                Расстояние маршрута не определено. Пожалуйста, выберите корректные начальную и
+                конечную точки в разделе &quot;Маршрут&quot;.
               </p>
             </div>
-            <Button
-              variant="outline"
-              onClick={() => setShowRouteWarningModal(false)}
-            >
+            <Button variant='outline' onClick={() => setShowRouteWarningModal(false)}>
               Закрыть
             </Button>
           </CardContent>
         </Card>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
         {/* Левая колонка */}
         <div>
           <RouteInfoCard
@@ -254,66 +255,118 @@ export function SummaryTab({
           />
 
           <PriceInfoCard
-            basePrice={formatPrice(selectedTariff?.basePrice ? Math.round(
-              userRole === 'partner' && sale ? Number(selectedTariff?.basePrice) * (1 - sale) : Number(selectedTariff?.basePrice)
-            ) : 0)}
-            distancePrice={formatPrice(selectedTariff?.perKmPrice ? Math.round(selectedTariff ?
-              (routeDistance || 0) / 1000 * (selectedTariff.perKmPrice * (userRole === 'partner' && sale ? 1 - sale : 1)) :
-              0) : 0)}
+            basePrice={formatPrice(
+              selectedTariff?.basePrice
+                ? Math.round(
+                    userRole === 'partner' && sale
+                      ? Number(selectedTariff?.basePrice) * (1 - sale)
+                      : Number(selectedTariff?.basePrice),
+                  )
+                : 0,
+            )}
+            distancePrice={formatPrice(
+              selectedTariff?.perKmPrice
+                ? Math.round(
+                    selectedTariff
+                      ? ((routeDistance || 0) / 1000) *
+                          (selectedTariff.perKmPrice *
+                            (userRole === 'partner' && sale ? 1 - sale : 1))
+                      : 0,
+                  )
+                : 0,
+            )}
             totalPrice={formatPrice(Math.round(currentPrice))}
             formattedPrice={_customPrice || ''}
             userRole={userRole}
             sale={sale}
             isCustomPrice={useCustomPrice || false}
-            handleCustomPriceChange={_handleCustomPriceChange || ((value) => setCustomPrice && setCustomPrice(value))}
+            handleCustomPriceChange={
+              _handleCustomPriceChange || (value => setCustomPrice && setCustomPrice(value))
+            }
             toggleCustomPrice={_toggleCustomPrice || handleCustomPriceToggle}
             showCustomPrice /* Показываем для всех режимов */
             calculatedPrice={currentPrice} /* Передаем рассчитанную цену */
-            customPriceValue={_customPrice ? parseFloat(_customPrice.replace(/[^0-9.-]+/g, '')) : 0} /* Передаем значение кастомной цены */
-            totalPriceValue={useCustomPrice && _customPrice ? parseFloat(_customPrice.replace(/[^0-9.-]+/g, '')) : currentPrice} /* Передаем числовое значение итоговой цены */
+            customPriceValue={
+              _customPrice ? parseFloat(_customPrice.replace(/[^0-9.-]+/g, '')) : 0
+            } /* Передаем значение кастомной цены */
+            totalPriceValue={
+              useCustomPrice && _customPrice
+                ? parseFloat(_customPrice.replace(/[^0-9.-]+/g, ''))
+                : currentPrice
+            } /* Передаем числовое значение итоговой цены */
             selectedServices={selectedServices.map(service => {
               // Ищем услугу в справочнике services по serviceId (для GetOrderServiceDTO) или id (для UISelectedService)
               const serviceId = 'serviceId' in service ? service.serviceId : (service as any).id;
-              const serviceInfo = _services && Array.isArray(_services) ? _services.find(s => s.id === serviceId) : null;
-              const originalPrice = 'price' in service ? Number((service as any).price || 0) : Number(serviceInfo?.price || 0);
+              const serviceInfo =
+                _services && Array.isArray(_services)
+                  ? _services.find(s => s.id === serviceId)
+                  : null;
+              const originalPrice =
+                'price' in service
+                  ? Number((service as any).price || 0)
+                  : Number(serviceInfo?.price || 0);
 
               return {
                 serviceId: serviceId,
                 quantity: service.quantity || 1,
-                name: serviceInfo?.name || ('name' in service ? (service as any).name : '') || `Услуга ${serviceId}`,
-                price: userRole === 'partner' && sale ? Math.round(originalPrice * (1 - sale)) : originalPrice
+                name:
+                  serviceInfo?.name ||
+                  ('name' in service ? (service as any).name : '') ||
+                  `Услуга ${serviceId}`,
+                price:
+                  userRole === 'partner' && sale
+                    ? Math.round(originalPrice * (1 - sale))
+                    : originalPrice,
               };
             })}
             servicesPrice={selectedServices.reduce((total, service) => {
               const quantity = service.quantity || 1;
               // Берем цену из справочника услуг (services) или устанавливаем в 0
               const serviceId = 'serviceId' in service ? service.serviceId : (service as any).id;
-              const serviceInfo = _services && Array.isArray(_services) ? _services.find(s => s.id === serviceId) : null;
-              const originalPrice = 'price' in service ? Number((service as any).price || 0) : Number(serviceInfo?.price || 0);
-              const price = userRole === 'partner' && sale ? Math.round(originalPrice * (1 - sale)) : originalPrice
+              const serviceInfo =
+                _services && Array.isArray(_services)
+                  ? _services.find(s => s.id === serviceId)
+                  : null;
+              const originalPrice =
+                'price' in service
+                  ? Number((service as any).price || 0)
+                  : Number(serviceInfo?.price || 0);
+              const price =
+                userRole === 'partner' && sale
+                  ? Math.round(originalPrice * (1 - sale))
+                  : originalPrice;
 
-              return total + (price * quantity);
+              return total + price * quantity;
             }, 0)}
             fullPriceValue={Math.round(
               (selectedTariff?.basePrice || 0) +
-              (selectedTariff?.perKmPrice ? (routeDistance || 0) / 1000 * selectedTariff.perKmPrice : 0) +
-              selectedServices.reduce((total, service) => {
-                const serviceId = 'serviceId' in service ? service.serviceId : (service as any).id;
-                const serviceInfo = _services && Array.isArray(_services) ? _services.find(s => s.id === serviceId) : null;
-                const originalPrice = 'price' in service ? Number((service as any).price || 0) : Number(serviceInfo?.price || 0);
-                return total + (originalPrice * (service.quantity || 1));
-              }, 0)
+                (selectedTariff?.perKmPrice
+                  ? ((routeDistance || 0) / 1000) * selectedTariff.perKmPrice
+                  : 0) +
+                selectedServices.reduce((total, service) => {
+                  const serviceId =
+                    'serviceId' in service ? service.serviceId : (service as any).id;
+                  const serviceInfo =
+                    _services && Array.isArray(_services)
+                      ? _services.find(s => s.id === serviceId)
+                      : null;
+                  const originalPrice =
+                    'price' in service
+                      ? Number((service as any).price || 0)
+                      : Number(serviceInfo?.price || 0);
+                  return total + originalPrice * (service.quantity || 1);
+                }, 0),
             )}
           />
 
           {/* Заметки */}
-          <Card className="mb-4">
-            <CardContent className="p-4">
+          <Card className='mb-4'>
+            <CardContent className='p-4'>
               <Textarea
-                placeholder="Заметки к заказу"
+                placeholder='Заметки к заказу'
                 value={notes}
                 onChange={handleNotesChange}
-                className="min-h-[100px]"
+                className='min-h-[100px]'
               />
             </CardContent>
           </Card>
@@ -321,21 +374,25 @@ export function SummaryTab({
 
         {/* Правая колонка */}
         <div>
-          <TariffInfoCard tariff={selectedTariff} userRole={userRole as 'admin' | 'operator' | 'partner' | 'driver'} sale={sale || 0} />
+          <TariffInfoCard
+            tariff={selectedTariff}
+            userRole={userRole as 'admin' | 'operator' | 'partner' | 'driver'}
+            sale={sale || 0}
+          />
 
           {/* Информация о водителе (перенесено выше пассажиров) */}
-          <Card className="mb-4">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <UserCheck className="h-5 w-5" />
+          <Card className='mb-4'>
+            <CardHeader className='flex flex-row items-center justify-between'>
+              <CardTitle className='flex items-center gap-2'>
+                <UserCheck className='h-5 w-5' />
                 Водитель
               </CardTitle>
               {_onTabChange && (
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant='ghost'
+                  size='sm'
                   onClick={() => _onTabChange('driver')}
-                  className="text-sm text-blue-600 hover:text-blue-800"
+                  className='text-sm text-blue-600 hover:text-blue-800'
                 >
                   {_selectedDriver ? 'Изменить' : 'Выбрать'}
                 </Button>
@@ -343,77 +400,88 @@ export function SummaryTab({
             </CardHeader>
             <CardContent>
               {_selectedDriver ? (
-                <div className="space-y-3">
+                <div className='space-y-3'>
                   {/* Основная информация о водителе */}
-                  <div className="flex items-center gap-3">
+                  <div className='flex items-center gap-3'>
                     {_selectedDriver.avatarUrl ? (
-                      <div className="w-12 h-12 rounded-full overflow-hidden">
+                      <div className='w-12 h-12 rounded-full overflow-hidden'>
                         <Image
                           src={_selectedDriver.avatarUrl}
                           alt={_selectedDriver.fullName || 'Водитель'}
                           width={48}
                           height={48}
-                          className="w-full h-full object-cover"
+                          className='w-full h-full object-cover'
                         />
                       </div>
                     ) : (
-                      <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium">
-                        {_selectedDriver.fullName ?
-                          _selectedDriver.fullName.split(' ').map(n => n[0]).join('').slice(0, 2) :
-                          'В'
-                        }
+                      <div className='w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium'>
+                        {_selectedDriver.fullName
+                          ? _selectedDriver.fullName
+                              .split(' ')
+                              .map(n => n[0])
+                              .join('')
+                              .slice(0, 2)
+                          : 'В'}
                       </div>
                     )}
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">
+                    <div className='flex-1'>
+                      <p className='font-medium text-gray-900'>
                         {_selectedDriver.fullName || 'Неизвестный водитель'}
                       </p>
-                      <p className="text-sm text-gray-600">{_selectedDriver.phoneNumber}</p>
+                      <p className='text-sm text-gray-600'>{_selectedDriver.phoneNumber}</p>
 
                       {/* Тариф водителя */}
                       {(_selectedDriver as any).tariff && (
-                        <p className="text-xs text-blue-600 font-medium">{(_selectedDriver as any).tariff.name}</p>
+                        <p className='text-xs text-blue-600 font-medium'>
+                          {(_selectedDriver as any).tariff.name}
+                        </p>
                       )}
                     </div>
 
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-blue-600 hover:text-blue-800"
+                      variant='ghost'
+                      size='sm'
+                      className='text-blue-600 hover:text-blue-800'
                       onClick={handleDriverDetailsClick}
                     >
-                      <Info className="h-4 w-4" />
+                      <Info className='h-4 w-4' />
                     </Button>
                   </div>
 
                   {/* Информация о машине */}
                   {(_selectedDriver as any).car && (
-                    <div className="pt-2 border-t border-gray-100">
-                      <div className="flex justify-between items-start">
+                    <div className='pt-2 border-t border-gray-100'>
+                      <div className='flex justify-between items-start'>
                         <div>
-                          <p className="font-medium text-gray-800">
-                            {(_selectedDriver as any).car.brand} {(_selectedDriver as any).car.model}
+                          <p className='font-medium text-gray-800'>
+                            {(_selectedDriver as any).car.brand}{' '}
+                            {(_selectedDriver as any).car.model}
                           </p>
-                          <p className="text-sm text-gray-600">{(_selectedDriver as any).car.color}</p>
-                          <p className="text-sm font-mono bg-gray-100 px-2 py-1 rounded mt-1 inline-block">
+                          <p className='text-sm text-gray-600'>
+                            {(_selectedDriver as any).car.color}
+                          </p>
+                          <p className='text-sm font-mono bg-gray-100 px-2 py-1 rounded mt-1 inline-block'>
                             {(_selectedDriver as any).car.plateNumber}
                           </p>
                         </div>
 
-                        {(_selectedDriver as any).rating !== undefined && (_selectedDriver as any).rating !== null && (
-                          <div className="flex items-center gap-1 text-sm bg-yellow-50 px-2 py-1 rounded">
-                            <span className="text-yellow-500">★</span>
-                            <span className="font-medium">{(_selectedDriver as any).rating.toFixed(1)}</span>
-                          </div>
-                        )}
+                        {(_selectedDriver as any).rating !== undefined &&
+                          (_selectedDriver as any).rating !== null && (
+                            <div className='flex items-center gap-1 text-sm bg-yellow-50 px-2 py-1 rounded'>
+                              <span className='text-yellow-500'>★</span>
+                              <span className='font-medium'>
+                                {(_selectedDriver as any).rating.toFixed(1)}
+                              </span>
+                            </div>
+                          )}
                       </div>
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="text-center py-4">
-                  <p className="text-gray-500">Водитель не выбран</p>
-                  <p className="text-xs text-gray-400 mt-1">Выберите водителя на вкладке "Карта"</p>
+                <div className='text-center py-4'>
+                  <p className='text-gray-500'>Водитель не выбран</p>
+                  <p className='text-xs text-gray-400 mt-1'>Выберите водителя на вкладке "Карта"</p>
                 </div>
               )}
             </CardContent>

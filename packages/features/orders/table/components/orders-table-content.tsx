@@ -4,7 +4,14 @@ import { Edit, Trash2, ChevronUp, ChevronDown, MoreHorizontal, Eye } from 'lucid
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import React from 'react';
 import { Badge } from '@shared/ui/data-display/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shared/ui/data-display/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@shared/ui/data-display/table';
 import { Button } from '@shared/ui/forms/button';
 import { DeleteConfirmationModal } from '@shared/ui/modals';
 import { orderNumberToString } from '@shared/utils/orderNumberConverter';
@@ -15,7 +22,17 @@ import {
   DropdownMenuTrigger,
 } from '@shared/ui/navigation/dropdown-menu';
 import { useUserRole } from '@shared/contexts';
-import { type GetOrderDTO, type OrderStatus, type OrderSubStatus, type OrderType, orderStatusLabels, orderSubStatusLabels, orderStatusColors, getOrderEditRoute, getOrderViewRoute } from '@entities/orders';
+import {
+  type GetOrderDTO,
+  type OrderStatus,
+  type OrderSubStatus,
+  type OrderType,
+  orderStatusLabels,
+  orderSubStatusLabels,
+  orderStatusColors,
+  getOrderEditRoute,
+  getOrderViewRoute,
+} from '@entities/orders';
 import { Role } from '@entities/users/enums';
 import { useDeleteOrder } from '@features/orders/hooks/use-delete-order';
 import { useUsdRate } from '@shared/hooks';
@@ -26,6 +43,7 @@ interface ColumnVisibility {
   startLocation: boolean;
   endLocation: boolean;
   status: boolean;
+  carLicensePlate: boolean;
   subStatus: boolean;
   initialPrice: boolean;
   finalPrice: boolean;
@@ -61,22 +79,21 @@ function SortableHeader({ field, sortBy, sortOrder, onSort, children }: Sortable
 
   return (
     <TableHead
-      className="cursor-pointer hover:bg-muted/50 select-none"
+      className='cursor-pointer hover:bg-muted/50 select-none'
       onClick={() => onSort(field)}
     >
-      <div className="flex items-center gap-1">
+      <div className='flex items-center gap-1'>
         {children}
-        {isActive && (
-          sortOrder === 'asc' ?
-            <ChevronUp className="h-4 w-4" /> :
-            <ChevronDown className="h-4 w-4" />
-        )}
+        {isActive &&
+          (sortOrder === 'asc' ? (
+            <ChevronUp className='h-4 w-4' />
+          ) : (
+            <ChevronDown className='h-4 w-4' />
+          ))}
       </div>
     </TableHead>
   );
 }
-
-
 
 export function OrdersTableContent({
   paginatedOrders,
@@ -129,39 +146,110 @@ export function OrdersTableContent({
       <Table>
         <TableHeader>
           <TableRow>
-            {columnVisibility.orderNumber && <SortableHeader field='orderNumber' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Номер заказа</SortableHeader>}
+            {columnVisibility.orderNumber && (
+              <SortableHeader
+                field='orderNumber'
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                onSort={handleSort}
+              >
+                Номер заказа
+              </SortableHeader>
+            )}
             {columnVisibility.startLocation && <TableHead>Откуда</TableHead>}
             {columnVisibility.endLocation && <TableHead>Куда</TableHead>}
-            {columnVisibility.status && <SortableHeader field='status' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Статус</SortableHeader>}
-            {columnVisibility.subStatus && <SortableHeader field='subStatus' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Подстатус</SortableHeader>}
-            {columnVisibility.initialPrice && <SortableHeader field='initialPrice' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Начальная цена</SortableHeader>}
-            {columnVisibility.finalPrice && <SortableHeader field='finalPrice' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Итоговая цена</SortableHeader>}
-            {columnVisibility.createdAt && <SortableHeader field='createdAt' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Создан</SortableHeader>}
-            {columnVisibility.scheduledTime && <SortableHeader field='scheduledTime' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Запланирован</SortableHeader>}
+            {columnVisibility.status && (
+              <SortableHeader
+                field='status'
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                onSort={handleSort}
+              >
+                Статус
+              </SortableHeader>
+            )}
+            {columnVisibility.subStatus && (
+              <SortableHeader
+                field='subStatus'
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                onSort={handleSort}
+              >
+                Подстатус
+              </SortableHeader>
+            )}
+            {columnVisibility.carLicensePlate && <TableHead>Номер автомобиля</TableHead>}
+            {/* {columnVisibility.initialPrice && <SortableHeader field='initialPrice' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Начальная цена</SortableHeader>} */}
+            {columnVisibility.finalPrice && (
+              <SortableHeader
+                field='finalPrice'
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                onSort={handleSort}
+              >
+                Итоговая цена
+              </SortableHeader>
+            )}
+            {columnVisibility.createdAt && (
+              <SortableHeader
+                field='createdAt'
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                onSort={handleSort}
+              >
+                Создан
+              </SortableHeader>
+            )}
+            {columnVisibility.scheduledTime && (
+              <SortableHeader
+                field='scheduledTime'
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                onSort={handleSort}
+              >
+                Запланирован
+              </SortableHeader>
+            )}
             {columnVisibility.airFlight && <TableHead>Рейс (прилет)</TableHead>}
             {columnVisibility.flyReis && <TableHead>Рейс (вылет)</TableHead>}
             {columnVisibility.actions && <TableHead className='w-[50px]'>Действия</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
-          {paginatedOrders.map((order) => (
+          {paginatedOrders.map(order => (
             <TableRow key={order.id} className='hover:bg-muted/50'>
               {columnVisibility.orderNumber && (
-                <TableCell className='font-medium'>{orderNumberToString(order.orderNumber)}</TableCell>
+                <TableCell className='font-medium'>
+                  {orderNumberToString(order.orderNumber)}
+                </TableCell>
               )}
               {columnVisibility.startLocation && (
-                <TableCell className='max-w-[160px] truncate' title={order.startLocation?.name || '—'}>
+                <TableCell
+                  className='max-w-[160px] truncate'
+                  title={order.startLocation?.name || '—'}
+                >
                   {order.startLocation?.name || '—'}
                 </TableCell>
               )}
               {columnVisibility.endLocation && (
-                <TableCell className='max-w-[160px] truncate' title={order.endLocation?.name || '—'}>
+                <TableCell
+                  className='max-w-[160px] truncate'
+                  title={order.endLocation?.name || '—'}
+                >
                   {order.endLocation?.name || '—'}
                 </TableCell>
               )}
               {columnVisibility.status && (
                 <TableCell>
-                  <Badge variant={orderStatusColors[order.status as OrderStatus] as "default" | "secondary" | "destructive" | "outline"}>
+                  <Badge
+                    variant={
+                      orderStatusColors[order.status as OrderStatus] as
+                        | 'default'
+                        | 'secondary'
+                        | 'destructive'
+                        | 'outline'
+                    }
+                  >
                     {orderStatusLabels[order.status as OrderStatus] || order.status}
                   </Badge>
                 </TableCell>
@@ -174,31 +262,24 @@ export function OrdersTableContent({
                 </TableCell>
               )}
               {columnVisibility.initialPrice && (
-                <TableCell>{formatPriceWithUsd(order.initialPrice, usdRate)}</TableCell>
+                <TableCell>
+                  {order.rides && order.rides.length > 0 ? order.rides[0].licensePlate : '—'}
+                </TableCell>
               )}
+              {/* {columnVisibility.initialPrice && (
+                <TableCell>{formatPriceWithUsd(order.initialPrice, usdRate)}</TableCell>
+              )} */}
               {columnVisibility.finalPrice && (
                 <TableCell>
                   {order.finalPrice ? formatPriceWithUsd(order.finalPrice, usdRate) : '—'}
                 </TableCell>
               )}
-              {columnVisibility.createdAt && (
-                <TableCell>{formatDate(order.createdAt)}</TableCell>
-              )}
+              {columnVisibility.createdAt && <TableCell>{formatDate(order.createdAt)}</TableCell>}
               {columnVisibility.scheduledTime && (
-                <TableCell>
-                  {order.scheduledTime ? formatDate(order.scheduledTime) : '—'}
-                </TableCell>
+                <TableCell>{order.scheduledTime ? formatDate(order.scheduledTime) : '—'}</TableCell>
               )}
-              {columnVisibility.airFlight && (
-                <TableCell>
-                  {order.airFlight || '—'}
-                </TableCell>
-              )}
-              {columnVisibility.flyReis && (
-                <TableCell>
-                  {order.flyReis || '—'}
-                </TableCell>
-              )}
+              {columnVisibility.airFlight && <TableCell>{order.airFlight || '—'}</TableCell>}
+              {columnVisibility.flyReis && <TableCell>{order.flyReis || '—'}</TableCell>}
               {columnVisibility.actions && (
                 <TableCell>
                   <DropdownMenu>
@@ -212,12 +293,20 @@ export function OrdersTableContent({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align='end'>
-                      <DropdownMenuItem onClick={() => router.push(getOrderViewRoute(order.id, order.type as OrderType))}>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          router.push(getOrderViewRoute(order.id, order.type as OrderType))
+                        }
+                      >
                         <Eye className='mr-2 h-4 w-4' />
                         Просмотр
                       </DropdownMenuItem>
                       {canEditOrders && (
-                        <DropdownMenuItem onClick={() => router.push(getOrderEditRoute(order.id, order.type as OrderType))}>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            router.push(getOrderEditRoute(order.id, order.type as OrderType))
+                          }
+                        >
                           <Edit className='mr-2 h-4 w-4' />
                           Редактировать
                         </DropdownMenuItem>

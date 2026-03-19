@@ -11,6 +11,7 @@ export interface OrderFilters {
   after?: string;
   last?: boolean;
   size?: number;
+  includes?: string;
   orderNumber?: string | number;
   orderNumberOp?: 'GreaterThan' | 'GreaterThanOrEqual' | 'Equal' | 'LessThanOrEqual' | 'LessThan';
   type?: OrderType[];

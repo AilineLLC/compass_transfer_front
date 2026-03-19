@@ -15,6 +15,7 @@ interface ColumnVisibility {
   orderNumber: boolean;
   startLocation: boolean;
   endLocation: boolean;
+  carLicensePlate: boolean;
   status: boolean;
   subStatus: boolean;
   initialPrice: boolean;
@@ -47,7 +48,7 @@ export function useOrdersTable(initialFilters?: {
   const searchParams = useSearchParams();
   const { userRole } = useUserRole();
   const signalR = useSignalR();
-  
+
   // Данные
   const [orders, setOrders] = useState<GetOrderDTO[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<GetOrderDTO[]>([]);
@@ -59,13 +60,13 @@ export function useOrdersTable(initialFilters?: {
   const [searchTerm, setSearchTerm] = useState('');
   const [orderNumberFilter, setOrderNumberFilter] = useState(initialFilters?.orderNumber || '');
   const [typeFilter, setTypeFilter] = useState<OrderType[]>(
-    initialFilters?.type ? [initialFilters.type as OrderType] : []
+    initialFilters?.type ? [initialFilters.type as OrderType] : [],
   );
   const [statusFilter, setStatusFilter] = useState<OrderStatus[]>(
-    initialFilters?.status ? [initialFilters.status as OrderStatus] : []
+    initialFilters?.status ? [initialFilters.status as OrderStatus] : [],
   );
   const [subStatusFilter, setSubStatusFilter] = useState<OrderSubStatus[]>(
-    initialFilters?.subStatus ? [initialFilters.subStatus as OrderSubStatus] : []
+    initialFilters?.subStatus ? [initialFilters.subStatus as OrderSubStatus] : [],
   );
   // Локальные состояния для ввода (без debounce)
   const [airFlightInput, setAirFlightInput] = useState(initialFilters?.airFlight || '');
@@ -101,7 +102,7 @@ export function useOrdersTable(initialFilters?: {
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('orders-column-visibility');
-      
+
       if (saved) {
         try {
           return JSON.parse(saved);
@@ -114,6 +115,7 @@ export function useOrdersTable(initialFilters?: {
     return {
       orderNumber: true,
       startLocation: true,
+      carLicensePlate: true,
       endLocation: true,
       status: true,
       subStatus: true,
@@ -143,8 +145,10 @@ export function useOrdersTable(initialFilters?: {
     if (currentStatus) {
       const statusArray = [currentStatus as OrderStatus];
       // Проверяем, изменился ли фильтр (сравниваем массивы)
-      if (statusArray.length !== statusFilter.length || 
-          !statusArray.every(status => statusFilter.includes(status))) {
+      if (
+        statusArray.length !== statusFilter.length ||
+        !statusArray.every(status => statusFilter.includes(status))
+      ) {
         setStatusFilter(statusArray);
         filtersChanged = true;
       }
@@ -183,13 +187,14 @@ export function useOrdersTable(initialFilters?: {
     loadingRef.current = true;
     setLoading(true);
     setError(null);
-    
+
     try {
       const params: OrderFilters = {
         first: isFirstPage,
         after: currentCursor || undefined,
         size: pageSize,
         sortBy,
+        includes: 'Rides.Car.LicensePlate',
         sortOrder: sortOrder === 'asc' ? 'Asc' : 'Desc',
       };
 
@@ -221,9 +226,10 @@ export function useOrdersTable(initialFilters?: {
       }
 
       // Для партнеров используем API для заказов созданных ими
-      const response = userRole === Role.Partner
-        ? await ordersApi.getMyCreatorOrders(params)
-        : await ordersApi.getOrders(params);
+      const response =
+        userRole === Role.Partner
+          ? await ordersApi.getMyCreatorOrders(params)
+          : await ordersApi.getOrders(params);
 
       setOrders(response.data);
       setFilteredOrders(response.data);
@@ -325,23 +331,29 @@ export function useOrdersTable(initialFilters?: {
   }, [signalR, loadOrders]);
 
   // Конфигурация для сохранения фильтров
-  const defaultFilters: SavedOrderFilters = useMemo(() => ({
-    orderNumberFilter: '',
-    typeFilter: [],
-    statusFilter: [],
-    subStatusFilter: [],
-    airFlightFilter: '',
-    flyReisFilter: '',
-  }), []);
+  const defaultFilters: SavedOrderFilters = useMemo(
+    () => ({
+      orderNumberFilter: '',
+      typeFilter: [],
+      statusFilter: [],
+      subStatusFilter: [],
+      airFlightFilter: '',
+      flyReisFilter: '',
+    }),
+    [],
+  );
 
-  const currentFilters: SavedOrderFilters = useMemo(() => ({
-    orderNumberFilter,
-    typeFilter,
-    statusFilter,
-    subStatusFilter,
-    airFlightFilter,
-    flyReisFilter,
-  }), [orderNumberFilter, typeFilter, statusFilter, subStatusFilter, airFlightFilter, flyReisFilter]);
+  const currentFilters: SavedOrderFilters = useMemo(
+    () => ({
+      orderNumberFilter,
+      typeFilter,
+      statusFilter,
+      subStatusFilter,
+      airFlightFilter,
+      flyReisFilter,
+    }),
+    [orderNumberFilter, typeFilter, statusFilter, subStatusFilter, airFlightFilter, flyReisFilter],
+  );
 
   // Функция загрузки сохраненных фильтров
   const onFiltersLoad = useCallback((filters: SavedOrderFilters) => {

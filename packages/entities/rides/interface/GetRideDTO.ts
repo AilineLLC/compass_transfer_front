@@ -10,6 +10,7 @@ export interface GetRideDTO {
   orderId?: string | null; // Ссылка на связанный заказ (если есть)
   driverId: string; // Водитель
   carId: string; // Автомобиль
+  licensePlate: string; // Номер автомобиля
   status: RideStatus;
   driverArrivedAt?: string | null; // Фактическое время прибытия водителя к клиенту
   startedAt?: string | null; // Фактическое время начала поездки
