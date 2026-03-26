@@ -47,7 +47,7 @@ interface ColumnVisibility {
   subStatus: boolean;
   initialPrice: boolean;
   finalPrice: boolean;
-  createdAt: boolean;
+  timeUntilOrder: boolean;
   scheduledTime: boolean;
   actions: boolean;
 }
@@ -340,7 +340,7 @@ export function OrdersTableFilters({
                     { key: 'subStatus', label: 'Подстатус' },
                     { key: 'initialPrice', label: 'Начальная цена' },
                     { key: 'finalPrice', label: 'Итоговая цена' },
-                    { key: 'createdAt', label: 'Создан' },
+                    { key: 'timeUntilOrder', label: 'До заказа' },
                     { key: 'scheduledTime', label: 'Запланирован' },
                     { key: 'airFlight', label: 'Рейс (прилет)' },
                     { key: 'flyReis', label: 'Рейс (вылет)' },

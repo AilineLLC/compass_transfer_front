@@ -2,7 +2,7 @@
 
 import { Edit, Trash2, ChevronUp, ChevronDown, MoreHorizontal, Eye } from 'lucide-react';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Badge } from '@shared/ui/data-display/badge';
 import {
   Table,
@@ -47,7 +47,7 @@ interface ColumnVisibility {
   subStatus: boolean;
   initialPrice: boolean;
   finalPrice: boolean;
-  createdAt: boolean;
+  timeUntilOrder: boolean;
   scheduledTime: boolean;
   airFlight: boolean;
   flyReis: boolean;
@@ -63,6 +63,41 @@ interface OrdersTableContentProps {
   handleSort: (field: string) => void;
   onDeleteOrder?: (order: GetOrderDTO) => void;
   onRefetch?: () => void;
+}
+
+// Компонент таймера обратного отсчёта до заказа
+function CountdownTimer({ scheduledTime }: { scheduledTime: string | null | undefined }) {
+  const [timeLeft, setTimeLeft] = useState<string>('');
+  const [isUrgent, setIsUrgent] = useState(false);
+
+  useEffect(() => {
+    if (!scheduledTime) {
+      setTimeLeft('—');
+      return;
+    }
+
+    const update = () => {
+      const diff = new Date(scheduledTime).getTime() - Date.now();
+      if (diff <= 0) {
+        setTimeLeft('Время истекло');
+        setIsUrgent(true);
+        return;
+      }
+      setIsUrgent(diff < 30 * 60 * 1000);
+      const hours = Math.floor(diff / 3600000);
+      const minutes = Math.floor((diff % 3600000) / 60000);
+      const seconds = Math.floor((diff % 60000) / 1000);
+      setTimeLeft(
+        `${hours}ч ${String(minutes).padStart(2, '0')}м ${String(seconds).padStart(2, '0')}с`,
+      );
+    };
+
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [scheduledTime]);
+
+  return <span className={isUrgent ? 'text-red-600 font-medium' : undefined}>{timeLeft}</span>;
 }
 
 // Компонент для сортируемых заголовков
@@ -190,16 +225,7 @@ export function OrdersTableContent({
                 Итоговая цена
               </SortableHeader>
             )}
-            {columnVisibility.createdAt && (
-              <SortableHeader
-                field='createdAt'
-                sortBy={sortBy}
-                sortOrder={sortOrder}
-                onSort={handleSort}
-              >
-                Создан
-              </SortableHeader>
-            )}
+            {columnVisibility.timeUntilOrder && <TableHead>До заказа</TableHead>}
             {columnVisibility.scheduledTime && (
               <SortableHeader
                 field='scheduledTime'
@@ -274,7 +300,11 @@ export function OrdersTableContent({
                   {order.finalPrice ? formatPriceWithUsd(order.finalPrice, usdRate) : '—'}
                 </TableCell>
               )}
-              {columnVisibility.createdAt && <TableCell>{formatDate(order.createdAt)}</TableCell>}
+              {columnVisibility.timeUntilOrder && (
+                <TableCell>
+                  <CountdownTimer scheduledTime={order.scheduledTime} />
+                </TableCell>
+              )}
               {columnVisibility.scheduledTime && (
                 <TableCell>{order.scheduledTime ? formatDate(order.scheduledTime) : '—'}</TableCell>
               )}

@@ -20,7 +20,7 @@ interface ColumnVisibility {
   subStatus: boolean;
   initialPrice: boolean;
   finalPrice: boolean;
-  createdAt: boolean;
+  timeUntilOrder: boolean;
   scheduledTime: boolean;
   airFlight: boolean;
   flyReis: boolean;
@@ -121,7 +121,7 @@ export function useOrdersTable(initialFilters?: {
       subStatus: true,
       initialPrice: true,
       finalPrice: true,
-      createdAt: true,
+      timeUntilOrder: true,
       scheduledTime: true,
       airFlight: false,
       flyReis: false,
