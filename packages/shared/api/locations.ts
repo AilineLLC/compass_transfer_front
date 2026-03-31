@@ -132,7 +132,10 @@ export const locationsApi = {
 
   // Создание локации
   createLocation: async (data: CreateLocationDTO): Promise<LocationDTO> => {
-    const result = await apiPost<LocationDTO, CreateLocationDTO>('/Location', data);
+    // group — Guid? на сервере: пустая строка не конвертируется в Guid,
+    // поэтому "" / undefined / null приводим к null, а не передаём как есть
+    const body = { ...data, group: data.group || null };
+    const result = await apiPost<LocationDTO, typeof body>('/Location', body);
 
     if (result.error) {
       throw new Error(result.error.message);
@@ -143,7 +146,9 @@ export const locationsApi = {
 
   // Обновление локации
   updateLocation: async (id: string, data: UpdateLocationDTO): Promise<LocationDTO> => {
-    const result = await apiPut<LocationDTO, UpdateLocationDTO>(`/Location/${id}`, data);
+    // group — Guid? на сервере: пустую строку приводим к null
+    const body = { ...data, group: data.group || null };
+    const result = await apiPut<LocationDTO, typeof body>(`/Location/${id}`, body);
 
     if (result.error) {
       throw new Error(result.error.message);
