@@ -15,6 +15,7 @@ import {
 import { Button } from '@shared/ui/forms/button';
 import { DeleteConfirmationModal } from '@shared/ui/modals';
 import { orderNumberToString } from '@shared/utils/orderNumberConverter';
+import { OrderStatus } from '@entities/orders/enums/OrderStatus.enum';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -66,13 +67,27 @@ interface OrdersTableContentProps {
 }
 
 // Компонент таймера обратного отсчёта до заказа
-function CountdownTimer({ scheduledTime }: { scheduledTime: string | null | undefined }) {
+const STOPPED_STATUSES = [OrderStatus.InProgress, OrderStatus.Completed, OrderStatus.Cancelled];
+
+function CountdownTimer({
+  scheduledTime,
+  status,
+}: {
+  scheduledTime: string | null | undefined;
+  status: string | null | undefined;
+}) {
   const [timeLeft, setTimeLeft] = useState<string>('');
   const [isUrgent, setIsUrgent] = useState(false);
 
   useEffect(() => {
     if (!scheduledTime) {
       setTimeLeft('—');
+      return;
+    }
+
+    if (status && STOPPED_STATUSES.includes(status as OrderStatus)) {
+      setTimeLeft('—');
+      setIsUrgent(false);
       return;
     }
 
@@ -84,18 +99,20 @@ function CountdownTimer({ scheduledTime }: { scheduledTime: string | null | unde
         return;
       }
       setIsUrgent(diff < 30 * 60 * 1000);
-      const hours = Math.floor(diff / 3600000);
+      const days = Math.floor(diff / 86400000);
+      const hours = Math.floor((diff % 86400000) / 3600000);
       const minutes = Math.floor((diff % 3600000) / 60000);
       const seconds = Math.floor((diff % 60000) / 1000);
+      const timeParts = days > 0 ? `${days}д ${String(hours).padStart(2, '0')}ч ` : `${hours}ч `;
       setTimeLeft(
-        `${hours}ч ${String(minutes).padStart(2, '0')}м ${String(seconds).padStart(2, '0')}с`,
+        `${timeParts}${String(minutes).padStart(2, '0')}м ${String(seconds).padStart(2, '0')}с`,
       );
     };
 
     update();
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
-  }, [scheduledTime]);
+  }, [scheduledTime, status]);
 
   return <span className={isUrgent ? 'text-red-600 font-medium' : undefined}>{timeLeft}</span>;
 }
@@ -302,7 +319,7 @@ export function OrdersTableContent({
               )}
               {columnVisibility.timeUntilOrder && (
                 <TableCell>
-                  <CountdownTimer scheduledTime={order.scheduledTime} />
+                  <CountdownTimer scheduledTime={order.scheduledTime} status={order.status} />
                 </TableCell>
               )}
               {columnVisibility.scheduledTime && (
