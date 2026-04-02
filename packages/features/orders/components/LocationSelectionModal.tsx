@@ -1,7 +1,8 @@
 'use client';
 
-import { Search, MapPin, Filter, X } from 'lucide-react';
+import { Search, MapPin, Filter, X, Plus, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { Badge } from '@shared/ui/data-display/badge';
 import { Button } from '@shared/ui/forms/button';
 import { Input } from '@shared/ui/forms/input';
@@ -12,6 +13,7 @@ import { LocationType, LocationTypeLabels, locationTypeIcons } from '@entities/l
 import { getCities, getRegionsByCity } from '@entities/locations/helpers';
 import type { GetLocationDTO } from '@entities/locations/interface';
 import { useLocations } from '@features/locations/hooks/useLocations';
+import { locationsApi } from '@shared/api/locations';
 
 interface LocationSelectionModalProps {
   isOpen: boolean;
@@ -28,6 +30,34 @@ interface Filters {
   isActive?: boolean;
 }
 
+// Результат поиска через Nominatim API
+interface GeocodingResult {
+  place_id: string | number;
+  display_name: string;
+  lat: string;
+  lon: string;
+}
+
+// Структурированный адрес из reverse-геокодинга
+interface ReverseGeocodeData {
+  fullAddress: string;
+  country: string;
+  region: string;
+  city: string;
+  street: string;
+}
+
+/**
+ * Вычисляет короткое название из полного display_name Nominatim.
+ * Разделяет по запятым и удаляет последние 4 части (индекс, область, страна и т.п.)
+ */
+function computeShortName(displayName: string): string {
+  const parts = displayName.split(',').map(p => p.trim()).filter(Boolean);
+  if (parts.length <= 4) return displayName;
+  const short = parts.slice(0, parts.length - 4).join(', ');
+  return short || parts[0];
+}
+
 export function LocationSelectionModal({
   isOpen,
   onClose,
@@ -40,6 +70,8 @@ export function LocationSelectionModal({
   const [showFilters, setShowFilters] = useState(false);
   const [searchResults, setSearchResults] = useState<GetLocationDTO[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [geocodingResults, setGeocodingResults] = useState<GeocodingResult[]>([]);
+  const [creatingPlaceId, setCreatingPlaceId] = useState<string | null>(null);
 
   const { searchLocations } = useLocations();
 
@@ -47,52 +79,52 @@ export function LocationSelectionModal({
   const cities = getCities();
   const availableRegions = filters.city ? getRegionsByCity(filters.city) : [];
 
-  // Поиск локаций с фильтрами
+  // Поиск: сначала в базе локаций, параллельно запускаем геокодинг
   useEffect(() => {
     const performSearch = async () => {
       if (!isOpen) return;
 
+      const trimmedQuery = searchQuery.trim();
       setIsSearching(true);
+
       try {
         const params: Record<string, string | number | boolean | LocationType[]> = {
           First: true,
           Size: 100,
         };
 
-        // Поиск по названию или адресу
-        if (searchQuery.trim()) {
-          params.Name = searchQuery.trim();
+        if (trimmedQuery) {
+          params.Name = trimmedQuery;
           params.NameOp = 'Contains';
         }
+        if (filters.type) params.Type = [filters.type];
+        if (filters.city) { params.City = filters.city; params.CityOp = 'Contains'; }
+        if (filters.region) { params.Region = filters.region; params.RegionOp = 'Contains'; }
+        if (filters.isActive !== undefined) params.IsActive = filters.isActive;
 
-        // Фильтры
-        if (filters.type) {
-          params.Type = [filters.type];
-        }
-        if (filters.city) {
-          params.City = filters.city;
-          params.CityOp = 'Contains';
-        }
-        if (filters.region) {
-          params.Region = filters.region;
-          params.RegionOp = 'Contains';
-        }
-        if (filters.isActive !== undefined) {
-          params.IsActive = filters.isActive;
-        }
+        // Запускаем геокодинг параллельно с поиском в базе (только при запросе ≥ 2 символов)
+        const geocodingPromise: Promise<GeocodingResult[]> = trimmedQuery.length >= 2
+          ? fetch(`/api/geocoding/search?q=${encodeURIComponent(trimmedQuery)}`)
+              .then(r => r.ok ? r.json() : [])
+              .catch(() => [])
+          : Promise.resolve([]);
 
-        const results = await searchLocations(searchQuery, undefined, params);
-        
-        setSearchResults(results);
+        const [dbResults, geoResults] = await Promise.all([
+          searchLocations(searchQuery, undefined, params).catch(() => []),
+          geocodingPromise,
+        ]);
+
+        setSearchResults(dbResults);
+        setGeocodingResults(geoResults);
       } catch {
         setSearchResults([]);
+        setGeocodingResults([]);
       } finally {
         setIsSearching(false);
       }
     };
 
     const timeoutId = setTimeout(performSearch, 300);
-
     return () => clearTimeout(timeoutId);
   }, [searchQuery, filters, isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -102,7 +134,9 @@ export function LocationSelectionModal({
       setSearchQuery('');
       setFilters({});
       setSearchResults([]);
+      setGeocodingResults([]);
       setShowFilters(false);
+      setCreatingPlaceId(null);
     }
   }, [isOpen]);
 
@@ -111,15 +145,69 @@ export function LocationSelectionModal({
     onClose();
   };
 
-  const clearFilters = () => {
-    setFilters({});
+  /**
+   * Обработчик выбора результата из геокодинга.
+   * Делает reverse-геокодинг для получения структурированного адреса,
+   * создаёт локацию в системе и выбирает её как точку маршрута.
+   */
+  const handleGeocodingResultSelect = async (result: GeocodingResult) => {
+    if (creatingPlaceId) return;
+    const placeId = String(result.place_id);
+    setCreatingPlaceId(placeId);
+
+    try {
+      const lat = parseFloat(result.lat);
+      const lon = parseFloat(result.lon);
+
+      // Получаем структурированный адрес через reverse-геокодинг
+      let addressData: ReverseGeocodeData = {
+        fullAddress: result.display_name,
+        country: 'Кыргызстан',
+        region: '',
+        city: '',
+        street: '',
+      };
+      try {
+        const reverseResponse = await fetch(`/api/geocoding/reverse?lat=${lat}&lon=${lon}`);
+        if (reverseResponse.ok) {
+          addressData = await reverseResponse.json();
+        }
+      } catch {
+        // Используем fallback из display_name
+      }
+
+      const name = computeShortName(result.display_name);
+
+      const newLocation = await locationsApi.createLocation({
+        type: LocationType.Other,
+        name: name || result.display_name,
+        address: result.display_name,
+        city: addressData.city || 'Бишкек',
+        country: addressData.country || 'Кыргызстан',
+        region: addressData.region || addressData.city || 'Чуйская область',
+        latitude: lat,
+        longitude: lon,
+        isActive: true,
+        district: null,
+        group: null,
+      });
+
+      onLocationSelect(newLocation as unknown as GetLocationDTO);
+      onClose();
+    } catch {
+      toast.error('Не удалось создать локацию. Попробуйте ещё раз.');
+    } finally {
+      setCreatingPlaceId(null);
+    }
   };
+
+  const clearFilters = () => setFilters({});
 
   const handleCityChange = (city: string) => {
     setFilters(prev => ({
       ...prev,
       city: city === 'all' ? undefined : city,
-      region: undefined // Сбрасываем регион при изменении города
+      region: undefined
     }));
   };
 
@@ -131,6 +219,13 @@ export function LocationSelectionModal({
   };
 
   const hasActiveFilters = Object.values(filters).some(value => value !== undefined && value !== '');
+
+  // Показывать геокодинг только когда нет результатов в базе и запрос достаточно длинный
+  const trimmedQuery = searchQuery.trim();
+  const showGeocodingSection =
+    !isSearching &&
+    trimmedQuery.length >= 2 &&
+    searchResults.length === 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -157,7 +252,7 @@ export function LocationSelectionModal({
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Поиск по названию..."
+                  placeholder="Поиск по названию или адресу..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
@@ -189,7 +284,7 @@ export function LocationSelectionModal({
                     </Button>
                   )}
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>Тип локации</Label>
@@ -274,6 +369,7 @@ export function LocationSelectionModal({
                 </div>
               </div>
             ) : searchResults.length > 0 ? (
+              /* ── Результаты из базы локаций ── */
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground mb-3">
                   Найдено локаций: {searchResults.length}
@@ -291,39 +387,98 @@ export function LocationSelectionModal({
                       }`}
                       onClick={() => !isAlreadySelected && handleLocationClick(location)}
                     >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <h4 className="font-medium flex items-center gap-2">
-                          <span>{locationTypeIcons[location.type]}</span>
-                          {location.name}
-                        </h4>
-                        <p className="text-sm text-muted-foreground">{location.address}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {location.city}, {location.region}
-                        </p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-medium flex items-center gap-2">
+                            <span>{locationTypeIcons[location.type]}</span>
+                            {location.name}
+                          </h4>
+                          <p className="text-sm text-muted-foreground">{location.address}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {location.city}, {location.region}
+                          </p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
+                          <Badge variant="outline">{LocationTypeLabels[location.type]}</Badge>
+                        </div>
                       </div>
-                      <div className="flex flex-col items-end gap-1">
-                        <Badge variant="outline">{LocationTypeLabels[location.type]}</Badge>
-                      </div>
+                      {isAlreadySelected && (
+                        <div className="mt-2 text-xs text-gray-500 italic">
+                          Уже выбрано в маршруте
+                        </div>
+                      )}
                     </div>
-                    {isAlreadySelected && (
-                      <div className="mt-2 text-xs text-gray-500 italic">
-                        Уже выбрано в маршруте
-                      </div>
-                    )}
-                  </div>
                   );
                 })}
               </div>
+            ) : showGeocodingSection ? (
+              /* ── Результаты из карты (Nominatim) ── */
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground border-b pb-2">
+                  <MapPin className="h-4 w-4 shrink-0" />
+                  <span>Локации не найдены в системе. Результаты поиска на карте:</span>
+                </div>
+
+                {geocodingResults.length > 0 ? (
+                  <div className="space-y-2">
+                    {geocodingResults.map((result) => {
+                      const placeId = String(result.place_id);
+                      const isCreating = creatingPlaceId === placeId;
+                      const shortName = computeShortName(result.display_name);
+
+                      return (
+                        <div
+                          key={placeId}
+                          className={`border border-dashed rounded-lg p-3 transition-colors ${
+                            isCreating || creatingPlaceId
+                              ? 'opacity-60 cursor-not-allowed border-blue-200 bg-blue-50/30'
+                              : 'cursor-pointer hover:bg-blue-50/50 border-blue-300 bg-blue-50/20'
+                          }`}
+                          onClick={() => !isCreating && !creatingPlaceId && handleGeocodingResultSelect(result)}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium flex items-center gap-2">
+                                {isCreating ? (
+                                  <Loader2 className="h-4 w-4 animate-spin text-blue-500 shrink-0" />
+                                ) : (
+                                  <Plus className="h-4 w-4 text-blue-500 shrink-0" />
+                                )}
+                                <span className="truncate">{shortName || result.display_name}</span>
+                              </h4>
+                              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                {result.display_name}
+                              </p>
+                            </div>
+                            <Badge
+                              variant="outline"
+                              className="text-blue-600 border-blue-300 shrink-0"
+                            >
+                              {isCreating ? 'Создание...' : 'Создать'}
+                            </Badge>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center py-6">
+                    <div className="text-center">
+                      <MapPin className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">Ничего не найдено на карте</p>
+                    </div>
+                  </div>
+                )}
+              </div>
             ) : (
+              /* ── Пустое состояние ── */
               <div className="flex items-center justify-center py-8">
                 <div className="text-center">
                   <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
                   <p className="text-muted-foreground">
-                    {searchQuery || hasActiveFilters 
-                      ? 'Локации не найдены' 
-                      : 'Введите запрос для поиска локаций'
-                    }
+                    {searchQuery || hasActiveFilters
+                      ? 'Локации не найдены'
+                      : 'Введите запрос для поиска локаций'}
                   </p>
                 </div>
               </div>

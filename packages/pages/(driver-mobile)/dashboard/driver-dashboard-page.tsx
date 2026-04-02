@@ -185,10 +185,22 @@ export default function DriverDashboardPage() {
     );
   }
 
+  if (currentOrder) {
+    return (
+      <div className='p-4'>
+        <ActiveOrderCard
+          order={currentOrder}
+          onStatusUpdate={handleStatusUpdate}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className='h-[calc(100vh-80px)] flex flex-col p-4'>
       {/* Основной контент - занимает всё доступное место */}
       <div className='flex-1 flex flex-col min-h-0 space-y-4'>
+<<<<<<< HEAD
         {currentOrder ? (
           // Если есть активный заказ, показываем его на весь экран
           <div className='flex-1 min-h-0'>
@@ -210,13 +222,25 @@ export default function DriverDashboardPage() {
                 leaveQueue={leaveQueue}
               />
             </div>
+=======
+        {/* DriverStatusCard занимает основное место */}
+        <div className='flex-1 min-h-0 flex flex-col'>
+          <DriverStatusCard
+            queueData={queueData}
+            isInQueue={isInQueue}
+            isLoading={queueIsLoading}
+            error={queueError}
+            leaveQueue={leaveQueue}
+          />
+        </div>
+>>>>>>> b9bcc014d5d6f8b01a2a42ccc5aa33f0c93e18fa
 
-            {/* DriverStatusBlock занимает столько места, сколько нужно */}
-            <div className='flex-shrink-0'>
-              <DriverStatusBlock />
+        {/* DriverStatusBlock занимает столько места, сколько нужно */}
+        <div className='flex-shrink-0'>
+          <DriverStatusBlock />
 
-              {/* Модалка DriverLocation на том же уровне что и DriverStatusBlock */}
-              {isDriverLocationModalOpen && (
+          {/* Модалка DriverLocation на том же уровне что и DriverStatusBlock */}
+          {isDriverLocationModalOpen && (
                 <div
                   className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"
                   onClick={() => setIsDriverLocationModalOpen(false)}
@@ -266,9 +290,7 @@ export default function DriverDashboardPage() {
                   </div>
                 </div>
               )}
-            </div>
-          </>
-        )}
+        </div>
       </div>
 
       <LocationSelectionModal
