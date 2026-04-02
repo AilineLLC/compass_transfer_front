@@ -44,8 +44,8 @@ export function DriverStatusCard({
   // Показываем loading состояние пока не получили ответ от API
   if (isLoading) {
     return (
-      <div className='h-full flex flex-col relative overflow-hidden rounded-2xl bg-white'>
-        <div className='relative z-10 flex flex-col h-full p-3 sm:p-4'>
+      <div className='flex-1 flex flex-col relative overflow-hidden rounded-2xl bg-white'>
+        <div className='relative z-10 flex flex-col flex-1 p-3 sm:p-4'>
           {/* Центральная часть - skeleton */}
           <div className='flex-1 flex flex-col items-center justify-center px-2 sm:px-4'>
             <div className='w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full bg-gray-200 animate-pulse mb-4' />
@@ -65,8 +65,8 @@ export function DriverStatusCard({
   // Показываем ошибку если есть
   if (error) {
     return (
-      <div className='h-full flex flex-col relative overflow-hidden rounded-2xl bg-white'>
-        <div className='relative z-10 flex flex-col h-full p-3 sm:p-4'>
+      <div className='flex-1 flex flex-col relative overflow-hidden rounded-2xl bg-white'>
+        <div className='relative z-10 flex flex-col flex-1 p-3 sm:p-4'>
           <div className='flex-1 flex flex-col items-center justify-center px-2 sm:px-4'>
             <div className='text-center'>
               <p className='text-red-600 text-sm sm:text-base font-medium mb-4'>
@@ -90,22 +90,21 @@ export function DriverStatusCard({
   }
 
   return (
-    <div className='bg-[#F9F9F9] h-full flex flex-col relative rounded-2xl'>
+    <div className='bg-[#F9F9F9] flex-1 flex flex-col relative rounded-2xl overflow-hidden'>
       {/* Фоновое изображение - показываем только когда НЕ в очереди */}
       {!isInQueue && (
-        <div className='absolute inset-0'>
-          <Image
-            src='/background/backgroundDriver.png'
-            alt='Driver Background'
-            fill
-            className='object-cover rounded-2xl'
-            priority
-          />
-        </div>
+        <Image
+          src='/background/backgroundDriver.png'
+          alt='Driver Background'
+          fill
+          sizes='100vw'
+          className='object-cover'
+          priority
+        />
       )}
 
       {/* Контент поверх фона */}
-      <div className='relative z-10 flex flex-col h-full p-3 sm:p-4'>
+      <div className='relative z-10 flex flex-col flex-1 p-3 sm:p-4'>
         {/* Центральная часть - растягивается с возможностью скролла */}
         <div className='flex-1 flex flex-col items-center justify-center px-2 sm:px-4 overflow-y-auto'>
           {isInQueue ? (

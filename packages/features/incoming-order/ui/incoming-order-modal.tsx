@@ -199,7 +199,7 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
         {/*  информация о пользователе */}
         <div className='px-6 pt-8 pb-4 text-left'>
           <h3 className='text-lg font-semibold text-gray-900 mb-1'>
-            {currentOrder.passengers[0].firstName} {currentOrder.passengers[0].lastName}
+            {currentOrder.passengers?.[0]?.firstName} {currentOrder.passengers?.[0]?.lastName}
           </h3>
         </div>
         <div className='mb-[30px] flex justify-center px-[10px]'>
