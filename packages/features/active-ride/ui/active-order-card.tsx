@@ -335,7 +335,7 @@ export function ActiveOrderCard({ order, onStatusUpdate }: ActiveOrderCardProps)
   const availableActions = getAvailableActions();
 
   return (
-    <Card className='p-4 border-l-4 border-l-blue-500 bg-blue-50/50'>
+    <Card className='p-4 border-l-4 border-l-blue-500 bg-blue-50/50 pb-20'>
       <div className='space-y-4'>
         {/* Заголовок с номером заказа и статусом */}
         <div className='flex items-center justify-between'>

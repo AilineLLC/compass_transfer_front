@@ -201,7 +201,7 @@ export default function DriverDashboardPage() {
           // Если нет заказа, показываем DriverStatusCard + DriverStatusBlock
           <>
             {/* DriverStatusCard занимает основное место */}
-            <div className='flex-1 min-h-0'>
+            <div className='flex-1 min-h-0 flex flex-col'>
               <DriverStatusCard
                 queueData={queueData}
                 isInQueue={isInQueue}

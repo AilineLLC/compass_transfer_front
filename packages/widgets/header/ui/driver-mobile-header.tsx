@@ -57,7 +57,7 @@ export function DriverMobileHeader() {
         {/* Изображение машины справа */}
         <div className='flex-shrink-0 ml-1'>
           <Image
-            src='/car/HongQi E-QM5.png'
+            src='/car/HongQi-E-QM5.png'
             alt='HongQi E-QM5'
             width={123}
             height={55}
