@@ -1,4 +1,4 @@
-import type { OrderType, OrderStatus, OrderSubStatus } from '@entities/orders/enums';
+import type { OrderType, OrderStatus, OrderSubStatus, PaymentMethodType } from '@entities/orders/enums';
 import type { GetRideDTO } from '@entities/rides/interface/GetRideDTO';
 import type { GetLocationDTO } from '@entities/locations/interface';
 import type { GetOrderServiceDTO } from './GetOrderServiceDTO';
@@ -143,4 +143,14 @@ export interface GetOrderDTO {
    * Доход водителя с поездки
    */
   driverProfit?: number | null;
+
+  /**
+   * Сумма водителя (вознаграждение водителя за заказ)
+   */
+  driverPrice?: number | null;
+
+  /**
+   * Метод оплаты (Наличные / Безналичный)
+   */
+  paymentMethodType?: PaymentMethodType | null;
 }

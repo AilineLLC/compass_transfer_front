@@ -1,8 +1,9 @@
 'use client';
 
-import { AlertTriangle, UserCheck, Info } from 'lucide-react';
+import { AlertTriangle, UserCheck, Info, Banknote, CreditCard } from 'lucide-react';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
+import { PaymentMethodType } from '@entities/orders/enums';
 import type { RoutePoint } from '@shared/components/map/types';
 import { Button } from '@shared/ui/forms/button';
 import { Textarea } from '@shared/ui/forms/textarea';
@@ -58,6 +59,12 @@ interface SummaryTabProps {
   setCustomPrice?: (value: string) => void;
   _handleCustomPriceChange?: (value: string) => void;
   _toggleCustomPrice?: () => void;
+
+  // Поля для водителя и метода оплаты (только Admin/Operator)
+  driverPrice?: string;
+  setDriverPrice?: (value: string) => void;
+  paymentMethodType?: PaymentMethodType;
+  setPaymentMethodType?: (value: PaymentMethodType) => void;
 
   // Управление включением доп.точек в стоимость
   includeIntermediateInPrice?: boolean;
@@ -130,6 +137,12 @@ export function SummaryTab({
   setCustomPrice,
   _handleCustomPriceChange,
   _toggleCustomPrice,
+
+  // Поля для водителя и метода оплаты
+  driverPrice = '',
+  setDriverPrice,
+  paymentMethodType = PaymentMethodType.Cash,
+  setPaymentMethodType,
 
   // Управление доп.точками
   includeIntermediateInPrice = true,
@@ -358,6 +371,96 @@ export function SummaryTab({
                 }, 0),
             )}
           />
+
+          {/* Метод оплаты и сумма водителя (только Admin и Operator) */}
+          {(userRole === 'admin' || userRole === 'operator') && (
+            <Card className='mb-4'>
+              <CardContent className='p-4 space-y-4'>
+                {/* Метод оплаты */}
+                <div>
+                  <label className='block text-sm font-medium text-gray-700 mb-2'>
+                    Метод оплаты
+                  </label>
+                  <div className='flex gap-2'>
+                    <button
+                      type='button'
+                      onClick={() => setPaymentMethodType?.(PaymentMethodType.Cash)}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg border-2 text-sm font-medium transition-colors ${
+                        paymentMethodType === PaymentMethodType.Cash
+                          ? 'border-green-500 bg-green-50 text-green-700'
+                          : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                      }`}
+                    >
+                      <Banknote className='h-4 w-4' />
+                      Наличные
+                    </button>
+                    <button
+                      type='button'
+                      onClick={() => setPaymentMethodType?.(PaymentMethodType.Card)}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg border-2 text-sm font-medium transition-colors ${
+                        paymentMethodType === PaymentMethodType.Card
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                      }`}
+                    >
+                      <CreditCard className='h-4 w-4' />
+                      Безналичный
+                    </button>
+                  </div>
+                </div>
+
+                {/* Сумма водителя */}
+                <div>
+                  <label className='block text-sm font-medium text-gray-700 mb-1'>
+                    Сумма водителя (сом)
+                    <span className='text-red-500 ml-1'>*</span>
+                  </label>
+                  <input
+                    type='number'
+                    min='0'
+                    max={
+                      useCustomPrice && _customPrice
+                        ? parseFloat(_customPrice.replace(/[^0-9.-]+/g, '')) || currentPrice
+                        : currentPrice
+                    }
+                    placeholder='Введите сумму водителя'
+                    value={driverPrice}
+                    onChange={e => setDriverPrice?.(e.target.value)}
+                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      !driverPrice
+                        ? 'border-red-400 bg-red-50 focus:border-red-500 focus:ring-red-300'
+                        : 'border-gray-300 focus:border-blue-500'
+                    }`}
+                  />
+                  {!driverPrice && (
+                    <p className='mt-1 text-xs text-red-600 font-medium'>
+                      ⚠ Укажите сумму водителя перед созданием заказа
+                    </p>
+                  )}
+                  {driverPrice && parseFloat(driverPrice) > currentPrice && (
+                    <p className='mt-1 text-xs text-red-600'>
+                      Сумма водителя не может превышать стоимость поездки ({currentPrice} сом)
+                    </p>
+                  )}
+                  <p className='mt-1 text-xs text-gray-400'>
+                    Максимум: {currentPrice} сом (стоимость поездки)
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Метод оплаты для партнеров (только информация — всегда Безналичный) */}
+          {userRole === 'partner' && (
+            <Card className='mb-4'>
+              <CardContent className='p-4'>
+                <div className='flex items-center gap-2 text-blue-700'>
+                  <CreditCard className='h-4 w-4' />
+                  <span className='text-sm font-medium'>Метод оплаты: Безналичный</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Заметки */}
           <Card className='mb-4'>

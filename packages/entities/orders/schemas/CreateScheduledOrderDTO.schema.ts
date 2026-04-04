@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { createDateTimeTransform } from '@shared/lib/utils';
+import { PaymentMethodType } from '@entities/orders/enums';
 import { OrderServiceDTOSchema } from '@entities/orders/schemas/OrderServiceDTO.schema';
 import { PassengerDTOSchema } from '@entities/orders/schemas/PassengerDTO.schema';
 /**
@@ -119,6 +120,23 @@ export const CreateScheduledOrderDTOSchema = z
       )
       .nullable()
       .optional(),
+    paymentMethodType: z.nativeEnum(PaymentMethodType).default(PaymentMethodType.Cash),
+    driverPrice: z.preprocess(
+      val => {
+        if (typeof val === 'string') {
+          const parsed = parseFloat(val);
+
+          return isNaN(parsed) ? null : parsed;
+        }
+
+        return val ?? null;
+      },
+      z
+        .number()
+        .min(0, { message: 'Сумма водителя не может быть отрицательной' })
+        .nullable()
+        .optional(),
+    ),
   })
   .refine(
     data => {
@@ -156,6 +174,20 @@ export const CreateScheduledOrderDTOSchema = z
     {
       message: 'Укажите либо готовый маршрут, либо начальную и конечную точки',
       path: ['routeId'],
+    },
+  )
+  .refine(
+    data => {
+      // driverPrice не должна превышать стоимость поездки
+      if (data.driverPrice != null && data.driverPrice > data.initialPrice) {
+        return false;
+      }
+
+      return true;
+    },
+    {
+      message: 'Сумма водителя не может превышать стоимость поездки',
+      path: ['driverPrice'],
     },
   );
 /**

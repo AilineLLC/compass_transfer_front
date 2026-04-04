@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import type { RoutePoint } from '@shared/components/map/types';
 import { useOrderData } from '@shared/hooks/useOrderData';
 import { Button } from '@shared/ui/forms/button';
+import { PaymentMethodType } from '@entities/orders/enums';
 import { Card, CardContent } from '@shared/ui/layout/card';
 import { SidebarHeader } from '@shared/ui/layout/sidebar';
 import type { GetLocationDTO } from '@entities/locations/interface';
@@ -74,6 +75,12 @@ export function InstantOrderPage({ mode, id, userRole = 'operator', initialTarif
   // Состояние для кастомной цены
   const [useCustomPrice, setUseCustomPrice] = useState<boolean>(false);
   const [customPrice, setCustomPrice] = useState<string>('');
+
+  // Состояние для метода оплаты и суммы водителя
+  const [paymentMethodType, setPaymentMethodType] = useState<PaymentMethodType>(
+    userRole === 'partner' ? PaymentMethodType.Card : PaymentMethodType.Cash,
+  );
+  const [driverPrice, setDriverPrice] = useState<string>('');
 
   // Состояние для данных маршрута
   const [startLocId, setStartLocId] = useState<string>('');
@@ -157,6 +164,14 @@ export function InstantOrderPage({ mode, id, userRole = 'operator', initialTarif
       if (orderData.initialPrice) {
         setCurrentPrice(orderData.initialPrice);
         setCustomPrice(orderData.initialPrice.toString());
+      }
+
+      // 4. Устанавливаем метод оплаты и сумму водителя
+      if (orderData.paymentMethodType) {
+        setPaymentMethodType(orderData.paymentMethodType);
+      }
+      if (orderData.driverPrice != null) {
+        setDriverPrice(orderData.driverPrice.toString());
       }
     }
   }, [mode, orderData, tariffs]);
@@ -349,19 +364,30 @@ export function InstantOrderPage({ mode, id, userRole = 'operator', initialTarif
 
   // Проверка готовности к созданию заказа (убираем проверку пассажиров)
   const isReadyToCreate = (): boolean => {
-    return !!(
+    const hasRoute =
       selectedTariff &&
       routePoints.some(p => p.type === 'start' && p.location) &&
       routePoints.some(p => p.type === 'end' && p.location) &&
-      currentPrice > 0
-    );
+      currentPrice > 0;
+
+    // Для admin/operator обязательно указать driverPrice
+    const driverPriceValid =
+      userRole === 'partner' ||
+      (!!driverPrice && parseFloat(driverPrice) >= 0 && parseFloat(driverPrice) <= currentPrice);
+
+    return !!(hasRoute && driverPriceValid);
   };
 
   // Функция для отправки заказа
   const handleSave = () => {
     if (!isReadyToCreate()) {
-      toast.error('Заполните все обязательные поля');
-      // Не все обязательные поля заполнены
+      if ((userRole === 'admin' || userRole === 'operator') && !driverPrice) {
+        toast.error('Укажите сумму водителя', {
+          description: 'Перейдите на вкладку "Итоги" и заполните поле "Сумма водителя"',
+        });
+      } else {
+        toast.error('Заполните все обязательные поля');
+      }
 
       return;
     }
@@ -393,6 +419,11 @@ export function InstantOrderPage({ mode, id, userRole = 'operator', initialTarif
           })),
         initialPrice: finalPrice, // ✅ Используем кастомную цену, если она установлена
         paymentId: null, // Для мгновенных заказов пока null
+        paymentMethodType: userRole === 'partner' ? PaymentMethodType.Card : paymentMethodType,
+        driverPrice:
+          (userRole === 'admin' || userRole === 'operator') && driverPrice
+            ? parseFloat(driverPrice) || null
+            : null,
       };
 
       // Для партнеров не отправляем passengers (они сами пассажиры)
@@ -567,6 +598,10 @@ export function InstantOrderPage({ mode, id, userRole = 'operator', initialTarif
                           setUseCustomPrice={setUseCustomPrice}
                           _customPrice={customPrice}
                           setCustomPrice={setCustomPrice}
+                          paymentMethodType={paymentMethodType}
+                          setPaymentMethodType={setPaymentMethodType}
+                          driverPrice={driverPrice}
+                          setDriverPrice={setDriverPrice}
                           _selectedDriver={selectedDriver ? {
                             ...selectedDriver,
                             phoneNumber: selectedDriver.phoneNumber || undefined,

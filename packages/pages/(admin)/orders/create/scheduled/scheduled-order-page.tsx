@@ -15,7 +15,7 @@ import {
   orderStatusLabels,
   orderSubStatusLabels,
 } from '@entities/orders/constants/order-status-labels';
-import { OrderStatus, OrderSubStatus, OrderSubStatusValues } from '@entities/orders/enums';
+import { OrderStatus, OrderSubStatus, OrderSubStatusValues, PaymentMethodType } from '@entities/orders/enums';
 import {
   useScheduledOrderSubmit,
   useUpdateOrderPassengers,
@@ -298,6 +298,12 @@ export function ScheduledOrderPage({
   // Состояние для кастомной цены
   const [useCustomPrice, setUseCustomPrice] = useState<boolean>(false);
   const [customPrice, setCustomPrice] = useState<string>('');
+
+  // Состояние для метода оплаты и суммы водителя
+  const [paymentMethodType, setPaymentMethodType] = useState<PaymentMethodType>(
+    userRole === 'partner' ? PaymentMethodType.Card : PaymentMethodType.Cash,
+  );
+  const [driverPrice, setDriverPrice] = useState<string>('');
 
   // Состояние для включения доп.точек в стоимость
   const [includeIntermediateInPrice, setIncludeIntermediateInPrice] = useState<boolean>(true);
@@ -620,6 +626,14 @@ export function ScheduledOrderPage({
         setSelectedServices(selectedServicesFromOrder);
       }
 
+      // 5. Устанавливаем метод оплаты и сумму водителя
+      if (existingOrder.paymentMethodType) {
+        setPaymentMethodType(existingOrder.paymentMethodType);
+      }
+      if (existingOrder.driverPrice != null) {
+        setDriverPrice(existingOrder.driverPrice.toString());
+      }
+
       // Отмечаем, что данные загружены
       setIsOrderDataLoaded(true);
 
@@ -743,6 +757,15 @@ export function ScheduledOrderPage({
   };
 
   const handleSave = async () => {
+    // Для admin/operator — проверяем что driverPrice заполнена
+    if ((userRole === 'admin' || userRole === 'operator') && !driverPrice) {
+      toast.error('Укажите сумму водителя', {
+        description: 'На вкладке "Итоги" заполните поле "Сумма водителя"',
+      });
+
+      return;
+    }
+
     try {
       // Получаем реальные точки маршрута с локациями
       const routePointsWithLocations = routePoints.filter(point => point.location);
@@ -840,6 +863,11 @@ export function ScheduledOrderPage({
 
           return value && typeof value === 'string' ? value : null;
         })(),
+        paymentMethodType: userRole === 'partner' ? PaymentMethodType.Card : paymentMethodType,
+        driverPrice:
+          (userRole === 'admin' || userRole === 'operator') && driverPrice
+            ? parseFloat(driverPrice) || null
+            : null,
       };
 
       // Отправляем или обновляем заказ в зависимости от режима
@@ -1138,6 +1166,11 @@ export function ScheduledOrderPage({
                       setCustomPrice={setCustomPrice}
                       _handleCustomPriceChange={handleCustomPriceChange}
                       _toggleCustomPrice={toggleCustomPrice}
+                      // Метод оплаты и сумма водителя
+                      paymentMethodType={paymentMethodType}
+                      setPaymentMethodType={setPaymentMethodType}
+                      driverPrice={driverPrice}
+                      setDriverPrice={setDriverPrice}
                       // Управление доп.точками в стоимости
                       includeIntermediateInPrice={includeIntermediateInPrice}
                       onIncludeIntermediateChange={setIncludeIntermediateInPrice}

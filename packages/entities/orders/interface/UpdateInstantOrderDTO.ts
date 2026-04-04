@@ -1,4 +1,4 @@
-import type { OrderStatus } from '@entities/orders/enums';
+import type { OrderStatus, PaymentMethodType } from '@entities/orders/enums';
 import type { OrderServiceDTO } from './OrderServiceDTO';
 
 /**
@@ -11,4 +11,6 @@ export interface UpdateInstantOrderDTO {
   services: OrderServiceDTO[];
   initialPrice: number;
   status: OrderStatus;
+  paymentMethodType?: PaymentMethodType | null;
+  driverPrice?: number | null;
 }

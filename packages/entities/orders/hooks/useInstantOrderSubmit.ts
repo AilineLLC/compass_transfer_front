@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@shared/lib/conditional-toast';
 import { OrdersApi, type CreateInstantOrderRequest, type CreateInstantOrderByPartnerRequest } from '../api/orders';
-import { OrderStatus } from '../enums';
+import { OrderStatus, PaymentMethodType } from '../enums';
 import type { GetOrderDTO, UpdateInstantOrderDTO } from '../interface';
 
 /**
@@ -23,7 +23,9 @@ function convertToUpdateData(data: CreateInstantOrderRequest | CreateInstantOrde
     routeId: data.routeId || null,
     services: data.services || [],
     initialPrice: data.initialPrice,
-    status: OrderStatus.Pending // По умолчанию статус Pending при обновлении
+    status: OrderStatus.Pending, // По умолчанию статус Pending при обновлении
+    paymentMethodType: (data as CreateInstantOrderRequest).paymentMethodType ?? PaymentMethodType.Cash,
+    driverPrice: (data as CreateInstantOrderRequest).driverPrice ?? null,
   };
 
   // Добавляем поля локаций, если они есть в исходных данных

@@ -1,5 +1,6 @@
 import { apiGet, apiPost, apiPut, apiDelete } from '@shared/api/client';
 import type { GetRideDTO } from '@entities/rides/interface/GetRideDTO';
+import { PaymentMethodType } from '../enums';
 import type {
   CreateScheduledOrderDTO,
   CreateScheduledRideDTO,
@@ -24,6 +25,12 @@ export interface CreateScheduledOrderRequest extends CreateScheduledOrderDTO {
 
   /** Комментарии к заказу */
   notes?: string | null;
+
+  /** Метод оплаты */
+  paymentMethodType?: PaymentMethodType | null;
+
+  /** Сумма водителя */
+  driverPrice?: number | null;
 }
 
 /**
@@ -65,6 +72,12 @@ export interface CreateInstantOrderRequest {
 
   /** ID платежа (опционально) */
   paymentId?: string | null;
+
+  /** Метод оплаты */
+  paymentMethodType?: PaymentMethodType | null;
+
+  /** Сумма водителя */
+  driverPrice?: number | null;
 }
 
 /**

@@ -1,9 +1,10 @@
 'use client';
 
-import { ArrowLeft, Navigation, MapPin, Clock, User } from 'lucide-react';
+import { ArrowLeft, Navigation, MapPin, Clock, User, Banknote, CreditCard, Wallet } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@shared/ui/forms/button';
 import { orderNumberToString } from '@shared/utils/orderNumberConverter';
+import { PaymentMethodType } from '@entities/orders/enums';
 import type { GetOrderDTO } from '@entities/orders/interface/GetOrderDTO';
 
 interface OrderDetailPageProps {
@@ -125,6 +126,61 @@ export function OrderDetailPage({ order, onBack }: OrderDetailPageProps) {
             )}
           </div>
         </div>
+
+        {/* Блок оплаты — показываем только если есть данные */}
+        {(order.driverPrice != null || order.initialPrice > 0) && (
+          <div className='bg-white rounded-xl p-4 shadow-sm'>
+            <h2 className='text-lg font-semibold mb-3 flex items-center'>
+              <Wallet className='w-5 h-5 mr-2 text-green-600' />
+              Оплата
+            </h2>
+
+            {/* Метод оплаты */}
+            <div className='mb-3'>
+              {order.paymentMethodType === PaymentMethodType.Card ? (
+                <span className='inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-700'>
+                  <CreditCard className='w-4 h-4' />
+                  Безналичный расчёт
+                </span>
+              ) : (
+                <span className='inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-700'>
+                  <Banknote className='w-4 h-4' />
+                  Наличный расчёт
+                </span>
+              )}
+            </div>
+
+            {/* При наличном расчёте: цена поездки + сумма водителя */}
+            {order.paymentMethodType !== PaymentMethodType.Card ? (
+              <div className='grid grid-cols-2 gap-3'>
+                <div className='bg-amber-50 border border-amber-200 rounded-xl p-3'>
+                  <p className='text-xs text-amber-600 font-medium'>Получить с пассажира</p>
+                  <p className='text-2xl font-bold text-amber-700 mt-1'>
+                    {order.initialPrice} <span className='text-base font-medium'>сом</span>
+                  </p>
+                </div>
+                {order.driverPrice != null && (
+                  <div className='bg-green-50 border border-green-200 rounded-xl p-3'>
+                    <p className='text-xs text-green-600 font-medium'>Ваша сумма</p>
+                    <p className='text-2xl font-bold text-green-700 mt-1'>
+                      {order.driverPrice} <span className='text-base font-medium'>сом</span>
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* При безналичном: только сумма водителя */
+              order.driverPrice != null && (
+                <div className='bg-green-50 border border-green-200 rounded-xl p-4'>
+                  <p className='text-sm text-green-600 font-medium'>Ваша сумма</p>
+                  <p className='text-3xl font-bold text-green-700 mt-1'>
+                    {order.driverPrice} <span className='text-lg font-medium'>сом</span>
+                  </p>
+                </div>
+              )
+            )}
+          </div>
+        )}
 
         {/* Маршрут */}
         <div className='bg-white rounded-xl p-4 shadow-sm'>

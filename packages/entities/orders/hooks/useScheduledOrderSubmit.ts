@@ -26,6 +26,8 @@ function convertToUpdateData(data: CreateScheduledOrderRequest, orderId: string)
     airFlight: data.airFlight ?? null,
     flyReis: data.flyReis ?? null,
     notes: data.notes ?? null,
+    paymentMethodType: data.paymentMethodType ?? null,
+    driverPrice: data.driverPrice ?? null,
   };
 
   return updateData;

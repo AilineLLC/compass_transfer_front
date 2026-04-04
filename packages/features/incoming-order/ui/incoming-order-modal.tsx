@@ -7,7 +7,7 @@ import { driverOrderApi } from '@shared/api/orders';
 import { ridesApi } from '@shared/api/rides/rides-api';
 import type { SignalREventData } from '@shared/hooks/signal/types';
 import { useSignalR } from '@shared/hooks/signal/useSignalR';
-import { OrderStatus } from '@entities/orders/enums';
+import { OrderStatus, PaymentMethodType } from '@entities/orders/enums';
 import type { GetOrderDTO } from '@entities/orders/interface/GetOrderDTO';
 import { useNotificationSound } from '@features/notifications';
 import { useOrderStack } from '@features/order-stack';
@@ -24,6 +24,9 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
   const [currentOrder, setCurrentOrder] = useState<GetOrderDTO | null>(null);
+  const [currentDriverPrice, setCurrentDriverPrice] = useState<number | null>(null);
+  const [currentPaymentMethod, setCurrentPaymentMethod] = useState<PaymentMethodType>(PaymentMethodType.Cash);
+  const [currentTripPrice, setCurrentTripPrice] = useState<number>(0);
   const [timeLeft, setTimeLeft] = useState(10); // Таймер на 10 секунд
 
   // Хуки
@@ -45,6 +48,18 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
         const waypoints = signalRData.waypoints || [];
         const startLocation = waypoints[0]?.location;
         const endLocation = waypoints[1]?.location;
+
+        const notifData = notification.data as {
+          waypoints: Array<{ location: { address?: string; name?: string } }>;
+          passengers: Array<{ firstName?: string; lastName?: string; isMainPassenger: boolean }>;
+          initialPrice?: number;
+          driverPrice?: number | null;
+          paymentMethodType?: string | null;
+        };
+
+        const tripPrice = notifData.initialPrice || 0;
+        const driverPriceValue = notifData.driverPrice ?? null;
+        const paymentMethod = (notifData.paymentMethodType as PaymentMethodType) || PaymentMethodType.Cash;
 
         const mappedOrderData = {
           id: orderId,
@@ -69,7 +84,9 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
           totalPrice: 0,
           currency: 'KGS',
           creatorId: '',
-          initialPrice: 0,
+          initialPrice: tripPrice,
+          driverPrice: driverPriceValue,
+          paymentMethodType: paymentMethod,
           services: [],
           passengers: passangers.length > 1 ? passangers.filter((passenger) => passenger.isMainPassenger) : passangers
         } as unknown as GetOrderDTO;
@@ -78,6 +95,9 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
         setCurrentOrderId(orderId);
         setCurrentRideId(rideId);
         setOrderType(orderTypeValue);
+        setCurrentDriverPrice(driverPriceValue);
+        setCurrentPaymentMethod(paymentMethod);
+        setCurrentTripPrice(tripPrice);
         setIsModalOpen(true);
         setTimeLeft(10); // Сбрасываем таймер на 10 секунд
         playSound();
@@ -122,6 +142,9 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
       setCurrentRideId(null);
       setOrderType(null);
       setCurrentOrder(null);
+      setCurrentDriverPrice(null);
+      setCurrentPaymentMethod(PaymentMethodType.Cash);
+      setCurrentTripPrice(0);
 
       // Отправляем событие для обновления dashboard
       window.dispatchEvent(new CustomEvent('orderAccepted'));
@@ -150,6 +173,9 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
     setCurrentRideId(null);
     setOrderType(null);
     setCurrentOrder(null);
+    setCurrentDriverPrice(null);
+    setCurrentPaymentMethod(PaymentMethodType.Cash);
+    setCurrentTripPrice(0);
     stopSound();
 
     // Автоматически выходим из очереди при закрытии модального окна

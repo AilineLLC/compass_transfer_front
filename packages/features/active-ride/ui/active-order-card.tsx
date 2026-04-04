@@ -12,6 +12,9 @@ import {
   ChevronUp,
   Users,
   Settings,
+  Banknote,
+  CreditCard,
+  Wallet,
 } from 'lucide-react';
 import React, { useState, useCallback } from 'react';
 import { toast } from '@shared/lib/conditional-toast';
@@ -20,7 +23,7 @@ import { ridesApi } from '@shared/api/rides/rides-api';
 import { Button } from '@shared/ui/forms/button';
 import { Card } from '@shared/ui/layout/card';
 import { orderNumberToString } from '@shared/utils/orderNumberConverter';
-import { RideStatus, OrderSubStatus } from '@entities/orders/enums';
+import { RideStatus, OrderSubStatus, PaymentMethodType } from '@entities/orders/enums';
 import { useLocation } from '@features/locations/hooks/useLocation';
 
 interface ActiveOrderCardProps {
@@ -347,6 +350,55 @@ export function ActiveOrderCard({ order, onStatusUpdate }: ActiveOrderCardProps)
             <span className={`text-sm font-medium ${statusInfo.color}`}>{statusInfo.text}</span>
           </div>
         </div>
+
+        {/* Блок оплаты */}
+        {(order.driverPrice != null || order.initialPrice > 0) && (
+          <div className='rounded-xl overflow-hidden border border-gray-200'>
+            {/* Метод оплаты */}
+            <div className={`flex items-center gap-2 px-3 py-2 ${
+              order.paymentMethodType === PaymentMethodType.Card
+                ? 'bg-blue-50 border-b border-blue-100'
+                : 'bg-green-50 border-b border-green-100'
+            }`}>
+              {order.paymentMethodType === PaymentMethodType.Card ? (
+                <>
+                  <CreditCard className='w-4 h-4 text-blue-600' />
+                  <span className='text-sm font-semibold text-blue-700'>Безналичный расчёт</span>
+                </>
+              ) : (
+                <>
+                  <Banknote className='w-4 h-4 text-green-700' />
+                  <span className='text-sm font-semibold text-green-700'>Наличный расчёт</span>
+                </>
+              )}
+            </div>
+
+            {/* Суммы */}
+            <div className={`grid ${order.paymentMethodType !== PaymentMethodType.Card && order.driverPrice != null ? 'grid-cols-2' : 'grid-cols-1'} divide-x divide-gray-200`}>
+              {/* При наличных: показываем сумму к получению от пассажира */}
+              {order.paymentMethodType !== PaymentMethodType.Card && (
+                <div className='px-3 py-3 bg-amber-50'>
+                  <div className='flex items-center gap-1 mb-1'>
+                    <Wallet className='w-3 h-3 text-amber-600' />
+                    <p className='text-xs text-amber-600 font-medium'>Взять с пассажира</p>
+                  </div>
+                  <p className='text-xl font-bold text-amber-700'>{order.initialPrice} <span className='text-sm font-normal'>сом</span></p>
+                </div>
+              )}
+
+              {/* Сумма водителя */}
+              {order.driverPrice != null && (
+                <div className='px-3 py-3 bg-green-50'>
+                  <div className='flex items-center gap-1 mb-1'>
+                    <Wallet className='w-3 h-3 text-green-600' />
+                    <p className='text-xs text-green-600 font-medium'>Ваша сумма</p>
+                  </div>
+                  <p className='text-xl font-bold text-green-700'>{order.driverPrice} <span className='text-sm font-normal'>сом</span></p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Маршрут */}
         <div className='space-y-3'>

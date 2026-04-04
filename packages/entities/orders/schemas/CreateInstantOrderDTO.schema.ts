@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PaymentMethodType } from '@entities/orders/enums';
 import { OrderServiceDTOSchema } from './OrderServiceDTO.schema';
 import { PassengerDTOSchema } from './PassengerDTO.schema';
 
@@ -33,6 +34,12 @@ export const CreateInstantOrderDTOSchema = z
       .array(PassengerDTOSchema)
       .min(1, { message: 'Добавьте хотя бы одного пассажира' }),
     paymentId: z.string().min(1, { message: 'Некорректный ID платежа' }).optional(),
+    paymentMethodType: z.nativeEnum(PaymentMethodType).default(PaymentMethodType.Cash),
+    driverPrice: z
+      .number()
+      .min(0, { message: 'Сумма водителя не может быть отрицательной' })
+      .nullable()
+      .optional(),
   })
   .refine(
     data => {
@@ -63,6 +70,20 @@ export const CreateInstantOrderDTOSchema = z
     {
       message: 'Должен быть ровно один главный пассажир',
       path: ['passengers'],
+    },
+  )
+  .refine(
+    data => {
+      // driverPrice не должна превышать стоимость поездки
+      if (data.driverPrice != null && data.driverPrice > data.initialPrice) {
+        return false;
+      }
+
+      return true;
+    },
+    {
+      message: 'Сумма водителя не может превышать стоимость поездки',
+      path: ['driverPrice'],
     },
   );
 

@@ -1,3 +1,4 @@
+import type { PaymentMethodType } from '@entities/orders/enums';
 import type { OrderServiceDTO } from './OrderServiceDTO';
 import type { PassengerDTO } from './PassengerDTO';
 
@@ -52,4 +53,10 @@ export interface UpdateScheduledOrderDTO {
 
   /** Комментарии к заказу */
   notes?: string | null;
+
+  /** Метод оплаты */
+  paymentMethodType?: PaymentMethodType | null;
+
+  /** Сумма водителя */
+  driverPrice?: number | null;
 }
