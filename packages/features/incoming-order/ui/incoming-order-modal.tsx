@@ -10,6 +10,7 @@ import { useSignalR } from '@shared/hooks/signal/useSignalR';
 import { OrderStatus, PaymentMethodType } from '@entities/orders/enums';
 import type { GetOrderDTO } from '@entities/orders/interface/GetOrderDTO';
 import { useNotificationSound } from '@features/notifications';
+import { showOrderNotification } from '@features/notifications/lib/showOrderNotification';
 import { useOrderStack } from '@features/order-stack';
 
 interface IncomingOrderModalProps {
@@ -101,6 +102,15 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
         setIsModalOpen(true);
         setTimeLeft(10); // Сбрасываем таймер на 10 секунд
         playSound();
+
+        // Нативное уведомление когда вкладка свёрнута — не прерывает звук,
+        // т.к. вызывается асинхронно и не запрашивает разрешения
+        if (typeof document !== 'undefined' && document.hidden) {
+          const from = startLocation?.name || startLocation?.address || 'Не указано';
+          const to = endLocation?.name || endLocation?.address || 'Не указано';
+
+          showOrderNotification(from, to, orderId);
+        }
       } else {
         // Неправильная структура уведомления - игнорируем
       }

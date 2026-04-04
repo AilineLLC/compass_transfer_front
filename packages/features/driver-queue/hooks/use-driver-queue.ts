@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { driverQueueApi, type QueueStatusResponse } from '@shared/api/driver-queue';
+import { useWakeLock } from '@features/notifications/hooks/useWakeLock';
 
 interface UseDriverQueueReturn {
   queueData: QueueStatusResponse | null;
@@ -16,6 +17,7 @@ export function useDriverQueue(): UseDriverQueueReturn {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const { acquire: acquireWakeLock, release: releaseWakeLock } = useWakeLock();
 
   // Водитель в очереди, если есть position или joinedAt (статус 200)
   // Если есть orderId или id заказа - это активный заказ (статус 404 с данными)
@@ -46,13 +48,15 @@ export function useDriverQueue(): UseDriverQueueReturn {
       setError(null);
       const result = await driverQueueApi.joinQueue(locationId);
 
-      // Обновляем состояние с данными из ответа
       setQueueData({
         driverId: result.driverId,
         locationId: result.locationId,
         joinedAt: result.joinedAt,
         position: result.position || 1
       });
+
+      // Блокируем засыпание экрана — пока водитель в очереди, телефон не спит
+      acquireWakeLock();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Ошибка при входе в очередь';
 
@@ -60,7 +64,7 @@ export function useDriverQueue(): UseDriverQueueReturn {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [acquireWakeLock]);
 
   const leaveQueue = useCallback(async () => {
     try {
@@ -68,6 +72,9 @@ export function useDriverQueue(): UseDriverQueueReturn {
       setError(null);
       await driverQueueApi.leaveQueue();
       setQueueData(null);
+
+      // Снимаем блокировку экрана
+      releaseWakeLock();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Ошибка при выходе из очереди';
 
@@ -75,7 +82,7 @@ export function useDriverQueue(): UseDriverQueueReturn {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [releaseWakeLock]);
 
   const refetch = useCallback(async () => {
     await checkQueueStatus();
@@ -110,6 +117,13 @@ export function useDriverQueue(): UseDriverQueueReturn {
   useEffect(() => {
     checkQueueStatus();
   }, [checkQueueStatus]);
+
+  // Восстанавливаем Wake Lock если водитель уже в очереди (после перезагрузки страницы)
+  useEffect(() => {
+    if (isInQueue) {
+      acquireWakeLock();
+    }
+  }, [isInQueue, acquireWakeLock]);
 
   return {
     queueData,

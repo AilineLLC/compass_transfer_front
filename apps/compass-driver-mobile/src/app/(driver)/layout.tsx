@@ -5,6 +5,7 @@ import { LocationProvider } from '@features/location-tracking';
 import { NotificationsProvider } from '@features/notifications';
 import { DriverMobileFooter } from '@widgets/footer';
 import { DriverMobileHeader } from '@widgets/header';
+import { PushNotificationSetup } from './push-notification-setup';
 
 interface DriverLayoutProps {
   children: React.ReactNode;
@@ -29,6 +30,9 @@ export default async function DriverLayout({ children }: DriverLayoutProps) {
 
               {/* Модальное окно для входящих заказов - теперь самодостаточное */}
               <IncomingOrderModal />
+
+              {/* Регистрация SW и подписка на Web Push уведомления */}
+              <PushNotificationSetup />
             </div>
           </LocationProvider>
         </NotificationsProvider>
