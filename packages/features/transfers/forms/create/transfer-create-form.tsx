@@ -647,6 +647,7 @@ export function TransferCreateForm({ mode = 'create', initialData }: TransferCre
         onLocationSelect={loc => setStartLocation(loc)}
         title='Выберите точку отправления'
         selectedLocationIds={endLocation ? [endLocation.id] : []}
+        isLandingOnly
       />
       <LocationSelectionModal
         isOpen={isEndModalOpen}
@@ -654,6 +655,7 @@ export function TransferCreateForm({ mode = 'create', initialData }: TransferCre
         onLocationSelect={loc => setEndLocation(loc)}
         title='Выберите точку назначения'
         selectedLocationIds={startLocation ? [startLocation.id] : []}
+        isLandingOnly
       />
       <DriverSelectModal
         isOpen={isDriverModalOpen}

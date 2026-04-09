@@ -58,6 +58,7 @@ interface LocationFilters {
   isActive?: boolean;
   popular1?: boolean;
   popular2?: boolean;
+  isLandingOnly?: boolean;
 
   // Полнотекстовый поиск
   'FTS.Plain'?: string;
@@ -82,6 +83,7 @@ interface CreateLocationDTO {
   isActive: boolean;
   popular1?: boolean;
   popular2?: boolean;
+  isLandingOnly?: boolean | null;
   group?: string | null;
 }
 
@@ -99,6 +101,7 @@ interface UpdateLocationDTO {
   isActive?: boolean;
   popular1?: boolean;
   popular2?: boolean;
+  isLandingOnly?: boolean | null;
 }
 
 // DTO для отправки текущих координат водителя

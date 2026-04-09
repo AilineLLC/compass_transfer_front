@@ -21,6 +21,7 @@ interface LocationSelectionModalProps {
   onLocationSelect: (location: GetLocationDTO) => void;
   title: string;
   selectedLocationIds?: string[]; // Уже выбранные локации
+  isLandingOnly?: boolean; // Показывать только лендинговые локации
 }
 
 interface Filters {
@@ -63,7 +64,8 @@ export function LocationSelectionModal({
   onClose,
   onLocationSelect,
   title,
-  selectedLocationIds = []
+  selectedLocationIds = [],
+  isLandingOnly,
 }: LocationSelectionModalProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<Filters>({});
@@ -101,6 +103,7 @@ export function LocationSelectionModal({
         if (filters.city) { params.City = filters.city; params.CityOp = 'Contains'; }
         if (filters.region) { params.Region = filters.region; params.RegionOp = 'Contains'; }
         if (filters.isActive !== undefined) params.IsActive = filters.isActive;
+        if (isLandingOnly) params.IsLandingOnly = true;
 
         // Запускаем геокодинг параллельно с поиском в базе (только при запросе ≥ 2 символов)
         const geocodingPromise: Promise<GeocodingResult[]> = trimmedQuery.length >= 2
@@ -188,6 +191,7 @@ export function LocationSelectionModal({
         latitude: lat,
         longitude: lon,
         isActive: true,
+        isLandingOnly: isLandingOnly ?? null,
         district: null,
         group: null,
       });

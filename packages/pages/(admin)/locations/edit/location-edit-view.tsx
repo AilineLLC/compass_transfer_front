@@ -69,6 +69,7 @@ export function LocationEditView({ locationId }: LocationEditViewProps) {
       isActive: true,
       popular: false,
       popular2: false,
+      isLandingOnly: false,
       group: null,
     },
     onBack: () => router.push('/locations'),
@@ -87,6 +88,7 @@ export function LocationEditView({ locationId }: LocationEditViewProps) {
         isActive: location.isActive ?? true,
         popular: location.popular1 ?? false,
         popular2: location.popular2 ?? false,
+        isLandingOnly: location.isLandingOnly ?? false,
         group: location.group || '',
       });
     }

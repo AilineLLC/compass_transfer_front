@@ -77,6 +77,11 @@ export const locationCreateSchema = z.object({
     .string()
     .optional()
     .or(z.literal('')),
+
+  isLandingOnly: z
+    .boolean()
+    .nullable()
+    .default(false),
 });
 
 /**

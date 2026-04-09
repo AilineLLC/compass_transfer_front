@@ -51,6 +51,7 @@ export function useLocationFormLogic({
       longitude: 74.603967,
       isActive: true,
       popular: false,
+      isLandingOnly: false,
       group: '',
     },
   });
@@ -92,6 +93,7 @@ export function useLocationFormLogic({
           longitude: data.longitude,
           isActive: data.isActive,
           popular1: data.popular,
+          isLandingOnly: data.isLandingOnly ?? false,
           group: data.group,
         };
         console.log(data)

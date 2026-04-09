@@ -44,6 +44,7 @@ export function useLocationEditFormLogic({
     isActive: boolean;
     popular: boolean;
     popular2: boolean;
+    isLandingOnly?: boolean | null;
     group?: string | null;
   };
   onBack: () => void;
@@ -64,6 +65,7 @@ export function useLocationEditFormLogic({
       isActive: initialData.isActive,
       popular: initialData.popular,
       popular2: initialData.popular2,
+      isLandingOnly: initialData.isLandingOnly ?? false,
       group: initialData.group || '',
     },
   });
@@ -105,6 +107,7 @@ export function useLocationEditFormLogic({
           isActive: data.isActive,
           popular1: data.popular,
           popular2: data.popular2,
+          isLandingOnly: data.isLandingOnly ?? false,
           group: data.group || null,
         };
         

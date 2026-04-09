@@ -41,6 +41,9 @@ export interface LocationDTO {
   /** Популярная локация 2 */
   popular2: boolean;
 
+  /** Отображать на лендинг-сайте */
+  isLandingOnly: boolean | null;
+
   /** Группа локации */
   group?: string | null;
 
