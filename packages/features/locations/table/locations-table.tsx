@@ -50,6 +50,8 @@ export function LocationsTable({
     setRegionFilter,
     setIsActiveFilter,
     setPopular1Filter,
+    isLandingOnlyFilter,
+    setIsLandingOnlyFilter,
     setShowAdvancedFilters,
     handleNextPage,
     handlePrevPage,
@@ -112,6 +114,8 @@ export function LocationsTable({
         handleIsActiveFilterChange={handleIsActiveFilterChange}
         popular1Filter={popular1Filter}
         setPopular1Filter={setPopular1Filter}
+        isLandingOnlyFilter={isLandingOnlyFilter}
+        setIsLandingOnlyFilter={setIsLandingOnlyFilter}
         pageSize={pageSize}
         handlePageSizeChange={handlePageSizeChange}
         showAdvancedFilters={showAdvancedFilters}

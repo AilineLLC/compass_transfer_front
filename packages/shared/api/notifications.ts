@@ -37,7 +37,8 @@ interface GetNotificationDTO {
   isRead: boolean;
   orderType: OrderType;
   userId?: string;
-  createdAt?: string;
+  data: unknown | null;
+  createdAt: string;
 }
 
 // Типы для API фильтров

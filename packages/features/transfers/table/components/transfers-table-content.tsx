@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronUp, ChevronDown, MoreHorizontal, Eye, Edit, Trash2 } from 'lucide-react';
+import { ChevronUp, ChevronDown, MoreHorizontal, Eye, Edit, Trash2, ClipboardList } from 'lucide-react';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import React, { useState } from 'react';
 import {
@@ -18,6 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@shared/ui/navigation/dropdown-menu';
+import { Badge } from '@shared/ui/data-display/badge';
 import { DeleteConfirmationModal } from '@shared/ui/modals';
 import { transfersApi, type GetTransferDTO } from '@shared/api/transfers';
 
@@ -26,6 +27,7 @@ interface ColumnVisibility {
   startLocation: boolean;
   endLocation: boolean;
   price: boolean;
+  reservations: boolean;
   passengers: boolean;
   freeSeats: boolean;
   driver: boolean;
@@ -36,6 +38,7 @@ interface ColumnVisibility {
 
 interface TransfersTableContentProps {
   transfers: GetTransferDTO[];
+  pendingReservationsMap: Record<string, number>;
   columnVisibility: ColumnVisibility;
   router: AppRouterInstance;
   sortBy: string;
@@ -83,6 +86,7 @@ const formatDate = (dateString: string) =>
 
 export function TransfersTableContent({
   transfers,
+  pendingReservationsMap,
   columnVisibility,
   router,
   sortBy,
@@ -134,6 +138,7 @@ export function TransfersTableContent({
                   Цена
                 </SortableHeader>
               )}
+              {columnVisibility.reservations && <TableHead>Заявки</TableHead>}
               {columnVisibility.passengers && <TableHead>Пассажиры</TableHead>}
               {columnVisibility.freeSeats && <TableHead>Свободных мест</TableHead>}
               {columnVisibility.driver && <TableHead>Водитель</TableHead>}
@@ -177,6 +182,24 @@ export function TransfersTableContent({
                 )}
                 {columnVisibility.price && (
                   <TableCell>{transfer.price.toLocaleString('ru-RU')} сом</TableCell>
+                )}
+                {columnVisibility.reservations && (
+                  <TableCell>
+                    {(pendingReservationsMap[transfer.id] ?? 0) > 0 ? (
+                      <button
+                        type='button'
+                        onClick={() => router.push(`/transfers/${transfer.id}`)}
+                        className='inline-flex'
+                      >
+                        <Badge className='gap-1 cursor-pointer bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-300'>
+                          <ClipboardList className='h-3 w-3' />
+                          {pendingReservationsMap[transfer.id]}
+                        </Badge>
+                      </button>
+                    ) : (
+                      <span className='text-muted-foreground text-sm'>—</span>
+                    )}
+                  </TableCell>
                 )}
                 {columnVisibility.passengers && (
                   <TableCell>{transfer.passengers.length}</TableCell>

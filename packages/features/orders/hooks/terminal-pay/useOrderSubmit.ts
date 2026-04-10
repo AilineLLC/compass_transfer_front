@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { toast } from '@shared/lib/conditional-toast';
 import { orderService } from '@shared/api/orders';
 import { usePaymentContext } from '@shared/contexts/PaymentContext';
-import type { OrderCancelledNotificationDTO } from '@shared/hooks/signal/interface';
 import type { RideNotificationData } from '@shared/hooks/signal/types';
 import { useSignalR } from '@shared/hooks/signal/useSignalR';
 import { useFiscalReceipt } from '@entities/fiscal';
@@ -88,24 +87,20 @@ export const useOrderSubmit = ({
       router.push('/receipt');
     };
 
-    const handleDriverNotFound = () => {
-      setIsLoading(false);
-      toast.error(t('errors.driverNotFound'));
+    const handleNew = (raw: unknown) => {
+      const n = raw as { type?: string; [key: string]: unknown };
+      if (n?.type === 'RideAccepted') {
+        handleRideAccepted(raw as RideNotificationData);
+      } else if (n?.type === 'OrderCancelled' || n?.type === 'DriverCancelled') {
+        setIsLoading(false);
+        toast.error(t('errors.driverCancelled'));
+      }
     };
 
-    const handleDriverCancelled = (_data: OrderCancelledNotificationDTO) => {
-      setIsLoading(false);
-      toast.error(t('errors.driverCancelled'));
-    };
-
-    signalR.on('RideAcceptedNotification', handleRideAccepted);
-    signalR.on('DriverNotFoundNotification', handleDriverNotFound);
-    signalR.on('OrderCancelledNotification', handleDriverCancelled);
+    signalR.on('New', handleNew);
 
     return () => {
-      signalR.off('RideAcceptedNotification', handleRideAccepted);
-      signalR.off('DriverNotFoundNotification', handleDriverNotFound);
-      signalR.off('OrderCancelledNotification', handleDriverCancelled);
+      signalR.off('New', handleNew);
     };
   }, [
     signalR,

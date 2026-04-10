@@ -10,7 +10,6 @@ import {
   Settings,
   DollarSign,
   ArrowLeftRight,
-  ClipboardList,
 } from 'lucide-react';
 import { sidebarMockData } from '@entities/users/mock-data';
 
@@ -89,29 +88,6 @@ export const sidebarData = {
         {
           title: 'Создать трансфер',
           url: '/transfers/create',
-        },
-      ],
-    },
-    {
-      title: 'Заявки',
-      url: '/transfer-reservations',
-      icon: ClipboardList,
-      items: [
-        {
-          title: 'Все заявки',
-          url: '/transfer-reservations',
-        },
-        {
-          title: 'Ожидающие',
-          url: '/transfer-reservations?status=Pending',
-        },
-        {
-          title: 'Одобренные',
-          url: '/transfer-reservations?status=Approved',
-        },
-        {
-          title: 'Отклонённые',
-          url: '/transfer-reservations?status=Rejected',
         },
       ],
     },

@@ -1,16 +1,19 @@
-import { Info, Settings, Users, Star, Plus } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Info, Settings, Users, Star, Plus, ImageIcon, Pencil } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/layout';
 import { Button } from '@shared/ui/forms/button';
 import { Badge } from '@shared/ui/data-display/badge';
 import type { GetCarDTO } from '@entities/cars/interface';
 import { ServiceClass, ServiceClassValues, CarType, CarTypeValues } from '@entities/tariffs/enums';
 import { CarFeature } from '@entities/cars/enums';
+import { CarImageSection, type CarImageItem } from '@entities/cars';
 import { CarDriversList } from './car-drivers-list';
 
 interface CarViewContentProps {
   car: GetCarDTO;
   onRemoveDriver?: (driverId: string) => Promise<void>;
   onAddFeature?: () => void;
+  onUpdateImage?: (item: CarImageItem) => Promise<void>;
 }
 
 // Переводы опций автомобиля
@@ -40,9 +43,93 @@ const carFeatureLabels: Record<CarFeature, string> = {
   [CarFeature.BikeRack]: 'Велосипедная стойка',
 };
 
-export function CarViewContent({ car, onRemoveDriver, onAddFeature }: CarViewContentProps) {
+export function CarViewContent({ car, onRemoveDriver, onAddFeature, onUpdateImage }: CarViewContentProps) {
+  const [isEditingImage, setIsEditingImage] = useState(false);
+  const [isSavingImage, setIsSavingImage] = useState(false);
+  const imageItemRef = useRef<CarImageItem>(
+    car.image ? { kind: 'existing', id: car.image.id, path: car.image.path } : null,
+  );
+
+  const getUploadUrl = (path: string) =>
+    `${process.env.NEXT_PUBLIC_UPLOADS_URL}/Uploads/${path}`;
+
+  const handleSaveImage = async () => {
+    if (!onUpdateImage) return;
+    setIsSavingImage(true);
+    try {
+      await onUpdateImage(imageItemRef.current);
+      setIsEditingImage(false);
+    } finally {
+      setIsSavingImage(false);
+    }
+  };
+
   return (
     <div className='space-y-6'>
+      {/* Фотография */}
+      <Card>
+        <CardHeader>
+          <div className='flex items-center justify-between'>
+            <CardTitle className='flex items-center gap-2'>
+              <ImageIcon className='h-5 w-5' />
+              Фотография
+            </CardTitle>
+            {onUpdateImage && !isEditingImage && (
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={() => setIsEditingImage(true)}
+                className='flex items-center gap-2'
+              >
+                <Pencil className='h-4 w-4' />
+                Изменить
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isEditingImage ? (
+            <div className='space-y-3'>
+              <CarImageSection
+                existingImageId={car.image?.id}
+                existingImagePath={car.image?.path}
+                onImageChange={item => { imageItemRef.current = item; }}
+              />
+              <div className='flex gap-2 justify-end'>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  onClick={() => {
+                    imageItemRef.current = car.image
+                      ? { kind: 'existing', id: car.image.id, path: car.image.path }
+                      : null;
+                    setIsEditingImage(false);
+                  }}
+                  disabled={isSavingImage}
+                >
+                  Отмена
+                </Button>
+                <Button size='sm' onClick={handleSaveImage} disabled={isSavingImage}>
+                  {isSavingImage ? 'Сохранение...' : 'Сохранить'}
+                </Button>
+              </div>
+            </div>
+          ) : car.image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={getUploadUrl(car.image.path)}
+              alt={`${car.make} ${car.model}`}
+              className='w-full max-h-72 object-cover rounded-lg'
+            />
+          ) : (
+            <div className='flex flex-col items-center justify-center py-8 text-gray-400'>
+              <ImageIcon className='h-12 w-12 mb-2' />
+              <p className='text-sm'>Фотография не добавлена</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Основная информация */}
       <Card>
         <CardHeader>

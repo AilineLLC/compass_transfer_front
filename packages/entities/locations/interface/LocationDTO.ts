@@ -1,5 +1,10 @@
 import type { LocationType } from '../enums/LocationType.enum';
 
+export interface LocationImageDTO {
+  id: string;
+  path: string;
+}
+
 /**
  * Интерфейс для локации
  * GET /Location/{uuid}
@@ -49,4 +54,7 @@ export interface LocationDTO {
 
   /** ID локации */
   id: string;
+
+  /** Картинки локации */
+  images?: LocationImageDTO[];
 }

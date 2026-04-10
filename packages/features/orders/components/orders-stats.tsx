@@ -49,34 +49,14 @@ export function OrdersStats({ className, activeStatus }: OrderStatsProps) {
   useEffect(() => {
     if (!signalR.isConnected) return;
 
-    // События, которые влияют на статистику заказов
-    const orderEvents = [
-      'OrderCreatedNotification',
-      'OrderConfirmedNotification',
-      'OrderCompletedNotification',
-      'OrderCancelledNotification',
-      'RideRequestNotification',
-      'RideAcceptedNotification',
-      'RideStartedNotification',
-      'RideCompletedNotification',
-      'RideCancelledNotification',
-    ];
-
-    // Обработчик события - перезагружаем статистику
     const handleOrderEvent = () => {
       loadStats();
     };
 
-    // Подписываемся на все события
-    orderEvents.forEach(event => {
-      signalR.on(event, handleOrderEvent);
-    });
+    signalR.on('New', handleOrderEvent);
 
-    // Отписываемся при размонтировании
     return () => {
-      orderEvents.forEach(event => {
-        signalR.off(event, handleOrderEvent);
-      });
+      signalR.off('New', handleOrderEvent);
     };
   }, [signalR, loadStats]);
 

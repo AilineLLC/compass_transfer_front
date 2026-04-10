@@ -297,36 +297,15 @@ export function useOrdersTable(initialFilters?: {
   useEffect(() => {
     if (!signalR.isConnected) return;
 
-    // События, которые влияют на список заказов
-    const orderEvents = [
-      'OrderCreatedNotification',
-      'OrderConfirmedNotification',
-      'OrderCompletedNotification',
-      'OrderCancelledNotification',
-      'OrderUpdatedNotification',
-      'RideRequestNotification',
-      'RideAcceptedNotification',
-      'RideStartedNotification',
-      'RideCompletedNotification',
-      'RideCancelledNotification',
-      'DriverAssignedNotification',
-    ];
-
-    // Обработчик события - перезагружаем список заказов
+    // Любое новое уведомление может означать изменение заказа
     const handleOrderEvent = () => {
       loadOrders();
     };
 
-    // Подписываемся на все события
-    orderEvents.forEach(event => {
-      signalR.on(event, handleOrderEvent);
-    });
+    signalR.on('New', handleOrderEvent);
 
-    // Отписываемся при размонтировании
     return () => {
-      orderEvents.forEach(event => {
-        signalR.off(event, handleOrderEvent);
-      });
+      signalR.off('New', handleOrderEvent);
     };
   }, [signalR, loadOrders]);
 

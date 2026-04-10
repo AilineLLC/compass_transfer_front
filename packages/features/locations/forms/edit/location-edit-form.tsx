@@ -2,10 +2,11 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { AxiosError } from 'axios';
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { locationsApi } from '@shared/api/locations';
+import { filesApi } from '@shared/api/files';
 import { logger } from '@shared/lib';
 import type { LocationType } from '@entities/locations/enums';
 import { parseAddress } from '@entities/locations/lib/address-parser';
@@ -46,11 +47,15 @@ export function useLocationEditFormLogic({
     popular2: boolean;
     isLandingOnly?: boolean | null;
     group?: string | null;
+    images?: import('@entities/locations').LocationImageDTO[];
   };
   onBack: () => void;
   onSuccess: () => void;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const imageItemsRef = useRef<import('@entities/locations').ImageItem[]>(
+    (initialData.images ?? []).map(img => ({ kind: 'existing' as const, id: img.id, path: img.path })),
+  );
 
   const form = useForm({
     resolver: zodResolver(locationUpdateSchema),
@@ -84,6 +89,17 @@ export function useLocationEditFormLogic({
     async (data: LocationUpdateFormData) => {
       setIsSubmitting(true);
       try {
+        // Загружаем картинки в порядке очереди
+        const orderedImageIds = await Promise.all(
+          imageItemsRef.current
+            .filter(item => item.kind !== 'pending' || !item.error)
+            .map(item =>
+              item.kind === 'existing'
+                ? Promise.resolve(item.id)
+                : filesApi.uploadFile('LocationImage', item.file),
+            ),
+        );
+
         // Парсим адрес для извлечения компонентов
         const addressComponents = parseAddress(data.address);
 
@@ -109,6 +125,7 @@ export function useLocationEditFormLogic({
           popular2: data.popular2,
           isLandingOnly: data.isLandingOnly ?? false,
           group: data.group || null,
+          images: orderedImageIds,
         };
         
         const result = await locationsApi.updateLocation(locationId, apiData);
@@ -214,6 +231,7 @@ export function useLocationEditFormLogic({
   return {
     form,
     isSubmitting,
+    imageItemsRef,
     getChapterStatus,
     getChapterErrors,
     onUpdate,

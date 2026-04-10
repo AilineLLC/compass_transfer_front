@@ -88,6 +88,11 @@ export const locationUpdateSchema = z.object({
     .boolean()
     .nullable()
     .default(false),
+
+  images: z
+    .array(z.string())
+    .optional()
+    .default([]),
 });
 
 /**

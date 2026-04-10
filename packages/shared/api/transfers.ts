@@ -80,6 +80,8 @@ export interface GetTransferDTO {
   departureTime: string;
   duration: number | null;
   price: number;
+  allowPartialReservations: boolean;
+  isHot: boolean;
   passengers: TransferPassenger[];
   startLocation: TransferLocation;
   endLocation: TransferLocation;
@@ -120,6 +122,8 @@ export interface CreateTransferDTO {
   departureTime: string;
   duration: number | null;
   price: number;
+  allowPartialReservations: boolean;
+  isHot: boolean;
   passengers: CreateTransferPassengerDTO[];
   startLocation: string;
   endLocation: string;

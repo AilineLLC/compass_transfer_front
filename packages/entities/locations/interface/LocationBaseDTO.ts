@@ -18,4 +18,5 @@ export interface LocationBaseDTO {
   popular1?: boolean;
   popular2?: boolean;
   group?: string | null;
+  images?: string[];
 }

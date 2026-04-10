@@ -16,11 +16,14 @@ import {
   Phone,
   UserCheck,
   X,
+  Ticket,
+  Flame,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@shared/ui/forms/button';
+import { Checkbox } from '@shared/ui/forms/checkbox';
 import { Input } from '@shared/ui/forms/input';
 import { Label } from '@shared/ui/forms/label';
 import type { GetLocationDTO } from '@entities/locations/interface';
@@ -28,6 +31,7 @@ import type { GetDriverDTO, GetCustomerDTO } from '@entities/users/interface';
 import type { GetCarDTO } from '@entities/cars/interface';
 import { LocationSelectionModal } from '@features/orders/components/LocationSelectionModal';
 import { transfersApi, type CreateTransferPassengerDTO, type GetTransferDTO } from '@shared/api/transfers';
+import { Switch } from '@shared/ui/forms/switch';
 import { DriverSelectModal } from './driver-select-modal';
 import { CarSelectModal } from './car-select-modal';
 import { CustomerSelectModal } from './customer-select-modal';
@@ -213,6 +217,10 @@ export function TransferCreateForm({ mode = 'create', initialData }: TransferCre
     initialData?.duration != null ? String(initialData.duration) : '',
   );
   const [price, setPrice] = useState(initialData ? String(initialData.price) : '');
+  const [allowPartialReservations, setAllowPartialReservations] = useState(
+    initialData ? initialData.allowPartialReservations : true,
+  );
+  const [isHot, setIsHot] = useState(initialData?.isHot ?? false);
 
   const [startLocation, setStartLocation] = useState<GetLocationDTO | null>(
     initialData ? toLocationDTO(initialData.startLocation) : null,
@@ -301,6 +309,8 @@ export function TransferCreateForm({ mode = 'create', initialData }: TransferCre
         departureTime: new Date(departureTime).toISOString(),
         duration: duration ? Number(duration) : null,
         price: Number(price),
+        allowPartialReservations,
+        isHot,
         passengers: passengersPayload,
         startLocation: startLocation.id,
         endLocation: endLocation.id,
@@ -401,6 +411,83 @@ export function TransferCreateForm({ mode = 'create', initialData }: TransferCre
                 onChange={e => setDuration(e.target.value)}
                 className='h-10'
               />
+            </div>
+          </div>
+        </Section>
+
+        {/* Бронирование */}
+        <Section icon={Ticket} title='Режим бронирования' description='Как пассажиры могут занимать места'>
+          <div
+            className={`flex items-start gap-4 rounded-xl border p-4 cursor-pointer transition-colors ${
+              allowPartialReservations
+                ? 'border-primary/30 bg-primary/5'
+                : 'border-gray-200 bg-gray-50/60'
+            }`}
+            onClick={() => setAllowPartialReservations(prev => !prev)}
+          >
+            <Checkbox
+              id='allowPartialReservations'
+              checked={allowPartialReservations}
+              onCheckedChange={val => setAllowPartialReservations(!!val)}
+              className='mt-0.5 shrink-0'
+            />
+            <div className='space-y-1'>
+              <Label
+                htmlFor='allowPartialReservations'
+                className='text-sm font-semibold cursor-pointer'
+              >
+                Частичное бронирование мест <span className='text-red-500'>*</span>
+              </Label>
+              <p className='text-xs text-muted-foreground leading-relaxed'>
+                {allowPartialReservations ? (
+                  <>
+                    <span className='font-medium text-primary'>Включено</span> — пассажиры могут
+                    бронировать отдельные места в трансфере через заявки. Каждый пассажир платит
+                    только за своё место. Подходит для маршрутных трансферов, где места продаются
+                    по отдельности.
+                  </>
+                ) : (
+                  <>
+                    <span className='font-medium text-orange-600'>Отключено</span> — трансфер
+                    бронируется целиком: клиент выкупает все места в автомобиле. Частичное
+                    занятие мест недоступно. Подходит для индивидуальных трансферов и групповых
+                    заказов на весь салон.
+                  </>
+                )}
+              </p>
+            </div>
+          </div>
+        </Section>
+
+        {/* Горячий трансфер */}
+        <Section icon={Flame} title='Горячий трансфер' description='Приоритетное отображение'>
+          <div
+            className={`flex items-start gap-4 rounded-xl border p-4 cursor-pointer transition-colors ${
+              isHot ? 'border-orange-300 bg-orange-50/60' : 'border-gray-200 bg-gray-50/60'
+            }`}
+            onClick={() => setIsHot(prev => !prev)}
+          >
+            <Switch checked={isHot} onCheckedChange={setIsHot} className='mt-0.5 shrink-0' />
+            <div className='space-y-1'>
+              <Label className='text-sm font-semibold cursor-pointer flex items-center gap-1.5'>
+                <Flame className='h-4 w-4 text-orange-500' />
+                Горячий трансфер
+              </Label>
+              <p className='text-xs text-muted-foreground leading-relaxed'>
+                {isHot ? (
+                  <>
+                    <span className='font-medium text-orange-600'>Включено</span> — трансфер будет
+                    отображаться как <span className='font-medium'>Горячий трансфер</span> и
+                    выделяться в списке для привлечения пассажиров. Используйте для срочных или
+                    выгодных рейсов с ограниченным временем.
+                  </>
+                ) : (
+                  <>
+                    <span className='font-medium text-gray-500'>Отключено</span> — трансфер
+                    отображается в стандартном режиме без дополнительного выделения.
+                  </>
+                )}
+              </p>
             </div>
           </div>
         </Section>

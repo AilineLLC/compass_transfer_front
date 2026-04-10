@@ -25,6 +25,7 @@ export interface TransferReservationFilters {
   page?: number;
   size?: number;
   status?: string;
+  Transfer?: string;
   sortBy?: string;
   sortOrder?: 'Asc' | 'Desc';
 }

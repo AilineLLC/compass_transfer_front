@@ -20,13 +20,18 @@ import {
   Palette,
   Star,
   Shield,
+  ClipboardList,
+  Check,
+  X,
+  Flame,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@shared/ui/data-display/badge';
 import { Button } from '@shared/ui/forms/button';
 import { transfersApi, type GetTransferDTO, type TransferPassenger } from '@shared/api/transfers';
+import { transferReservationsApi, type TransferReservationDTO } from '@shared/api/transfer-reservations';
 import { DeleteConfirmationModal } from '@shared/ui/modals';
 
 const formatDate = (iso: string) =>
@@ -107,6 +112,49 @@ export function TransferViewPage({ transfer: initialTransfer }: TransferViewPage
   const [transfer, setTransfer] = useState<GetTransferDTO>(initialTransfer);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [passengerToDelete, setPassengerToDelete] = useState<TransferPassenger | null>(null);
+  const [reservations, setReservations] = useState<TransferReservationDTO[]>([]);
+  const [reservationsLoading, setReservationsLoading] = useState(true);
+  const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await transferReservationsApi.getReservations({ Transfer: transfer.id, size: 100 });
+        setReservations(res.data);
+      } catch {
+        // silent — reservations section will show empty state
+      } finally {
+        setReservationsLoading(false);
+      }
+    };
+    load();
+  }, [transfer.id]);
+
+  const handleApprove = async (id: string) => {
+    setProcessingIds(prev => new Set(prev).add(id));
+    try {
+      await transferReservationsApi.approveReservation(id);
+      setReservations(prev => prev.map(r => r.id === id ? { ...r, status: 'Approved' } : r));
+      toast.success('Заявка одобрена');
+    } catch {
+      toast.error('Не удалось одобрить заявку');
+    } finally {
+      setProcessingIds(prev => { const s = new Set(prev); s.delete(id); return s; });
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    setProcessingIds(prev => new Set(prev).add(id));
+    try {
+      await transferReservationsApi.rejectReservation(id);
+      setReservations(prev => prev.map(r => r.id === id ? { ...r, status: 'Rejected' } : r));
+      toast.success('Заявка отклонена');
+    } catch {
+      toast.error('Не удалось отклонить заявку');
+    } finally {
+      setProcessingIds(prev => { const s = new Set(prev); s.delete(id); return s; });
+    }
+  };
 
   const handleDelete = async () => {
     await transfersApi.deleteTransfer(transfer.id);
@@ -121,6 +169,8 @@ export function TransferViewPage({ transfer: initialTransfer }: TransferViewPage
       departureTime: transfer.departureTime,
       duration: transfer.duration,
       price: transfer.price,
+      allowPartialReservations: transfer.allowPartialReservations,
+      isHot: transfer.isHot,
       passengers: updatedPassengers.map(p => ({
         customerId: p.customerId,
         reservedSeats: p.reservedSeats,
@@ -153,7 +203,15 @@ export function TransferViewPage({ transfer: initialTransfer }: TransferViewPage
           </Button>
           <div className='h-5 w-px bg-border' />
           <div>
-            <h1 className='text-base font-bold tracking-tight'>Трансфер</h1>
+            <div className='flex items-center gap-2'>
+              <h1 className='text-base font-bold tracking-tight'>Трансфер</h1>
+              {transfer.isHot && (
+                <span className='inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-700 border border-orange-200'>
+                  <Flame className='h-3 w-3' />
+                  Горячий
+                </span>
+              )}
+            </div>
             <p className='text-xs text-muted-foreground font-mono'>{transfer.id}</p>
           </div>
         </div>
@@ -456,6 +514,94 @@ export function TransferViewPage({ transfer: initialTransfer }: TransferViewPage
                   </Button>
                 </div>
               ))}
+            </div>
+          )}
+        </SectionCard>
+
+        {/* Заявки */}
+        <SectionCard
+          icon={ClipboardList}
+          title='Заявки'
+          action={
+            reservations.length > 0 ? (
+              <span className='text-xs text-muted-foreground bg-gray-100 px-2 py-0.5 rounded-full'>
+                {reservations.length}
+              </span>
+            ) : undefined
+          }
+        >
+          {reservationsLoading ? (
+            <p className='text-sm text-muted-foreground py-4 text-center'>Загрузка заявок...</p>
+          ) : reservations.length === 0 ? (
+            <div className='flex flex-col items-center justify-center py-6 text-center gap-2'>
+              <div className='flex h-12 w-12 items-center justify-center rounded-full bg-gray-100'>
+                <ClipboardList className='h-5 w-5 text-gray-400' />
+              </div>
+              <p className='text-sm text-muted-foreground'>Заявок нет</p>
+            </div>
+          ) : (
+            <div className='grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3'>
+              {reservations.map(r => {
+                const isPending = r.status === 'Pending';
+                const isProcessing = processingIds.has(r.id);
+                return (
+                  <div
+                    key={r.id}
+                    className='flex flex-col gap-3 rounded-xl bg-gray-50 border px-4 py-3'
+                  >
+                    <div className='flex items-start justify-between gap-2'>
+                      <div className='min-w-0'>
+                        <p className='font-medium text-sm truncate'>{r.name || '—'}</p>
+                        {r.phone && (
+                          <span className='flex items-center gap-1 text-xs text-muted-foreground mt-0.5'>
+                            <Phone className='h-3 w-3' />
+                            {r.phone}
+                          </span>
+                        )}
+                        <span className='flex items-center gap-1 text-xs text-muted-foreground mt-0.5'>
+                          <Armchair className='h-3 w-3' />
+                          {r.reservedSeats} {r.reservedSeats === 1 ? 'место' : 'мест'}
+                        </span>
+                      </div>
+                      <Badge
+                        variant='outline'
+                        className={
+                          r.status === 'Verified'
+                            ? 'text-green-700 border-green-300 bg-green-50 shrink-0'
+                            : r.status === 'Rejected'
+                            ? 'text-red-700 border-red-300 bg-red-50 shrink-0'
+                            : 'text-amber-700 border-amber-300 bg-amber-50 shrink-0'
+                        }
+                      >
+                        {r.status === 'Verified' ? 'Одобрено' : r.status === 'Rejected' ? 'Отклонено' : 'Ожидает'}
+                      </Badge>
+                    </div>
+                    {isPending && (
+                      <div className='flex gap-2 border-t pt-2'>
+                        <Button
+                          size='sm'
+                          className='flex-1 h-7 gap-1 bg-green-600 hover:bg-green-700 text-white'
+                          disabled={isProcessing}
+                          onClick={() => handleApprove(r.id)}
+                        >
+                          <Check className='h-3.5 w-3.5' />
+                          Одобрить
+                        </Button>
+                        <Button
+                          size='sm'
+                          variant='outline'
+                          className='flex-1 h-7 gap-1 text-red-600 border-red-200 hover:bg-red-50'
+                          disabled={isProcessing}
+                          onClick={() => handleReject(r.id)}
+                        >
+                          <X className='h-3.5 w-3.5' />
+                          Отклонить
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </SectionCard>

@@ -7,6 +7,7 @@ import { useTransfersTable } from './hooks/use-transfers-table';
 export function TransfersTable() {
   const {
     transfers,
+    pendingReservationsMap,
     loading,
     error,
     pageSize,
@@ -51,6 +52,7 @@ export function TransfersTable() {
 
       <TransfersTableContent
         transfers={transfers}
+        pendingReservationsMap={pendingReservationsMap}
         columnVisibility={columnVisibility}
         router={router}
         sortBy={sortBy}

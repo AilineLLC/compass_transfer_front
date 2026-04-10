@@ -106,10 +106,16 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
       }
     };
 
-    on('RideRequestNotification', handleRideRequest);
+    const handleNew = (data: unknown) => {
+      if (data && typeof data === 'object' && (data as Record<string, unknown>).type === 'RideRequest') {
+        handleRideRequest(data);
+      }
+    };
+
+    on('New', handleNew);
 
     return () => {
-      off('RideRequestNotification', handleRideRequest);
+      off('New', handleNew);
       stopSound();
     };
   }, [on, off, playSound, stopSound]);

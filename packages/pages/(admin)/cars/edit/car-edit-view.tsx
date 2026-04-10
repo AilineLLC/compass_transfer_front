@@ -7,7 +7,7 @@ import { carsApi } from '@shared/api/cars';
 import { Card, CardContent } from '@shared/ui/layout';
 import { ChapterHeader } from '@shared/ui/layout/chapter-header';
 import { FormSidebar } from '@shared/ui/layout/form-sidebar';
-import { CarBasicSection, CarFeaturesSection } from '@entities/cars';
+import { CarBasicSection, CarFeaturesSection, CarImageSection, type CarImageItem } from '@entities/cars';
 import { VehicleStatus, VehicleType, CarColor } from '@entities/cars/enums';
 import type { GetCarDTO } from '@entities/cars/interface';
 import { CAR_FORM_CHAPTERS } from '@entities/cars/model/form-chapters/car-chapters';
@@ -22,6 +22,8 @@ interface CarEditViewProps {
 interface CarEditFormViewProps {
   form: UseFormReturn<CarUpdateFormData>;
   isSubmitting: boolean;
+  imageItemRef: React.MutableRefObject<CarImageItem>;
+  carImage?: { id: string; path: string } | null;
   getChapterStatus: (chapterId: string) => 'complete' | 'warning' | 'error' | 'pending';
   getChapterErrors: (chapterId: string) => string[];
   onUpdate: () => void;
@@ -92,8 +94,12 @@ export function CarEditView({ carId }: CarEditViewProps) {
         passengerCapacity: car.passengerCapacity || 4,
         features: car.features || [],
       });
+      // Инициализируем ref изображения
+      logic.imageItemRef.current = car.image
+        ? { kind: 'existing', id: car.image.id, path: car.image.path }
+        : null;
     }
-  }, [car, logic.form]);
+  }, [car, logic.form, logic.imageItemRef]);
 
   if (isLoading) {
     return (
@@ -110,12 +116,14 @@ export function CarEditView({ carId }: CarEditViewProps) {
     notFound();
   }
 
-  return <CarEditFormView {...logic} />;
+  return <CarEditFormView {...logic} carImage={car.image} />;
 }
 
 function CarEditFormView({
   form,
   isSubmitting,
+  imageItemRef,
+  carImage,
   getChapterStatus,
   getChapterErrors,
   onUpdate,
@@ -170,6 +178,23 @@ function CarEditFormView({
                       labels={{
                         features: 'Дополнительные опции *',
                       }}
+                    />
+                  </div>
+                </div>
+
+                {/* Глава 3: Фотография */}
+                <div id='chapter-image' className='relative flex flex-col gap-4'>
+                  <ChapterHeader
+                    number={3}
+                    title='Фотография'
+                    status='pending'
+                  />
+                  <div className='relative ml-12'>
+                    <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
+                    <CarImageSection
+                      existingImageId={carImage?.id}
+                      existingImagePath={carImage?.path}
+                      onImageChange={item => { imageItemRef.current = item; }}
                     />
                   </div>
                 </div>

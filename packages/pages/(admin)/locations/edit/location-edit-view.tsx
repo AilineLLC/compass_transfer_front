@@ -1,13 +1,14 @@
 'use client';
 
 import { notFound, useRouter } from 'next/navigation';
-import { useState, useEffect, useLayoutEffect } from 'react';
+import { useState, useEffect, useLayoutEffect, type MutableRefObject } from 'react';
 import { FormProvider, type UseFormReturn } from 'react-hook-form';
 import { locationsApi } from '@shared/api/locations';
 import { Card, CardContent } from '@shared/ui/layout';
 import { ChapterHeader } from '@shared/ui/layout/chapter-header';
 import { FormSidebar } from '@shared/ui/layout/form-sidebar';
-import { LocationBasicSection, LocationCoordinatesSection, LocationMapSection } from '@entities/locations';
+import { LocationBasicSection, LocationCoordinatesSection, LocationImagesSection, LocationMapSection } from '@entities/locations';
+import type { ImageItem, LocationImageDTO } from '@entities/locations';
 import { LocationType } from '@entities/locations/enums';
 import type { LocationDTO } from '@entities/locations/interface';
 import { LOCATION_FORM_CHAPTERS } from '@entities/locations/model/form-chapters/location-chapters';
@@ -21,6 +22,8 @@ interface LocationEditViewProps {
 interface LocationEditFormViewProps {
   form: UseFormReturn<LocationUpdateFormData>;
   isSubmitting: boolean;
+  imageItemsRef: MutableRefObject<ImageItem[]>;
+  initialImages: LocationImageDTO[];
   getChapterStatus: (chapterId: string) => 'complete' | 'warning' | 'error' | 'pending';
   getChapterErrors: (chapterId: string) => string[];
   onUpdate: () => void;
@@ -33,6 +36,7 @@ export function LocationEditView({ locationId }: LocationEditViewProps) {
   const [location, setLocation] = useState<LocationDTO | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [initialImages, setInitialImages] = useState<LocationImageDTO[]>([]);
 
   // Загружаем данные локации
   useEffect(() => {
@@ -44,6 +48,7 @@ export function LocationEditView({ locationId }: LocationEditViewProps) {
         const locationData = await locationsApi.getLocationById(locationId);
 
         setLocation(locationData);
+        setInitialImages(locationData.images ?? [] as LocationImageDTO[]);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Ошибка загрузки данных');
       } finally {
@@ -71,6 +76,7 @@ export function LocationEditView({ locationId }: LocationEditViewProps) {
       popular2: false,
       isLandingOnly: false,
       group: null,
+      images: [] as LocationImageDTO[],
     },
     onBack: () => router.push('/locations'),
     onSuccess: () => router.push('/locations'),
@@ -109,18 +115,30 @@ export function LocationEditView({ locationId }: LocationEditViewProps) {
     notFound();
   }
 
-  return <LocationEditFormView {...logic} />;
+  return <LocationEditFormView {...logic} initialImages={initialImages} />;
 }
 
 function LocationEditFormView({
   form,
   isSubmitting,
+  imageItemsRef,
+  initialImages,
   getChapterStatus,
   getChapterErrors,
   onUpdate,
   handleChapterClick,
   onBack,
 }: LocationEditFormViewProps) {
+  // Синхронизируем imageItemsRef при получении данных с сервера
+  useEffect(() => {
+    imageItemsRef.current = initialImages.map(img => ({
+      kind: 'existing' as const,
+      id: img.id,
+      path: img.path,
+    }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialImages]);
+
   return (
     <FormProvider {...form}>
       <div className='flex overflow-hidden h-full pb-2'>
@@ -181,6 +199,22 @@ function LocationEditFormView({
                         isActive: 'Активная локация',
                         popular: 'Локация которая показывается в терминале в начале (Топ точки)',
                       }}
+                    />
+                  </div>
+                </div>
+
+                {/* Глава 4: Картинки локации */}
+                <div id='chapter-images' className='relative flex flex-col gap-4'>
+                  <ChapterHeader
+                    number={4}
+                    title='Картинки локации'
+                    status='pending'
+                  />
+                  <div className='relative ml-12'>
+                    <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
+                    <LocationImagesSection
+                      existingImages={initialImages}
+                      onItemsChange={items => { imageItemsRef.current = items; }}
                     />
                   </div>
                 </div>

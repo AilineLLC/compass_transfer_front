@@ -85,6 +85,7 @@ interface CreateLocationDTO {
   popular2?: boolean;
   isLandingOnly?: boolean | null;
   group?: string | null;
+  images?: string[];
 }
 
 // DTO для обновления локации
@@ -102,6 +103,7 @@ interface UpdateLocationDTO {
   popular1?: boolean;
   popular2?: boolean;
   isLandingOnly?: boolean | null;
+  images?: string[];
 }
 
 // DTO для отправки текущих координат водителя
@@ -124,7 +126,9 @@ export const locationsApi = {
 
   // Получение локации по ID
   getLocationById: async (id: string): Promise<LocationDTO> => {
-    const result = await apiGet<LocationDTO>(`/Location/${id}`);
+    const result = await apiGet<LocationDTO>(`/Location/${id}`, {
+      params: { Includes: 'Images' },
+    });
 
     if (result.error) {
       throw new Error(result.error.message);

@@ -3,12 +3,14 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { transfersApi, type GetTransferDTO, type TransferFilters } from '@shared/api/transfers';
+import { transferReservationsApi } from '@shared/api/transfer-reservations';
 
 interface ColumnVisibility {
   departureTime: boolean;
   startLocation: boolean;
   endLocation: boolean;
   price: boolean;
+  reservations: boolean;
   passengers: boolean;
   freeSeats: boolean;
   driver: boolean;
@@ -21,6 +23,7 @@ export function useTransfersTable() {
   const router = useRouter();
 
   const [transfers, setTransfers] = useState<GetTransferDTO[]>([]);
+  const [pendingReservationsMap, setPendingReservationsMap] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,6 +63,7 @@ export function useTransfersTable() {
       startLocation: true,
       endLocation: true,
       price: true,
+      reservations: true,
       passengers: true,
       freeSeats: true,
       driver: true,
@@ -86,12 +90,21 @@ export function useTransfersTable() {
         sortOrder: sortOrder === 'asc' ? 'Asc' : 'Desc',
       };
 
-      const response = await transfersApi.getTransfers(params);
+      const [response, reservationsResponse] = await Promise.all([
+        transfersApi.getTransfers(params),
+        transferReservationsApi.getReservations({ status: 'Pending', size: 1000 }),
+      ]);
 
       setTransfers(response.data);
       setTotalCount(response.totalCount);
       setHasNext(response.hasNext);
       setHasPrevious(response.hasPrevious);
+
+      const map: Record<string, number> = {};
+      for (const r of reservationsResponse.data) {
+        map[r.transfer] = (map[r.transfer] || 0) + 1;
+      }
+      setPendingReservationsMap(map);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Неизвестная ошибка');
     } finally {
@@ -154,6 +167,7 @@ export function useTransfersTable() {
 
   return {
     transfers,
+    pendingReservationsMap,
     loading,
     error,
 

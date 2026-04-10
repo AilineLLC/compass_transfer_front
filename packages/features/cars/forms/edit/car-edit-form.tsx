@@ -2,10 +2,12 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { AxiosError } from 'axios';
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { carsApi } from '@shared/api/cars';
+import { filesApi } from '@shared/api/files';
+import type { CarImageItem } from '@entities/cars/ui/car-image-section';
 import { logger } from '@shared/lib';
 import { CarColor, VehicleType, ServiceClass, VehicleStatus, CarFeature, VEHICLE_TYPE_CAPACITY } from '@entities/cars/enums';
 import {
@@ -47,6 +49,7 @@ export function useCarEditFormLogic({
   onSuccess: () => void;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const imageItemRef = useRef<CarImageItem>(null);
 
   const form = useForm({
     resolver: zodResolver(carUpdateSchema),
@@ -80,6 +83,17 @@ export function useCarEditFormLogic({
     async (data: CarUpdateFormData) => {
       setIsSubmitting(true);
       try {
+        // Загружаем изображение если есть новое
+        let imageId: string | null | undefined = undefined;
+        const imageItem = imageItemRef.current;
+        if (imageItem === null) {
+          imageId = null; // явно удаляем
+        } else if (imageItem.kind === 'existing') {
+          imageId = imageItem.id;
+        } else if (!imageItem.error) {
+          imageId = await filesApi.uploadFile('CarImage', imageItem.file);
+        }
+
         const apiData = {
           make: data.make,
           model: data.model,
@@ -91,8 +105,9 @@ export function useCarEditFormLogic({
           status: data.status,
           passengerCapacity: data.passengerCapacity,
           features: data.features,
+          image: imageId,
         };
-        
+
         const result = await carsApi.updateCar(carId, apiData);
 
         if (result && result.make && result.model) {
@@ -188,6 +203,7 @@ export function useCarEditFormLogic({
   return {
     form,
     isSubmitting,
+    imageItemRef,
     getChapterStatus,
     getChapterErrors,
     onUpdate,

@@ -6,34 +6,28 @@ const NOTIFICATION_STATE_PRIORITY: Record<string, number> = {
   // Начальные состояния
   'RideRequest': 1,
   'OrderCreated': 1,
-  
+
   // Активные состояния
   'RideAccepted': 2,
-  'DriverAssigned': 3,
+  'DriverHeading': 3,
   'DriverArrived': 4,
-  'DriverHeading': 4,
   'RideStarted': 5,
   'OrderConfirmed': 5,
-  'OrderUpdated': 5,
-  
-  // Финальные состояния (самый высокий приоритет)
+
+  // Финальные состояния
   'RideCompleted': 10,
   'OrderCompleted': 10,
 
-  // Отмены и отклонения (высокий приоритет, но ниже успешного завершения)
+  // Отмены и отклонения
   'RideCancelled': 9,
   'OrderCancelled': 9,
-  'DriverCancelled': 8,  // Если водитель отменил, это важнее чем просто отклонение
-  'RideRejected': 7,     // Отклонение - менее критично чем отмена
-  
-  // Системные уведомления (всегда показываем)
+  'DriverCancelled': 8,
+  'RideRejected': 7,
+
+  // Платежи (всегда показываем, не дедуплицируем)
+  'Payment': 100,
   'PaymentReceived': 100,
   'PaymentFailed': 100,
-  'System': 100,
-  'SystemMessage': 100,
-  'Maintenance': 100,
-  'Verification': 100,
-  'Payment': 100
 };
 
 /**
