@@ -1,0 +1,43 @@
+name: Deploy Staging
+
+on:
+  push:
+    branches: [ "staging" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            set -e
+            # Создаем отдельную директорию для стейджинга
+            mkdir -p /home/compass/compass-staging
+            cd /home/compass/compass-staging
+
+            # Инициализация репозитория, если его еще нет
+            if [ ! -d ".git" ]; then
+              git clone https://github.com/ВАШ_РЕПО/compass.git .
+            fi
+
+            git fetch --all
+            git reset --hard origin/main
+
+            # Экспортируем порты для Docker Compose
+            export STAGING_PORT_ADMIN=4027
+            export STAGING_PORT_DRIVER=4028
+            export STAGING_PORT_TERMINAL=4029
+            export STAGING_PORT_LANDING=4026
+
+            # Запуск сборки и контейнеров с отдельным именем проекта (флаг -p)
+            docker compose -p compass-staging -f docker/docker-compose-staging.yml run --rm compass-install
+            
+            # Если у вас в оригинальном скрипте были отдельные шаги build, добавьте их сюда с флагом -p
+            
+            docker compose -p compass-staging -f docker/docker-compose-staging.yml up -d --build --force-recreate --remove-orphans
