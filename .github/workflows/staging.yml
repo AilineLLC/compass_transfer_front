@@ -29,7 +29,7 @@ jobs:
             # 4. КОСТЫЛЬ: Если файла всё еще нет (потому что он в main), забираем его принудительно
             if [ ! -f "docker/docker-compose-staging.yml" ]; then
               echo "File not found in staging branch, trying to pull from main..."
-              git checkout origin/main -- docker/docker-compose-staging.yml
+              git checkout origin/main -- docker/docker-compose.staging.yml
             fi
 
             # 5. Экспортируем порты
@@ -41,7 +41,7 @@ jobs:
 
             # 6. Запуск Docker с префиксом проекта, чтобы не задеть Прод
             # Проверяем наличие файла еще раз перед запуском
-            ls -la docker/docker-compose-staging.yml
+            ls -la docker/docker-compose.staging.yml
 
             docker compose -f docker/docker-compose.staging.yml run --rm compass-install
             docker compose -f docker/docker-compose.staging.yml up -d --build --force-recreate --remove-orphans
