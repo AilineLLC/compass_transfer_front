@@ -27,5 +27,5 @@ jobs:
             export STAGING_PORT_LANDING=4026
 
             # 5. Запуск Docker
-            docker compose -p compass-staging -f docker/docker-compose-staging.yml run --rm compass-install
-            docker compose -p compass-staging -f docker/docker-compose-staging.yml up -d --build --force-recreate --remove-orphans
+            docker compose -f docker/docker-compose-staging.yml run --rm compass-install
+            docker compose -f docker/docker-compose-staging.yml up -d --build --force-recreate --remove-orphans
