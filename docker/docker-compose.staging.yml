@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   compass-install:
     image: node:20-alpine3.19
@@ -9,7 +7,7 @@ services:
     # Подтягиваем файл из корня проекта на сервере
     env_file:
       - ../.env
-    command: npm install --legacy-peer-deps
+    command: npm install
 
   compass-landing:
     image: node:20-alpine3.19
