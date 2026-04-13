@@ -16,16 +16,31 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
+            set -e
             
+            # Переходим строго в папку проекта
+            cd /home/compass/compass-staging
+            
+            # Проверяем, что мы в гит-репозитории (на всякий случай)
+            if [ ! -d ".git" ]; then
+              echo "Error: /home/compass/compass-staging is not a git repository"
+              exit 1
+            fi
+
+            # Обновляем код
             git fetch --all
             git reset --hard origin/staging 
 
-            # 4. Переменные
+            # Экспортируем порты (они будут видны для docker compose)
             export STAGING_PORT_ADMIN=4027
             export STAGING_PORT_DRIVER=4028
             export STAGING_PORT_TERMINAL=4029
             export STAGING_PORT_LANDING=4026
+            
+            # Передаем API URL если нужно (Next.js подхватит при билде)
+            export NEXT_PUBLIC_API_URL="https://compass.ailine.kg/api"
 
-            # 5. Запуск Docker
-            docker compose -f docker/docker-compose-staging.yml run --rm compass-install
-            docker compose -f docker/docker-compose-staging.yml up -d --build --force-recreate --remove-orphans
+            # Запуск Docker
+            # Используем флаг -p чтобы контейнеры стейджинга не пересекались с продом
+            docker compose -p compass-staging -f docker/docker-compose-staging.yml run --rm compass-install
+            docker compose -p compass-staging -f docker/docker-compose-staging.yml up -d --build --force-recreate --remove-orphans
