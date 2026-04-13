@@ -43,5 +43,5 @@ jobs:
             # Проверяем наличие файла еще раз перед запуском
             ls -la docker/docker-compose-staging.yml
 
-            docker compose -p compass-staging -f docker/docker-compose.staging.yml run --rm compass-install
-            docker compose -p compass-staging -f docker/docker-compose.staging.yml up -d --build --force-recreate --remove-orphans
+            docker compose -f docker/docker-compose.staging.yml run --rm compass-install
+            docker compose -f docker/docker-compose.staging.yml up -d --build --force-recreate --remove-orphans
