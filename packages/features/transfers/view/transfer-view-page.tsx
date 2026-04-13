@@ -135,6 +135,8 @@ export function TransferViewPage({ transfer: initialTransfer }: TransferViewPage
     try {
       await transferReservationsApi.approveReservation(id);
       setReservations(prev => prev.map(r => r.id === id ? { ...r, status: 'Approved' } : r));
+      const updated = await transfersApi.getTransferById(transfer.id);
+      setTransfer(updated);
       toast.success('Заявка одобрена');
     } catch {
       toast.error('Не удалось одобрить заявку');
@@ -178,8 +180,8 @@ export function TransferViewPage({ transfer: initialTransfer }: TransferViewPage
         name: p.name,
         phone: p.phone,
       })),
-      startLocationId: transfer.startLocation.id,
-      endLocationId: transfer.endLocation.id,
+      startLocation: transfer.startLocation.id,
+      endLocation: transfer.endLocation.id,
       car: transfer.car?.id ?? '',
       driver: transfer.driver?.id ?? '',
     });

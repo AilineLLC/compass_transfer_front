@@ -25,7 +25,6 @@ import {
 import { useUserRole } from '@shared/contexts';
 import {
   type GetOrderDTO,
-  type OrderStatus,
   type OrderSubStatus,
   type OrderType,
   orderStatusLabels,
