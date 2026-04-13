@@ -2,7 +2,7 @@ name: Deploy Staging
 
 on:
   push:
-    branches: [ "staging" ] # Деплоим при пуше в staging
+    branches: [ "staging" ]
 
 jobs:
   deploy:
@@ -17,27 +17,30 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             set -e
-            
-            # 1. Подготовка директории
+            # 1. Создаем и переходим
             mkdir -p /home/compass/compass-staging
             cd /home/compass/compass-staging
 
-            # 2. Проверка репозитория (исправляем ошибку "destination path '.' already exists")
+            # 2. Умная проверка репозитория
             if [ ! -d ".git" ]; then
-              echo "Creating fresh clone..."
-              find . -mindepth 1 -delete # Удаляем всё, кроме самой папки, чтобы clone прошел в '.'
-              git clone https://github.com/ВАШ_РЕПО/compass.git .
+              echo "Directory is empty or not a git repo. Cleaning and cloning..."
+              # Удаляем всё содержимое, включая скрытые файлы, чтобы clone прошел чисто
+              rm -rf ..?* .[!.]* * git clone https://github.com/AilineLLC/compass_transfer_front.git .
             fi
 
             # 3. Обновление кода
             git fetch --all
+            # ВНИМАНИЕ: вы триггерите экшн на ветку 'staging', 
+            # но делаете reset на 'origin/main'. 
+            # Если staging должен деплоить ветку staging, замените на origin/staging
             git reset --hard origin/staging 
 
-            # 4. Переменные окружения для Docker (Порты и API)
+            # 4. Переменные
             export STAGING_PORT_ADMIN=4027
             export STAGING_PORT_DRIVER=4028
             export STAGING_PORT_TERMINAL=4029
             export STAGING_PORT_LANDING=4026
-            export NEXT_PUBLIC_API_URL="https://compass.ailine.kg/api"
 
-            # 5
+            # 5. Запуск Docker
+            docker compose -p compass-staging -f docker/docker-compose-staging.yml run --rm compass-install
+            docker compose -p compass-staging -f docker/docker-compose-staging.yml up -d --build --force-recreate --remove-orphans
