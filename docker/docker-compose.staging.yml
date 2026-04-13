@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  # Инсталлятор (выполняет npm install)
+  compass-install:
+    image: node:20-alpine3.19
+    working_dir: /app
+    volumes:
+      - ../:/app
+    command: npm install
+
+  # Сборка и запуск Admin
+  compass-admin:
+    image: node:20-alpine3.19
+    working_dir: /app/apps/admin # Уточните путь к подпроекту
+    volumes:
+      - ../:/app
+    ports:
+      - "${STAGING_ADMIN_PORT:-4027}:3000"
+    environment:
+      - NODE_ENV=production
+    command: sh -c "npm run build && npm run start"
+    restart: always
+
+  # Сборка и запуск Driver
+  compass-driver:
+    image: node:20-alpine3.19
+    working_dir: /app/apps/driver
+    volumes:
+      - ../:/app
+    ports:
+      - "${STAGING_DRIVER_PORT:-4028}:3000"
+    environment:
+      - NODE_ENV=production
+    command: sh -c "npm run build && npm run start"
+    restart: always
+
+  # Сборка и запуск Terminal
+  compass-terminal:
+    image: node:20-alpine3.19
+    working_dir: /app/apps/terminal
+    volumes:
+      - ../:/app
+    ports:
+      - "${STAGING_TERMINAL_PORT:-4029}:3000"
+    environment:
+      - NODE_ENV=production
+    command: sh -c "npm run build && npm run start"
+    restart: always
+
+  # Landing (корень)
+  compass-landing:
+    image: node:20-alpine3.19
+    working_dir: /app/apps/landing
+    volumes:
+      - ../:/app
+    ports:
+      - "${STAGING_LANDING_PORT:-4026}:3000"
+    environment:
+      - NODE_ENV=production
+    command: sh -c "npm run build && npm run start"
+    restart: always
