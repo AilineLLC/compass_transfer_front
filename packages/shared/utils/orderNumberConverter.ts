@@ -15,6 +15,7 @@
  * @returns Номер заказа в base36 строковом формате
  */
 export function orderNumberToString(orderNumber: number): string {
+  console.log(orderNumber, orderNumber.toString(36).toUpperCase())
   return orderNumber.toString(36).toUpperCase();
 }
 

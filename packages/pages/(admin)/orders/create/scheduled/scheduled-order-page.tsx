@@ -771,12 +771,22 @@ export function ScheduledOrderPage({
       const routePointsWithLocations = routePoints.filter(point => point.location);
 
       // Формируем данные для отправки согласно API
+      // В режиме редактирования используем данные существующего заказа как запасной вариант,
+      // если пользователь не посещал вкладку карты и routePoints не содержат объекты локаций
+      const startLoc = routePointsWithLocations[0]?.location ?? (isEditMode ? existingOrder?.startLocation : null);
+      const endLoc = routePointsWithLocations[routePointsWithLocations.length - 1]?.location ?? (isEditMode ? existingOrder?.endLocation : null);
+
+      // Для ID также используем startLocId/endLocId как запасной вариант
+      const startLocationId = startLoc?.id || (isEditMode ? existingOrder?.startLocationId : null) || null;
+      const endLocationId = endLoc?.id || (isEditMode ? existingOrder?.endLocationId : null) || null;
+
       const orderData = {
         tariffId: selectedTariff?.id || '',
         routeId: null,
-        startLocationId: routePointsWithLocations[0]?.location?.id || null,
-        endLocationId:
-          routePointsWithLocations[routePointsWithLocations.length - 1]?.location?.id || null,
+        startLocationId,
+        endLocationId,
+        startAddress: startLoc?.address || startLoc?.name || '',
+        endAddress: endLoc?.address || endLoc?.name || '',
         additionalStops: routePointsWithLocations.slice(1, -1).map(point => point.location!.id),
         services: selectedServices
           .filter(service => !!service.serviceId) // Фильтруем сервисы без ID

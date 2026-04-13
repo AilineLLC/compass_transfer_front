@@ -217,7 +217,7 @@ export function TransferCreateForm({ mode = 'create', initialData }: TransferCre
     initialData?.duration != null ? String(initialData.duration) : '',
   );
   const [price, setPrice] = useState(initialData ? String(initialData.price) : '');
-  const [allowPartialReservations, setAllowPartialReservations] = useState(
+const [allowPartialReservations, setAllowPartialReservations] = useState(
     initialData ? initialData.allowPartialReservations : true,
   );
   const [isHot, setIsHot] = useState(initialData?.isHot ?? false);
@@ -287,7 +287,7 @@ export function TransferCreateForm({ mode = 'create', initialData }: TransferCre
   const handleSubmit = async () => {
     if (!departureTime) { toast.error('Укажите время отправления'); return; }
     if (!price || isNaN(Number(price)) || Number(price) <= 0) { toast.error('Укажите корректную цену'); return; }
-    if (!startLocation) { toast.error('Выберите точку отправления'); return; }
+if (!startLocation) { toast.error('Выберите точку отправления'); return; }
     if (!endLocation) { toast.error('Выберите точку назначения'); return; }
     if (!selectedDriver) { toast.error('Выберите водителя'); return; }
     if (!selectedCar) { toast.error('Выберите автомобиль'); return; }
@@ -309,7 +309,7 @@ export function TransferCreateForm({ mode = 'create', initialData }: TransferCre
         departureTime: new Date(departureTime).toISOString(),
         duration: duration ? Number(duration) : null,
         price: Number(price),
-        allowPartialReservations,
+    allowPartialReservations,
         isHot,
         passengers: passengersPayload,
         startLocation: startLocation.id,
@@ -364,7 +364,7 @@ export function TransferCreateForm({ mode = 'create', initialData }: TransferCre
       <div className='flex-1 overflow-y-auto px-6 py-5 space-y-4'>
         {/* Основная информация */}
         <Section icon={Clock} title='Основная информация' description='Дата, цена и продолжительность'>
-          <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
             <div className='space-y-1.5'>
               <Label htmlFor='departureTime' className='flex items-center gap-1.5 text-xs font-medium'>
                 <Clock className='h-3.5 w-3.5' />
@@ -382,7 +382,7 @@ export function TransferCreateForm({ mode = 'create', initialData }: TransferCre
             <div className='space-y-1.5'>
               <Label htmlFor='price' className='flex items-center gap-1.5 text-xs font-medium'>
                 <Banknote className='h-3.5 w-3.5' />
-                Цена (сом) <span className='text-red-500'>*</span>
+                Цена для клиента (сом) <span className='text-red-500'>*</span>
               </Label>
               <Input
                 id='price'
@@ -391,10 +391,13 @@ export function TransferCreateForm({ mode = 'create', initialData }: TransferCre
                 step='1'
                 placeholder='0'
                 value={price}
-                onChange={e => setPrice(e.target.value)}
+                onChange={e => {
+                  setPrice(e.target.value);
+                }}
                 className='h-10'
               />
             </div>
+
 
             <div className='space-y-1.5'>
               <Label htmlFor='duration' className='flex items-center gap-1.5 text-xs font-medium'>

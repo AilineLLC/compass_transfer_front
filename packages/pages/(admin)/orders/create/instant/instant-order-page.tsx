@@ -370,10 +370,14 @@ export function InstantOrderPage({ mode, id, userRole = 'operator', initialTarif
       routePoints.some(p => p.type === 'end' && p.location) &&
       currentPrice > 0;
 
-    // Для admin/operator обязательно указать driverPrice
+    // Эффективная цена: кастомная (если включена) или рассчитанная
+    const effectivePrice =
+      useCustomPrice && customPrice ? parseFloat(customPrice.replace(/[^0-9.-]/g, '')) || currentPrice : currentPrice;
+
+    // Для admin/operator обязательно указать driverPrice, не превышающую эффективную цену
     const driverPriceValid =
       userRole === 'partner' ||
-      (!!driverPrice && parseFloat(driverPrice) >= 0 && parseFloat(driverPrice) <= currentPrice);
+      (!!driverPrice && parseFloat(driverPrice) >= 0 && parseFloat(driverPrice) <= effectivePrice);
 
     return !!(hasRoute && driverPriceValid);
   };

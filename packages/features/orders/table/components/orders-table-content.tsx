@@ -192,7 +192,7 @@ export function OrdersTableContent({
   if (paginatedOrders.length === 0) {
     return;
   }
-
+  
   return (
     <div className='rounded-md border'>
       <Table>

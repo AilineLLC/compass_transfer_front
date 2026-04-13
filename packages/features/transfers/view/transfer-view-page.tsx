@@ -169,6 +169,7 @@ export function TransferViewPage({ transfer: initialTransfer }: TransferViewPage
       departureTime: transfer.departureTime,
       duration: transfer.duration,
       price: transfer.price,
+      ...(transfer.driverPrice != null ? { driverPrice: transfer.driverPrice } : {}),
       allowPartialReservations: transfer.allowPartialReservations,
       isHot: transfer.isHot,
       passengers: updatedPassengers.map(p => ({
@@ -177,8 +178,8 @@ export function TransferViewPage({ transfer: initialTransfer }: TransferViewPage
         name: p.name,
         phone: p.phone,
       })),
-      startLocation: transfer.startLocation.id,
-      endLocation: transfer.endLocation.id,
+      startLocationId: transfer.startLocation.id,
+      endLocationId: transfer.endLocation.id,
       car: transfer.car?.id ?? '',
       driver: transfer.driver?.id ?? '',
     });

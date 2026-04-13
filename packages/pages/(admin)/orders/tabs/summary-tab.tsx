@@ -410,42 +410,51 @@ export function SummaryTab({
                 </div>
 
                 {/* Сумма водителя */}
-                <div>
-                  <label className='block text-sm font-medium text-gray-700 mb-1'>
-                    Сумма водителя (сом)
-                    <span className='text-red-500 ml-1'>*</span>
-                  </label>
-                  <input
-                    type='number'
-                    min='0'
-                    max={
-                      useCustomPrice && _customPrice
-                        ? parseFloat(_customPrice.replace(/[^0-9.-]+/g, '')) || currentPrice
-                        : currentPrice
-                    }
-                    placeholder='Введите сумму водителя'
-                    value={driverPrice}
-                    onChange={e => setDriverPrice?.(e.target.value)}
-                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      !driverPrice
-                        ? 'border-red-400 bg-red-50 focus:border-red-500 focus:ring-red-300'
-                        : 'border-gray-300 focus:border-blue-500'
-                    }`}
-                  />
-                  {!driverPrice && (
-                    <p className='mt-1 text-xs text-red-600 font-medium'>
-                      ⚠ Укажите сумму водителя перед созданием заказа
-                    </p>
-                  )}
-                  {driverPrice && parseFloat(driverPrice) > currentPrice && (
-                    <p className='mt-1 text-xs text-red-600'>
-                      Сумма водителя не может превышать стоимость поездки ({currentPrice} сом)
-                    </p>
-                  )}
-                  <p className='mt-1 text-xs text-gray-400'>
-                    Максимум: {currentPrice} сом (стоимость поездки)
-                  </p>
-                </div>
+                {(() => {
+                  const effectivePrice =
+                    useCustomPrice && _customPrice
+                      ? parseFloat(_customPrice.replace(/[^0-9.-]+/g, '')) || currentPrice
+                      : currentPrice;
+                  const driverPriceNum = parseFloat(driverPrice);
+                  const isOverLimit = !!driverPrice && !isNaN(driverPriceNum) && driverPriceNum > effectivePrice;
+
+                  return (
+                    <div>
+                      <label className='block text-sm font-medium text-gray-700 mb-1'>
+                        Сумма водителя (сом)
+                        <span className='text-red-500 ml-1'>*</span>
+                      </label>
+                      <input
+                        type='number'
+                        min='0'
+                        max={effectivePrice}
+                        placeholder='Введите сумму водителя'
+                        value={driverPrice}
+                        onChange={e => setDriverPrice?.(e.target.value)}
+                        className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          !driverPrice
+                            ? 'border-red-400 bg-red-50 focus:border-red-500 focus:ring-red-300'
+                            : isOverLimit
+                              ? 'border-red-400 bg-red-50 focus:border-red-500 focus:ring-red-300'
+                              : 'border-gray-300 focus:border-blue-500'
+                        }`}
+                      />
+                      {!driverPrice && (
+                        <p className='mt-1 text-xs text-red-600 font-medium'>
+                          ⚠ Укажите сумму водителя перед созданием заказа
+                        </p>
+                      )}
+                      {isOverLimit && (
+                        <p className='mt-1 text-xs text-red-600'>
+                          Сумма водителя не может превышать стоимость поездки ({effectivePrice} сом)
+                        </p>
+                      )}
+                      <p className='mt-1 text-xs text-gray-400'>
+                        Максимум: {effectivePrice} сом{useCustomPrice && _customPrice ? ' (кастомная цена)' : ' (стоимость поездки)'}
+                      </p>
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
           )}
