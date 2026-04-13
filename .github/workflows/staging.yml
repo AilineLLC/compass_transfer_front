@@ -18,29 +18,31 @@ jobs:
           script: |
             set -e
             
-            # Переходим строго в папку проекта
+            # 1. Переходим в папку
             cd /home/compass/compass-staging
             
-            # Проверяем, что мы в гит-репозитории (на всякий случай)
-            if [ ! -d ".git" ]; then
-              echo "Error: /home/compass/compass-staging is not a git repository"
-              exit 1
-            fi
-
-            # Обновляем код
+            # 2. Обновляем данные о ветках
             git fetch --all
+            
+            # 3. Сбрасываем текущую ветку на актуальный staging
             git reset --hard origin/staging 
 
-            # Экспортируем порты (они будут видны для docker compose)
+            # 4. КОСТЫЛЬ: Если файла всё еще нет (потому что он в main), забираем его принудительно
+            if [ ! -f "docker/docker-compose-staging.yml" ]; then
+              echo "File not found in staging branch, trying to pull from main..."
+              git checkout origin/main -- docker/docker-compose-staging.yml
+            fi
+
+            # 5. Экспортируем порты
             export STAGING_PORT_ADMIN=4027
             export STAGING_PORT_DRIVER=4028
             export STAGING_PORT_TERMINAL=4029
             export STAGING_PORT_LANDING=4026
-            
-            # Передаем API URL если нужно (Next.js подхватит при билде)
             export NEXT_PUBLIC_API_URL="https://compass.ailine.kg/api"
 
-            # Запуск Docker
-            # Используем флаг -p чтобы контейнеры стейджинга не пересекались с продом
-            docker compose -f docker/docker-compose-staging.yml run --rm compass-install
-            docker compose -f docker/docker-compose-staging.yml up -d --build --force-recreate --remove-orphans
+            # 6. Запуск Docker с префиксом проекта, чтобы не задеть Прод
+            # Проверяем наличие файла еще раз перед запуском
+            ls -la docker/docker-compose-staging.yml
+
+            docker compose -p compass-staging -f docker/docker-compose-staging.yml run --rm compass-install
+            docker compose -p compass-staging -f docker/docker-compose-staging.yml up -d --build --force-recreate --remove-orphans
