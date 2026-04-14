@@ -28,10 +28,10 @@ jobs:
             docker compose -p compass-staging --env-file .env -f docker/docker-compose.yml run --rm compass-install npm install --legacy-peer-deps
 
             # 3. Сборка фронтенда
-            docker compose -p compass-staging --env-file .env -f docker/docker-compose.yml run --rm compass-admin-build
-            docker compose -p compass-staging --env-file .env -f docker/docker-compose.yml run --rm compass-driver-build
-            docker compose -p compass-staging --env-file .env -f docker/docker-compose.yml run --rm compass-terminal-build
+            docker compose -p compass-staging --env-file .env -f docker/docker-compose.staginig.yml run --rm compass-admin-build
+            docker compose -p compass-staging --env-file .env -f docker/docker-compose.staginig.yml run --rm compass-driver-build
+            docker compose -p compass-staging --env-file .env -f docker/docker-compose.staginig.yml run --rm compass-terminal-build
 
             # 4. Запуск стейджинга
             # --force-recreate обновит контейнеры с новыми переменными из вашего .env
-            docker compose -p compass-staging --env-file .env -f docker/docker-compose.yml up -d --force-recreate --remove-orphans
+            docker compose -p compass-staging --env-file .env -f docker/docker-compose.staginig.yml up -d --force-recreate --remove-orphans
