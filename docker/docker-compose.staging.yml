@@ -12,7 +12,7 @@ services:
     restart: "no"
     profiles: ["ops"]
     networks:
-      - host
+      - compass_default
 
   compass-landing:
     image: node:20-alpine3.19
