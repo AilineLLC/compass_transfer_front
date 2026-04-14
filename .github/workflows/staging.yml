@@ -19,19 +19,20 @@ jobs:
             set -e
             cd /home/compass/compass-staging
             
-            # 1. Обновляем код
             git fetch --all
-            git reset --hard origin/staging
+            git reset --hard origin/staging 
 
-            # 2. Установка зависимостей (используем ваш .env на сервере)
-            # Флаг --env-file указывает докеру брать переменные из вашего готового файла
-            docker compose -p compass-staging --env-file .env -f docker/docker-compose.yml run --rm compass-install npm install --legacy-peer-deps
+            # Удаляем старый package-lock если он есть, так как мы работаем с yarn
+            rm -f package-lock.json
 
-            # 3. Сборка фронтенда
-            docker compose -p compass-staging --env-file .env -f docker/docker-compose.staginig.yml run --rm compass-admin-build
-            docker compose -p compass-staging --env-file .env -f docker/docker-compose.staginig.yml run --rm compass-driver-build
-            docker compose -p compass-staging --env-file .env -f docker/docker-compose.staginig.yml run --rm compass-terminal-build
+            # 1. Установка зависимостей через YARN
+            # Явно вызываем yarn внутри контейнера
+            docker compose -p compass-staging --env-file .env -f docker/docker-compose.staging.yml run --rm compass-install yarn install
 
-            # 4. Запуск стейджинга
-            # --force-recreate обновит контейнеры с новыми переменными из вашего .env
-            docker compose -p compass-staging --env-file .env -f docker/docker-compose.staginig.yml up -d --force-recreate --remove-orphans
+            # 2. Сборка (убедитесь, что команды build в package.json вызываются через yarn)
+            docker compose -p compass-staging --env-file .env -f docker/docker-compose.staging.yml run --rm compass-admin-build
+            docker compose -p compass-staging --env-file .env -f docker/docker-compose.staging.yml run --rm compass-driver-build
+            docker compose -p compass-staging --env-file .env -f docker/docker-compose.staging.yml run --rm compass-terminal-build
+
+            # 3. Запуск сервисов
+            docker compose -p compass-staging --env-file .env -f docker/docker-compose.staging.yml up -d --build --force-recreate --remove-orphans
