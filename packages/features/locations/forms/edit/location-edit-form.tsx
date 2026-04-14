@@ -48,6 +48,7 @@ export function useLocationEditFormLogic({
     isLandingOnly?: boolean | null;
     group?: string | null;
     images?: import('@entities/locations').LocationImageDTO[];
+    poi?: import('@entities/locations').PoiItemDTO[];
   };
   onBack: () => void;
   onSuccess: () => void;
@@ -55,6 +56,14 @@ export function useLocationEditFormLogic({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const imageItemsRef = useRef<import('@entities/locations').ImageItem[]>(
     (initialData.images ?? []).map(img => ({ kind: 'existing' as const, id: img.id, path: img.path })),
+  );
+  const poiItemsRef = useRef<import('@entities/locations').PoiItemState[]>(
+    (initialData.poi ?? []).map(p => ({
+      name: p.name,
+      imageState: p.image
+        ? { kind: 'existing' as const, id: p.image.id, path: p.image.path }
+        : { kind: 'empty' as const },
+    })),
   );
 
   const form = useForm({
@@ -128,7 +137,20 @@ export function useLocationEditFormLogic({
           images: orderedImageIds,
         };
         
-        const result = await locationsApi.updateLocation(locationId, apiData);
+        // Обрабатываем POI: загружаем картинки и собираем массив
+        const poiData = await Promise.all(
+          poiItemsRef.current.map(async item => {
+            let imageId = '';
+            if (item.imageState.kind === 'existing') {
+              imageId = item.imageState.id;
+            } else if (item.imageState.kind === 'pending' && !item.imageState.error) {
+              imageId = await filesApi.uploadFile('LocationImage', item.imageState.file);
+            }
+            return { name: item.name, image: imageId };
+          }),
+        );
+
+        const result = await locationsApi.updateLocation(locationId, { ...apiData, poi: poiData });
 
         if (result && result.name) {
           toast.success(`Локация "${result.name}" успешно обновлена!`);
@@ -232,6 +254,7 @@ export function useLocationEditFormLogic({
     form,
     isSubmitting,
     imageItemsRef,
+    poiItemsRef,
     getChapterStatus,
     getChapterErrors,
     onUpdate,

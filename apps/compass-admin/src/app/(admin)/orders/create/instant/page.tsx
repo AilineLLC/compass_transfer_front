@@ -5,7 +5,13 @@ import { InstantOrderPage } from '@pages/(admin)/orders/create/instant';
 export default async function CreateInstantOrderPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tariffId?: string }>;
+  searchParams: Promise<{
+    tariffId?: string;
+    formId?: string;
+    startLocationId?: string;
+    endLocationId?: string;
+    services?: string;
+  }>;
 }) {
   const params = await searchParams;
 
@@ -28,7 +34,17 @@ export default async function CreateInstantOrderPage({
     }
   })();
 
-  return <InstantOrderPage mode="create" userRole={roleString} initialTariffId={params.tariffId} />;
+  return (
+    <InstantOrderPage
+      mode="create"
+      userRole={roleString}
+      initialTariffId={params.tariffId}
+      fromFormId={params.formId}
+      initialStartLocationId={params.startLocationId}
+      initialEndLocationId={params.endLocationId}
+      initialServicesJson={params.services}
+    />
+  );
 }
 
 export const metadata = {

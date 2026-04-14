@@ -12,7 +12,6 @@ export const locationCreateSchema = z.object({
   
   description: z
     .string()
-    .max(255, { message: 'Описание локации не должно превышать 255 символов' })
     .optional()
     .or(z.literal('')),
   
@@ -85,6 +84,16 @@ export const locationCreateSchema = z.object({
 
   images: z
     .array(z.string())
+    .optional()
+    .default([]),
+
+  poi: z
+    .array(
+      z.object({
+        name: z.string(),
+        image: z.string(),
+      }),
+    )
     .optional()
     .default([]),
 });

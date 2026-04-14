@@ -7,8 +7,8 @@ import { locationsApi } from '@shared/api/locations';
 import { Card, CardContent } from '@shared/ui/layout';
 import { ChapterHeader } from '@shared/ui/layout/chapter-header';
 import { FormSidebar } from '@shared/ui/layout/form-sidebar';
-import { LocationBasicSection, LocationCoordinatesSection, LocationImagesSection, LocationMapSection } from '@entities/locations';
-import type { ImageItem, LocationImageDTO } from '@entities/locations';
+import { LocationBasicSection, LocationCoordinatesSection, LocationImagesSection, LocationMapSection, LocationPoiSection } from '@entities/locations';
+import type { ImageItem, LocationImageDTO, PoiItemDTO, PoiItemState } from '@entities/locations';
 import { LocationType } from '@entities/locations/enums';
 import type { LocationDTO } from '@entities/locations/interface';
 import { LOCATION_FORM_CHAPTERS } from '@entities/locations/model/form-chapters/location-chapters';
@@ -23,7 +23,9 @@ interface LocationEditFormViewProps {
   form: UseFormReturn<LocationUpdateFormData>;
   isSubmitting: boolean;
   imageItemsRef: MutableRefObject<ImageItem[]>;
+  poiItemsRef: MutableRefObject<PoiItemState[]>;
   initialImages: LocationImageDTO[];
+  initialPoi: PoiItemDTO[];
   getChapterStatus: (chapterId: string) => 'complete' | 'warning' | 'error' | 'pending';
   getChapterErrors: (chapterId: string) => string[];
   onUpdate: () => void;
@@ -37,6 +39,7 @@ export function LocationEditView({ locationId }: LocationEditViewProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [initialImages, setInitialImages] = useState<LocationImageDTO[]>([]);
+  const [initialPoi, setInitialPoi] = useState<PoiItemDTO[]>([]);
 
   // Загружаем данные локации
   useEffect(() => {
@@ -49,6 +52,7 @@ export function LocationEditView({ locationId }: LocationEditViewProps) {
 
         setLocation(locationData);
         setInitialImages(locationData.images ?? [] as LocationImageDTO[]);
+        setInitialPoi(locationData.poi ?? []);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Ошибка загрузки данных');
       } finally {
@@ -77,6 +81,7 @@ export function LocationEditView({ locationId }: LocationEditViewProps) {
       isLandingOnly: false,
       group: null,
       images: [] as LocationImageDTO[],
+      poi: [],
     },
     onBack: () => router.push('/locations'),
     onSuccess: () => router.push('/locations'),
@@ -87,6 +92,7 @@ export function LocationEditView({ locationId }: LocationEditViewProps) {
     if (location && logic.form) {
       logic.form.reset({
         name: location.name || '',
+        description: location.description || '',
         type: location.type,
         address: location.address || '',
         latitude: location.latitude || 0,
@@ -115,14 +121,16 @@ export function LocationEditView({ locationId }: LocationEditViewProps) {
     notFound();
   }
 
-  return <LocationEditFormView {...logic} initialImages={initialImages} />;
+  return <LocationEditFormView {...logic} initialImages={initialImages} initialPoi={initialPoi} />;
 }
 
 function LocationEditFormView({
   form,
   isSubmitting,
   imageItemsRef,
+  poiItemsRef,
   initialImages,
+  initialPoi,
   getChapterStatus,
   getChapterErrors,
   onUpdate,
@@ -138,6 +146,17 @@ function LocationEditFormView({
     }));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialImages]);
+
+  // Синхронизируем poiItemsRef при получении данных с сервера
+  useEffect(() => {
+    poiItemsRef.current = initialPoi.map(p => ({
+      name: p.name,
+      imageState: p.image
+        ? { kind: 'existing' as const, id: p.image.id, path: p.image.path }
+        : { kind: 'empty' as const },
+    }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialPoi]);
 
   return (
     <FormProvider {...form}>
@@ -215,6 +234,22 @@ function LocationEditFormView({
                     <LocationImagesSection
                       existingImages={initialImages}
                       onItemsChange={items => { imageItemsRef.current = items; }}
+                    />
+                  </div>
+                </div>
+
+                {/* Глава 5: Интересные места */}
+                <div id='chapter-poi' className='relative flex flex-col gap-4'>
+                  <ChapterHeader
+                    number={5}
+                    title='Интересные места'
+                    status='pending'
+                  />
+                  <div className='relative ml-12'>
+                    <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
+                    <LocationPoiSection
+                      existingPoi={initialPoi}
+                      onItemsChange={items => { poiItemsRef.current = items; }}
                     />
                   </div>
                 </div>

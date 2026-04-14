@@ -37,6 +37,7 @@ export function useLocationFormLogic({
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const imageItemsRef = useRef<import('@entities/locations').ImageItem[]>([]);
+  const poiItemsRef = useRef<import('@entities/locations').PoiItemState[]>([]);
 
   const form = useForm<LocationCreateFormData>({
     resolver: zodResolver(locationCreateSchema),
@@ -110,7 +111,20 @@ export function useLocationFormLogic({
           group: data.group,
           images: orderedImageIds,
         };
-        const result = await locationsApi.createLocation(apiData);
+        // Обрабатываем POI: загружаем картинки и собираем массив
+        const poiData = await Promise.all(
+          poiItemsRef.current.map(async item => {
+            let imageId = '';
+            if (item.imageState.kind === 'existing') {
+              imageId = item.imageState.id;
+            } else if (item.imageState.kind === 'pending' && !item.imageState.error) {
+              imageId = await filesApi.uploadFile('LocationImage', item.imageState.file);
+            }
+            return { name: item.name, image: imageId };
+          }),
+        );
+
+        const result = await locationsApi.createLocation({ ...apiData, poi: poiData });
 
         if (result && result.name) {
           toast.success(`Локация "${result.name}" успешно создана!`);
@@ -213,6 +227,7 @@ export function useLocationFormLogic({
     form,
     isSubmitting,
     imageItemsRef,
+    poiItemsRef,
     getChapterStatus,
     getChapterErrors,
     onCreate,

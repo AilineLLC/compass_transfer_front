@@ -6,6 +6,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { useOrderData } from '@shared/hooks/useOrderData';
 import { logger } from '@shared/lib/logger';
+import { customerOrderFormsApi } from '@shared/api/customer-order-forms';
 import { Button } from '@shared/ui/forms/button';
 import { Card, CardContent } from '@shared/ui/layout/card';
 import { SidebarHeader } from '@shared/ui/layout/sidebar';
@@ -35,6 +36,7 @@ import {
 } from '../../tabs';
 import { useSelfProfile } from '@entities/users/hooks/useSelfProfile';
 import { usersApi } from '@shared/api/users';
+import { locationsApi } from '@shared/api/locations';
 
 // Интерфейс для точки маршрута в форме заказа
 interface OrderRoutePoint {
@@ -52,6 +54,13 @@ interface OrderPageProps {
   id?: string;
   initialTariffId?: string;
   userRole?: 'admin' | 'operator' | 'partner' | 'driver';
+  fromFormId?: string;
+  initialStartLocationId?: string;
+  initialEndLocationId?: string;
+  initialServicesJson?: string;
+  initialPassengerName?: string;
+  initialPassengerPhone?: string;
+  initialScheduledTime?: string;
 }
 
 export function ScheduledOrderPage({
@@ -59,6 +68,13 @@ export function ScheduledOrderPage({
   id,
   initialTariffId,
   userRole = 'operator',
+  fromFormId,
+  initialStartLocationId,
+  initialEndLocationId,
+  initialServicesJson,
+  initialPassengerName,
+  initialPassengerPhone,
+  initialScheduledTime,
 }: OrderPageProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('pricing');
@@ -386,7 +402,16 @@ export function ScheduledOrderPage({
 
   // Состояния формы заказа
   const [selectedTariff, setSelectedTariff] = useState<GetTariffDTO | null>(null);
-  const [selectedServices, setSelectedServices] = useState<GetOrderServiceDTO[]>([]);
+  const [selectedServices, setSelectedServices] = useState<GetOrderServiceDTO[]>(() => {
+    if (initialServicesJson) {
+      try {
+        return JSON.parse(initialServicesJson) as GetOrderServiceDTO[];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
   const [currentPrice, setCurrentPrice] = useState<number>(0);
 
   // Автоматический выбор тарифа при создании заказа
@@ -402,6 +427,57 @@ export function ScheduledOrderPage({
       }
     }
   }, [mode, initialTariffId, tariffs, selectedTariff]);
+
+  // Предзаполнение локаций из заявки при создании — загружаем объекты локаций и заполняем routePoints
+  useEffect(() => {
+    if (mode !== 'create') return;
+    if (!initialStartLocationId && !initialEndLocationId) return;
+
+    if (initialStartLocationId) methods.setValue('startLocationId', initialStartLocationId);
+    if (initialEndLocationId) methods.setValue('endLocationId', initialEndLocationId);
+
+    let cancelled = false;
+    const fetchLocations = async () => {
+      const [startLoc, endLoc] = await Promise.all([
+        initialStartLocationId ? locationsApi.getLocationById(initialStartLocationId).catch(() => null) : null,
+        initialEndLocationId ? locationsApi.getLocationById(initialEndLocationId).catch(() => null) : null,
+      ]);
+      if (cancelled) return;
+      setRoutePoints(prev => prev.map(p => {
+        if (p.type === 'start' && startLoc) return { ...p, location: startLoc as unknown as GetLocationDTO };
+        if (p.type === 'end' && endLoc) return { ...p, location: endLoc as unknown as GetLocationDTO };
+        return p;
+      }));
+    };
+    fetchLocations();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, initialStartLocationId, initialEndLocationId]);
+
+  // Предзаполнение даты поездки из заявки при создании
+  useEffect(() => {
+    if (mode === 'create' && initialScheduledTime) {
+      methods.setValue('scheduledTime', initialScheduledTime);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, initialScheduledTime]);
+
+  // Предзаполнение пассажира из заявки при создании
+  useEffect(() => {
+    if (mode === 'create' && (initialPassengerName || initialPassengerPhone)) {
+      methods.setValue('passengers', [
+        {
+          id: `passenger-${Date.now()}`,
+          customerId: null,
+          firstName: initialPassengerName ?? '',
+          lastName: null,
+          phone: initialPassengerPhone ?? null,
+          isMainPassenger: true,
+        },
+      ]);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, initialPassengerName, initialPassengerPhone]);
 
   // Автоматический расчет цены при изменении тарифа, расстояния или услуг
   useEffect(() => {
@@ -724,6 +800,12 @@ export function ScheduledOrderPage({
         }))
       : undefined,
     onSuccess: _order => {
+      // Если заказ создан из заявки — отмечаем заявку как принятую
+      if (mode === 'create' && fromFormId) {
+        customerOrderFormsApi.updateStatus(fromFormId, 'Verified').catch(() => {
+          // Не блокируем основной флоу при ошибке обновления статуса заявки
+        });
+      }
       // Не переходим сразу к списку заказов, если нужно назначить водителя
       // Переход происходит после назначения водителя или если водитель не выбран
       if (!selectedDriver) {

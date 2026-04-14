@@ -73,6 +73,7 @@ interface LocationFilters {
 interface CreateLocationDTO {
   type: LocationType;
   name: string;
+  description?: string | null;
   address: string;
   district?: string | null;
   city: string;
@@ -86,12 +87,14 @@ interface CreateLocationDTO {
   isLandingOnly?: boolean | null;
   group?: string | null;
   images?: string[];
+  poi?: { name: string; image: string }[];
 }
 
 // DTO для обновления локации
 interface UpdateLocationDTO {
   type?: LocationType;
   name?: string;
+  description?: string | null;
   address?: string;
   district?: string | null;
   city?: string;
@@ -104,6 +107,7 @@ interface UpdateLocationDTO {
   popular2?: boolean;
   isLandingOnly?: boolean | null;
   images?: string[];
+  poi?: { name: string; image: string }[];
 }
 
 // DTO для отправки текущих координат водителя

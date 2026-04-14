@@ -30,7 +30,7 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children, acce
       }
 
       const wsBaseUrl = process.env.NEXT_PUBLIC_WS_BASE_URL!;
-      const wsUrl = `${wsBaseUrl}?access_token=${accessToken}`;
+      const wsUrl = `${wsBaseUrl}/New?access_token=${accessToken}`;
       const newConnection = new WebSocket(wsUrl);
 
       newConnection.onopen = () => {
