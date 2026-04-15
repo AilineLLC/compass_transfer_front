@@ -31,7 +31,7 @@ services:
     env_file:
       - ../apps/compass-admin/.env.staging
     command: >
-      sh -c "yarn build:admin"
+      sh -c "rm -rf /app/node_modules/@img/sharp-win32-x64 /app/node_modules/@img/sharp-darwin-x64 /app/node_modules/@img/sharp-darwin-arm64 2>/dev/null; yarn build:admin"
     restart: "no"
     profiles: ["ops"]
     mem_limit: 2g
@@ -49,7 +49,7 @@ services:
     env_file:
       - ../apps/compass-driver-mobile/.env.staging
     command: >
-      sh -c "yarn build:driver-mobile"
+      sh -c "rm -rf /app/node_modules/@img/sharp-win32-x64 /app/node_modules/@img/sharp-darwin-x64 /app/node_modules/@img/sharp-darwin-arm64 2>/dev/null; yarn build:driver-mobile"
     restart: "no"
     profiles: ["ops"]
     dns:
@@ -70,7 +70,7 @@ services:
     env_file:
       - ../apps/compass-terminal/.env.staging
     command: >
-      sh -c "yarn build:terminal"
+      sh -c "rm -rf /app/node_modules/@img/sharp-win32-x64 /app/node_modules/@img/sharp-darwin-x64 /app/node_modules/@img/sharp-darwin-arm64 2>/dev/null; yarn build:terminal"
     restart: "no"
     profiles: ["ops"]
     dns:
