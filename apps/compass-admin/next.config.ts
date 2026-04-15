@@ -89,7 +89,7 @@ const getSecurityHeaders = (isDev: boolean) => {
 const nextConfig: NextConfig = {
   reactStrictMode: false,
   basePath: BASE_PATH,
-  assetPrefix: BASE_PATH || undefined,
+  // assetPrefix: BASE_PATH || undefined,
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -100,6 +100,12 @@ const nextConfig: NextConfig = {
     unoptimized: process.env.NEXT_PUBLIC_IMAGE_UNOPTIMIZED === 'true',
     formats: ['image/webp'],
     remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'compass.ailine.kg',
+        port: '',
+        pathname: '/**',
+      },
       {
         protocol: 'https',
         hostname: 'via.placeholder.com',
