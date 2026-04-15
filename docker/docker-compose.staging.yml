@@ -11,7 +11,7 @@ services:
       NODE_ENV: staging
     # Используем yarn install для монорепозитория
     command: >
-      sh -c "yarn install"
+      sh -c "yarn install && npm rebuild sharp"
     restart: "no"
     profiles: ["ops"]
     dns:

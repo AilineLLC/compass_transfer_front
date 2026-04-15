@@ -21,16 +21,18 @@ export function LogoutButton({
   const handleLogout = async () => {
     setIsLoading(true);
 
+    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+
     try {
       // Сначала вызываем наш API route для очистки куки
-      const logoutResponse = await fetch('/api/auth/logout', {
+      const logoutResponse = await fetch(`${basePath}/api/auth/logout`, {
         method: 'POST',
         credentials: 'include',
       });
 
       if (logoutResponse.ok) {
         // Перенаправляем на страницу входа
-        window.location.href = '/login';
+        window.location.href = `${basePath}/login`;
       } else {
         logger.error('Ошибка при выходе из системы');
       }
