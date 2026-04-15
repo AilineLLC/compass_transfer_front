@@ -26,9 +26,8 @@ services:
     volumes:
       - ../:/app
     environment:
-      NODE_ENV: staging
+      NODE_ENV: production
       NODE_OPTIONS: --max-old-space-size=4096
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     env_file:
       - ../apps/compass-admin/.env.staging
     command: >
@@ -45,9 +44,8 @@ services:
     volumes:
       - ../:/app
     environment:
-      NODE_ENV: staging
+      NODE_ENV: production
       NODE_OPTIONS: --max-old-space-size=4096
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     env_file:
       - ../apps/compass-driver-mobile/.env.staging
     command: >
@@ -67,9 +65,8 @@ services:
     volumes:
       - ../:/app
     environment:
-      NODE_ENV: staging
+      NODE_ENV: production
       NODE_OPTIONS: --max-old-space-size=4096
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     env_file:
       - ../apps/compass-terminal/.env.staging
     command: >
@@ -93,8 +90,7 @@ services:
     ports:
       - "${STAGING_PORT_ADMIN}:3027" # Внешний порт 4027 -> внутренний 3027
     environment:
-      NODE_ENV: staging
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      NODE_ENV: production
     env_file:
       - ../apps/compass-admin/.env.staging
     command: >
@@ -111,8 +107,7 @@ services:
     ports:
       - "${STAGING_PORT_DRIVER}:3028" # Внешний порт 4028 -> внутренний 3028
     environment:
-      NODE_ENV: staging
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      NODE_ENV: production
     env_file:
       - ../apps/compass-driver-mobile/.env.staging
     command: >
@@ -129,8 +124,7 @@ services:
     ports:
       - "${STAGING_PORT_TERMINAL}:3029" # Внешний порт 4029 -> внутренний 3029
     environment:
-      NODE_ENV: staging
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      NODE_ENV: production
     env_file:
       - ../apps/compass-terminal/.env.staging
     command: >
