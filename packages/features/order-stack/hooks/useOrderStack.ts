@@ -109,10 +109,18 @@ export function useOrderStack() {
       }
     };
 
-    on('CancelRideRequestNotification', handleCancelRideRequest);
+    const handleNew = (data: SignalREventData) => {
+      const n = data as { type?: string; orderId?: string };
+      // RideCancelled или OrderCancelled означает снятие заявки
+      if (n?.type === 'RideCancelled' || n?.type === 'OrderCancelled') {
+        handleCancelRideRequest(data);
+      }
+    };
+
+    on('New', handleNew);
 
     return () => {
-      off('CancelRideRequestNotification', handleCancelRideRequest);
+      off('New', handleNew);
     };
   }, [on, off, removeFromStack]);
 

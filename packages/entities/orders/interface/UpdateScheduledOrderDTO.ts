@@ -21,6 +21,12 @@ export interface UpdateScheduledOrderDTO {
   /** ID конечной точки (опционально, если не используется routeId) */
   endLocationId?: string | null;
 
+  /** Текстовый адрес начальной точки */
+  startAddress: string;
+
+  /** Текстовый адрес конечной точки */
+  endAddress: string;
+
   /** Промежуточные точки (ID локаций) */
   additionalStops: string[];
 

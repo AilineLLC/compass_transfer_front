@@ -66,6 +66,7 @@ export function useLocationsTable(_initialFilters?: {
     return null;
   });
   const [popular1Filter, setPopular1Filter] = useState<boolean | null>(null);
+  const [isLandingOnlyFilter, setIsLandingOnlyFilter] = useState<boolean | null>(null);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   // Пагинация (cursor-based с историей)
@@ -174,6 +175,9 @@ export function useLocationsTable(_initialFilters?: {
       if (popular1Filter !== null) {
         params.popular1 = popular1Filter;
       }
+      if (isLandingOnlyFilter !== null) {
+        params.isLandingOnly = isLandingOnlyFilter;
+      }
       if (searchTerm) {
         params['FTS.Plain'] = searchTerm;
       }
@@ -207,6 +211,7 @@ export function useLocationsTable(_initialFilters?: {
     typeFilter,
     isActiveFilter,
     popular1Filter,
+    isLandingOnlyFilter,
     searchTerm,
   ]);
 
@@ -390,6 +395,7 @@ export function useLocationsTable(_initialFilters?: {
     typeFilter,
     isActiveFilter,
     popular1Filter,
+    isLandingOnlyFilter,
     showAdvancedFilters,
 
     // Пагинация
@@ -460,6 +466,12 @@ export function useLocationsTable(_initialFilters?: {
     },
     setPopular1Filter: (popular1: boolean | null) => {
       setPopular1Filter(popular1);
+      setCurrentCursor(null);
+      setIsFirstPage(true);
+      setCurrentPageNumber(1);
+    },
+    setIsLandingOnlyFilter: (val: boolean | null) => {
+      setIsLandingOnlyFilter(val);
       setCurrentCursor(null);
       setIsFirstPage(true);
       setCurrentPageNumber(1);

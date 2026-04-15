@@ -12,7 +12,6 @@ export const locationUpdateSchema = z.object({
   
   description: z
     .string()
-    .max(255, { message: 'Описание локации не должно превышать 255 символов' })
     .optional()
     .or(z.literal('')),
   
@@ -83,6 +82,26 @@ export const locationUpdateSchema = z.object({
     .string()
     .optional()
     .or(z.literal('')),
+
+  isLandingOnly: z
+    .boolean()
+    .nullable()
+    .default(false),
+
+  images: z
+    .array(z.string())
+    .optional()
+    .default([]),
+
+  poi: z
+    .array(
+      z.object({
+        name: z.string(),
+        image: z.string(),
+      }),
+    )
+    .optional()
+    .default([]),
 });
 
 /**

@@ -25,7 +25,6 @@ import {
 import { useUserRole } from '@shared/contexts';
 import {
   type GetOrderDTO,
-  type OrderStatus,
   type OrderSubStatus,
   type OrderType,
   orderStatusLabels,
@@ -192,7 +191,7 @@ export function OrdersTableContent({
   if (paginatedOrders.length === 0) {
     return;
   }
-
+  
   return (
     <div className='rounded-md border'>
       <Table>

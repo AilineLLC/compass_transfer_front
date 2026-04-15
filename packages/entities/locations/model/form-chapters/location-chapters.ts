@@ -20,6 +20,16 @@ export const LOCATION_FORM_CHAPTERS = {
       title: 'Настройки локации',
       description: 'Параметры активности и популярности локации',
     },
+    {
+      id: 'images',
+      title: 'Картинки локации',
+      description: 'Добавьте фотографии локации',
+    },
+    {
+      id: 'poi',
+      title: 'Интересные места',
+      description: 'Добавьте интересные места внутри локации',
+    },
   ] as FormChapter[],
 
   EDIT: [
@@ -37,6 +47,16 @@ export const LOCATION_FORM_CHAPTERS = {
       id: 'coordinates',
       title: 'Настройки локации',
       description: 'Параметры активности и популярности локации',
+    },
+    {
+      id: 'images',
+      title: 'Картинки локации',
+      description: 'Добавьте фотографии локации',
+    },
+    {
+      id: 'poi',
+      title: 'Интересные места',
+      description: 'Добавьте интересные места внутри локации',
     },
   ] as FormChapter[],
 };

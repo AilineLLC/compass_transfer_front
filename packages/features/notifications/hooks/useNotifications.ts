@@ -14,40 +14,25 @@ export enum NotificationCategory {
 
 // Маппинг типов уведомлений к категориям
 const NOTIFICATION_TYPE_TO_CATEGORY: Record<NotificationType, NotificationCategory> = {
-  // О заказе
   [NotificationType.OrderCreated]: NotificationCategory.ORDER,
-  [NotificationType.OrderUpdated]: NotificationCategory.ORDER,
   [NotificationType.OrderConfirmed]: NotificationCategory.ORDER,
   [NotificationType.OrderCancelled]: NotificationCategory.ORDER,
   [NotificationType.OrderCompleted]: NotificationCategory.ORDER,
+
   [NotificationType.RideRequest]: NotificationCategory.ORDER,
   [NotificationType.RideAccepted]: NotificationCategory.ORDER,
   [NotificationType.RideRejected]: NotificationCategory.ORDER,
   [NotificationType.RideStarted]: NotificationCategory.ORDER,
   [NotificationType.RideCompleted]: NotificationCategory.ORDER,
   [NotificationType.RideCancelled]: NotificationCategory.ORDER,
-  [NotificationType.RideUpdate]: NotificationCategory.ORDER,
+
   [NotificationType.DriverHeading]: NotificationCategory.ORDER,
   [NotificationType.DriverArrived]: NotificationCategory.ORDER,
-  [NotificationType.DriverAssigned]: NotificationCategory.ORDER,
   [NotificationType.DriverCancelled]: NotificationCategory.ORDER,
-  [NotificationType.DriverNearby]: NotificationCategory.ORDER,
-  
-  // Важная информация
-  [NotificationType.System]: NotificationCategory.IMPORTANT,
-  [NotificationType.SystemMessage]: NotificationCategory.IMPORTANT,
-  [NotificationType.Maintenance]: NotificationCategory.IMPORTANT,
-  [NotificationType.Verification]: NotificationCategory.IMPORTANT,
-  [NotificationType.Chat]: NotificationCategory.IMPORTANT,
-  
-  // Предупреждения
+
   [NotificationType.Payment]: NotificationCategory.WARNING,
   [NotificationType.PaymentReceived]: NotificationCategory.WARNING,
   [NotificationType.PaymentFailed]: NotificationCategory.WARNING,
-  [NotificationType.PaymentRefunded]: NotificationCategory.WARNING,
-  [NotificationType.Promo]: NotificationCategory.WARNING,
-  [NotificationType.PromoOffer]: NotificationCategory.WARNING,
-  [NotificationType.Unknown]: NotificationCategory.WARNING,
 };
 
 export interface UseNotificationsResult {

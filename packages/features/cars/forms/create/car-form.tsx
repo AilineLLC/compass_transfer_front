@@ -2,10 +2,12 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { AxiosError } from 'axios';
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { carsApi } from '@shared/api/cars';
+import { filesApi } from '@shared/api/files';
+import type { CarImageItem } from '@entities/cars/ui/car-image-section';
 import { logger } from '@shared/lib';
 import { CarColor, VehicleType, ServiceClass, VehicleStatus, CarFeature, VEHICLE_TYPE_CAPACITY } from '@entities/cars/enums';
 import {
@@ -32,6 +34,7 @@ export function useCarFormLogic({
   onSuccess: () => void;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const imageItemRef = useRef<CarImageItem>(null);
 
   const form = useForm<CarCreateFormData>({
     resolver: zodResolver(carCreateSchema),
@@ -64,6 +67,17 @@ export function useCarFormLogic({
     async (data: CarCreateFormData) => {
       setIsSubmitting(true);
       try {
+        // Загружаем изображение если есть
+        let imageId: string | null = null;
+        const imageItem = imageItemRef.current;
+        if (imageItem) {
+          if (imageItem.kind === 'existing') {
+            imageId = imageItem.id;
+          } else if (!imageItem.error) {
+            imageId = await filesApi.uploadFile('CarImage', imageItem.file);
+          }
+        }
+
         // Подготавливаем данные для API
         const apiData = {
           make: data.make,
@@ -76,6 +90,7 @@ export function useCarFormLogic({
           status: data.status,
           passengerCapacity: data.passengerCapacity,
           features: data.features,
+          image: imageId,
         };
 
         const result = await carsApi.createCar(apiData);
@@ -174,6 +189,7 @@ export function useCarFormLogic({
   return {
     form,
     isSubmitting,
+    imageItemRef,
     getChapterStatus,
     getChapterErrors,
     onCreate,

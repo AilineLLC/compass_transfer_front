@@ -15,8 +15,13 @@ export const CAR_FORM_CHAPTERS = {
       title: 'Дополнительные опции',
       description: 'Комфорт, технологии, безопасность и другие опции',
     },
+    {
+      id: 'image',
+      title: 'Фотография',
+      description: 'Фотография автомобиля',
+    },
   ] as FormChapter[],
-  
+
   EDIT: [
     {
       id: 'basic',
@@ -27,6 +32,11 @@ export const CAR_FORM_CHAPTERS = {
       id: 'features',
       title: 'Дополнительные опции',
       description: 'Комфорт, технологии, безопасность и другие опции',
+    },
+    {
+      id: 'image',
+      title: 'Фотография',
+      description: 'Фотография автомобиля',
     },
   ] as FormChapter[],
 };

@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { carsApi } from '@shared/api/cars';
+import { filesApi } from '@shared/api/files';
 import type { GetCarDTO } from '@entities/cars/interface';
 import { CarFeature } from '@entities/cars/enums';
+import type { CarImageItem } from '@entities/cars';
 import { CarViewHeader } from './components/car-view-header';
 import { CarViewActions } from './components/car-view-actions';
 import { CarViewContent } from './components/car-view-content';
@@ -108,6 +110,26 @@ export function CarView({ carId }: CarViewProps) {
     }
   };
 
+  // Обработчик обновления изображения
+  const handleUpdateImage = async (item: CarImageItem) => {
+    if (!car) return;
+
+    let image: string | null = null;
+    if (item === null) {
+      image = null;
+    } else if (item.kind === 'existing') {
+      image = item.id;
+    } else if (!item.error) {
+      image = await filesApi.uploadFile('CarImage', item.file);
+    }
+
+    await carsApi.updateCar(carId, { image });
+    toast.success('Фотография автомобиля обновлена');
+
+    const carData = await carsApi.getCarById(carId);
+    setCar(carData);
+  };
+
   // Обработчик обновления опций
   const handleUpdateFeatures = async (features: CarFeature[]) => {
     if (!car) return;
@@ -165,6 +187,7 @@ export function CarView({ carId }: CarViewProps) {
             car={car}
             onRemoveDriver={handleRemoveDriver}
             onAddFeature={() => setIsManageFeaturesModalOpen(true)}
+            onUpdateImage={handleUpdateImage}
           />
         </div>
 

@@ -14,6 +14,8 @@ function convertToUpdateData(data: CreateScheduledOrderRequest, orderId: string)
     routeId: data.routeId || null,
     startLocationId: data.startLocationId || null,
     endLocationId: data.endLocationId || null,
+    startAddress: data.startAddress || '',
+    endAddress: data.endAddress || '',
     additionalStops: data.additionalStops || [],
     services: data.services || [],
     initialPrice: data.initialPrice,

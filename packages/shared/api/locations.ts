@@ -58,6 +58,7 @@ interface LocationFilters {
   isActive?: boolean;
   popular1?: boolean;
   popular2?: boolean;
+  isLandingOnly?: boolean;
 
   // Полнотекстовый поиск
   'FTS.Plain'?: string;
@@ -72,6 +73,7 @@ interface LocationFilters {
 interface CreateLocationDTO {
   type: LocationType;
   name: string;
+  description?: string | null;
   address: string;
   district?: string | null;
   city: string;
@@ -82,13 +84,17 @@ interface CreateLocationDTO {
   isActive: boolean;
   popular1?: boolean;
   popular2?: boolean;
+  isLandingOnly?: boolean | null;
   group?: string | null;
+  images?: string[];
+  poi?: { name: string; image: string }[];
 }
 
 // DTO для обновления локации
 interface UpdateLocationDTO {
   type?: LocationType;
   name?: string;
+  description?: string | null;
   address?: string;
   district?: string | null;
   city?: string;
@@ -99,6 +105,9 @@ interface UpdateLocationDTO {
   isActive?: boolean;
   popular1?: boolean;
   popular2?: boolean;
+  isLandingOnly?: boolean | null;
+  images?: string[];
+  poi?: { name: string; image: string }[];
 }
 
 // DTO для отправки текущих координат водителя
@@ -121,7 +130,9 @@ export const locationsApi = {
 
   // Получение локации по ID
   getLocationById: async (id: string): Promise<LocationDTO> => {
-    const result = await apiGet<LocationDTO>(`/Location/${id}`);
+    const result = await apiGet<LocationDTO>(`/Location/${id}`, {
+      params: { Includes: 'Images' },
+    });
 
     if (result.error) {
       throw new Error(result.error.message);

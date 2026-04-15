@@ -9,6 +9,8 @@ import {
   CreditCard,
   Settings,
   DollarSign,
+  ArrowLeftRight,
+  ClipboardList,
 } from 'lucide-react';
 import { sidebarMockData } from '@entities/users/mock-data';
 
@@ -72,6 +74,44 @@ export const sidebarData = {
         {
           title: 'Создать заказ',
           url: '/orders/create',
+        },
+      ],
+    },
+    {
+      title: 'Трансферы',
+      url: '/transfers',
+      icon: ArrowLeftRight,
+      items: [
+        {
+          title: 'Все трансферы',
+          url: '/transfers',
+        },
+        {
+          title: 'Создать трансфер',
+          url: '/transfers/create',
+        },
+      ],
+    },
+    {
+      title: 'Заявки',
+      url: '/order-forms',
+      icon: ClipboardList,
+      items: [
+        {
+          title: 'Все заявки',
+          url: '/order-forms',
+        },
+        {
+          title: 'Ожидают',
+          url: '/order-forms?status=Pending',
+        },
+        {
+          title: 'Принятые',
+          url: '/order-forms?status=Verified',
+        },
+        {
+          title: 'Отклонённые',
+          url: '/order-forms?status=Rejected',
         },
       ],
     },

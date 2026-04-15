@@ -2,10 +2,11 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { AxiosError } from 'axios';
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { locationsApi } from '@shared/api/locations';
+import { filesApi } from '@shared/api/files';
 import { logger } from '@shared/lib';
 import type { LocationType } from '@entities/locations/enums';
 import { parseAddress } from '@entities/locations/lib/address-parser';
@@ -44,12 +45,26 @@ export function useLocationEditFormLogic({
     isActive: boolean;
     popular: boolean;
     popular2: boolean;
+    isLandingOnly?: boolean | null;
     group?: string | null;
+    images?: import('@entities/locations').LocationImageDTO[];
+    poi?: import('@entities/locations').PoiItemDTO[];
   };
   onBack: () => void;
   onSuccess: () => void;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const imageItemsRef = useRef<import('@entities/locations').ImageItem[]>(
+    (initialData.images ?? []).map(img => ({ kind: 'existing' as const, id: img.id, path: img.path })),
+  );
+  const poiItemsRef = useRef<import('@entities/locations').PoiItemState[]>(
+    (initialData.poi ?? []).map(p => ({
+      name: p.name,
+      imageState: p.image
+        ? { kind: 'existing' as const, id: p.image.id, path: p.image.path }
+        : { kind: 'empty' as const },
+    })),
+  );
 
   const form = useForm({
     resolver: zodResolver(locationUpdateSchema),
@@ -64,6 +79,7 @@ export function useLocationEditFormLogic({
       isActive: initialData.isActive,
       popular: initialData.popular,
       popular2: initialData.popular2,
+      isLandingOnly: initialData.isLandingOnly ?? false,
       group: initialData.group || '',
     },
   });
@@ -82,6 +98,17 @@ export function useLocationEditFormLogic({
     async (data: LocationUpdateFormData) => {
       setIsSubmitting(true);
       try {
+        // Загружаем картинки в порядке очереди
+        const orderedImageIds = await Promise.all(
+          imageItemsRef.current
+            .filter(item => item.kind !== 'pending' || !item.error)
+            .map(item =>
+              item.kind === 'existing'
+                ? Promise.resolve(item.id)
+                : filesApi.uploadFile('LocationImage', item.file),
+            ),
+        );
+
         // Парсим адрес для извлечения компонентов
         const addressComponents = parseAddress(data.address);
 
@@ -105,10 +132,25 @@ export function useLocationEditFormLogic({
           isActive: data.isActive,
           popular1: data.popular,
           popular2: data.popular2,
+          isLandingOnly: data.isLandingOnly ?? false,
           group: data.group || null,
+          images: orderedImageIds,
         };
         
-        const result = await locationsApi.updateLocation(locationId, apiData);
+        // Обрабатываем POI: загружаем картинки и собираем массив
+        const poiData = await Promise.all(
+          poiItemsRef.current.map(async item => {
+            let imageId = '';
+            if (item.imageState.kind === 'existing') {
+              imageId = item.imageState.id;
+            } else if (item.imageState.kind === 'pending' && !item.imageState.error) {
+              imageId = await filesApi.uploadFile('LocationImage', item.imageState.file);
+            }
+            return { name: item.name, image: imageId };
+          }),
+        );
+
+        const result = await locationsApi.updateLocation(locationId, { ...apiData, poi: poiData });
 
         if (result && result.name) {
           toast.success(`Локация "${result.name}" успешно обновлена!`);
@@ -211,6 +253,8 @@ export function useLocationEditFormLogic({
   return {
     form,
     isSubmitting,
+    imageItemsRef,
+    poiItemsRef,
     getChapterStatus,
     getChapterErrors,
     onUpdate,

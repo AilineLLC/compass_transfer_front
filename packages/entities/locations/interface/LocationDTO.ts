@@ -1,5 +1,24 @@
 import type { LocationType } from '../enums/LocationType.enum';
 
+export interface LocationImageDTO {
+  id: string;
+  path: string;
+}
+
+export interface PoiImageFileDTO {
+  id: string;
+  name: string;
+  extension: string;
+  size: number;
+  createdAt: string;
+  path: string;
+}
+
+export interface PoiItemDTO {
+  name: string;
+  image: PoiImageFileDTO | null;
+}
+
 /**
  * Интерфейс для локации
  * GET /Location/{uuid}
@@ -10,6 +29,9 @@ export interface LocationDTO {
 
   /** Название локации */
   name: string;
+
+  /** Описание локации */
+  description?: string | null;
 
   /** Адрес локации */
   address: string;
@@ -41,9 +63,18 @@ export interface LocationDTO {
   /** Популярная локация 2 */
   popular2: boolean;
 
+  /** Отображать на лендинг-сайте */
+  isLandingOnly: boolean | null;
+
   /** Группа локации */
   group?: string | null;
 
   /** ID локации */
   id: string;
+
+  /** Картинки локации */
+  images?: LocationImageDTO[];
+
+  /** Интересные места локации */
+  poi?: PoiItemDTO[];
 }

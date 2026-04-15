@@ -16,6 +16,7 @@ import type { GetOrderServiceDTO } from '@entities/orders/interface';
 import type { GetTariffDTO } from '@entities/tariffs/interface';
 import type { GetDriverDTO } from '@entities/users/interface';
 import { PotentialDriversModal } from '@features/orders/ui/potential-drivers-modal';
+import { customerOrderFormsApi } from '@shared/api/customer-order-forms';
 import {
   TariffPricingTab,
   MapTab,
@@ -27,9 +28,22 @@ interface InstantOrderPageProps {
   id?: string; // ID заказа для режима редактирования
   userRole?: 'admin' | 'operator' | 'partner' | 'driver';
   initialTariffId?: string; // ID тарифа для предварительного выбора
+  fromFormId?: string; // ID заявки (CustomerOrderForm), из которой создается заказ
+  initialStartLocationId?: string; // Предзаполненный ID начальной локации из заявки
+  initialEndLocationId?: string; // Предзаполненный ID конечной локации из заявки
+  initialServicesJson?: string; // JSON-строка с услугами из заявки
 }
 
-export function InstantOrderPage({ mode, id, userRole = 'operator', initialTariffId }: InstantOrderPageProps) {
+export function InstantOrderPage({
+  mode,
+  id,
+  userRole = 'operator',
+  initialTariffId,
+  fromFormId,
+  initialStartLocationId,
+  initialEndLocationId,
+  initialServicesJson,
+}: InstantOrderPageProps) {
   const router = useRouter();
 
   // Загрузка данных заказа для режима редактирования
@@ -47,8 +61,17 @@ export function InstantOrderPage({ mode, id, userRole = 'operator', initialTarif
 
   // Состояние для отслеживания выбранных данных
   const [selectedTariff, setSelectedTariff] = useState<GetTariffDTO | null>(null);
-  const [selectedDriver, setSelectedDriver] = useState<GetDriverDTO | null>(null); 
-  const [selectedServices, _setSelectedServices] = useState<GetOrderServiceDTO[]>([]);
+  const [selectedDriver, setSelectedDriver] = useState<GetDriverDTO | null>(null);
+  const [selectedServices, _setSelectedServices] = useState<GetOrderServiceDTO[]>(() => {
+    if (initialServicesJson) {
+      try {
+        return JSON.parse(initialServicesJson) as GetOrderServiceDTO[];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
   // Убираем состояние passengers - используем дефолтного пассажира
   const [routePoints, setRoutePoints] = useState<RoutePoint[]>([
     {
@@ -83,8 +106,8 @@ export function InstantOrderPage({ mode, id, userRole = 'operator', initialTarif
   const [driverPrice, setDriverPrice] = useState<string>('');
 
   // Состояние для данных маршрута
-  const [startLocId, setStartLocId] = useState<string>('');
-  const [endLocId, setEndLocId] = useState<string>('');
+  const [startLocId, setStartLocId] = useState<string>(initialStartLocationId ?? '');
+  const [endLocId, setEndLocId] = useState<string>(initialEndLocationId ?? '');
   const [additionalStopsIds, setAdditionalStopsIds] = useState<string[]>([]);
   const [routeDistance, setRouteDistance] = useState<number>(0);
   const [routeLoading, setRouteLoading] = useState<boolean>(false);
@@ -111,6 +134,12 @@ export function InstantOrderPage({ mode, id, userRole = 'operator', initialTarif
     shouldUpdatePassengers: mode === 'edit' && userRole !== 'partner', // Обновляем пассажиров только в режиме редактирования
     onSuccess: (order) => {
       if (mode === 'create') {
+        // Если заказ создан из заявки — отмечаем заявку как принятую
+        if (fromFormId) {
+          customerOrderFormsApi.updateStatus(fromFormId, 'Verified').catch(() => {
+            // Не блокируем основной флоу при ошибке обновления статуса заявки
+          });
+        }
         // Для создания заказа показываем модальное окно с потенциальными водителями
         setCreatedOrderId(order.id);
         setShowDriversModal(true);
@@ -370,10 +399,14 @@ export function InstantOrderPage({ mode, id, userRole = 'operator', initialTarif
       routePoints.some(p => p.type === 'end' && p.location) &&
       currentPrice > 0;
 
-    // Для admin/operator обязательно указать driverPrice
+    // Эффективная цена: кастомная (если включена) или рассчитанная
+    const effectivePrice =
+      useCustomPrice && customPrice ? parseFloat(customPrice.replace(/[^0-9.-]/g, '')) || currentPrice : currentPrice;
+
+    // Для admin/operator обязательно указать driverPrice, не превышающую эффективную цену
     const driverPriceValid =
       userRole === 'partner' ||
-      (!!driverPrice && parseFloat(driverPrice) >= 0 && parseFloat(driverPrice) <= currentPrice);
+      (!!driverPrice && parseFloat(driverPrice) >= 0 && parseFloat(driverPrice) <= effectivePrice);
 
     return !!(hasRoute && driverPriceValid);
   };

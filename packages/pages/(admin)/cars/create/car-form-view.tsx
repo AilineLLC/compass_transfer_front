@@ -1,15 +1,17 @@
+import { useRef } from 'react';
 import { FormProvider, type UseFormReturn } from 'react-hook-form';
 import { Button } from '@shared/ui/forms/button';
 import { Card, CardContent } from '@shared/ui/layout';
 import { ChapterHeader } from '@shared/ui/layout/chapter-header';
 import { FormSidebar } from '@shared/ui/layout/form-sidebar';
-import { CarBasicSection, CarFeaturesSection } from '@entities/cars';
+import { CarBasicSection, CarFeaturesSection, CarImageSection, type CarImageItem } from '@entities/cars';
 import { CAR_FORM_CHAPTERS } from '@entities/cars/model/form-chapters/car-chapters';
 import type { CarCreateFormData } from '@entities/cars/schemas/carCreateSchema';
 
 interface CarFormViewProps {
   form: UseFormReturn<CarCreateFormData>;
   isSubmitting: boolean;
+  imageItemRef: React.MutableRefObject<CarImageItem>;
   getChapterStatus: (chapterId: string) => 'complete' | 'warning' | 'error' | 'pending';
   getChapterErrors: (chapterId: string) => string[];
   onCreate: () => void;
@@ -20,6 +22,7 @@ interface CarFormViewProps {
 export function CarFormView({
   form,
   isSubmitting,
+  imageItemRef,
   getChapterStatus,
   getChapterErrors,
   onCreate,
@@ -80,6 +83,21 @@ export function CarFormView({
                       labels={{
                         features: 'Дополнительные опции *',
                       }}
+                    />
+                  </div>
+                </div>
+
+                {/* Глава 3: Фотография */}
+                <div id='chapter-image' className='relative flex flex-col gap-4'>
+                  <ChapterHeader
+                    number={3}
+                    title='Фотография'
+                    status='pending'
+                  />
+                  <div className='relative ml-12'>
+                    <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
+                    <CarImageSection
+                      onImageChange={item => { imageItemRef.current = item; }}
                     />
                   </div>
                 </div>

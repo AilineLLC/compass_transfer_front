@@ -23,7 +23,7 @@ export const notificationUpdateSchema = z.object({
   
   content: z
     .string()
-    .max(1000, { message: 'Содержимое не должно превышать 1000 символов' })
+    .max(511, { message: 'Содержимое не должно превышать 511 символов' })
     .optional()
     .or(z.literal('')),
   

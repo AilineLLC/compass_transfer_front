@@ -2,10 +2,11 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { AxiosError } from 'axios';
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { locationsApi } from '@shared/api/locations';
+import { filesApi } from '@shared/api/files';
 import { logger } from '@shared/lib';
 import { LocationType } from '@entities/locations/enums';
 import { parseAddress } from '@entities/locations/lib/address-parser';
@@ -35,6 +36,8 @@ export function useLocationFormLogic({
   onSuccess: () => void;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const imageItemsRef = useRef<import('@entities/locations').ImageItem[]>([]);
+  const poiItemsRef = useRef<import('@entities/locations').PoiItemState[]>([]);
 
   const form = useForm<LocationCreateFormData>({
     resolver: zodResolver(locationCreateSchema),
@@ -51,6 +54,7 @@ export function useLocationFormLogic({
       longitude: 74.603967,
       isActive: true,
       popular: false,
+      isLandingOnly: false,
       group: '',
     },
   });
@@ -69,6 +73,17 @@ export function useLocationFormLogic({
     async (data: LocationCreateFormData) => {
       setIsSubmitting(true);
       try {
+        // Загружаем картинки в порядке очереди
+        const orderedImageIds = await Promise.all(
+          imageItemsRef.current
+            .filter(item => item.kind !== 'pending' || !item.error)
+            .map(item =>
+              item.kind === 'existing'
+                ? Promise.resolve(item.id)
+                : filesApi.uploadFile('LocationImage', item.file),
+            ),
+        );
+
         // Парсим адрес для извлечения компонентов
         const addressComponents = parseAddress(data.address);
 
@@ -92,10 +107,24 @@ export function useLocationFormLogic({
           longitude: data.longitude,
           isActive: data.isActive,
           popular1: data.popular,
+          isLandingOnly: data.isLandingOnly ?? false,
           group: data.group,
+          images: orderedImageIds,
         };
-        console.log(data)
-        const result = await locationsApi.createLocation(apiData);
+        // Обрабатываем POI: загружаем картинки и собираем массив
+        const poiData = await Promise.all(
+          poiItemsRef.current.map(async item => {
+            let imageId = '';
+            if (item.imageState.kind === 'existing') {
+              imageId = item.imageState.id;
+            } else if (item.imageState.kind === 'pending' && !item.imageState.error) {
+              imageId = await filesApi.uploadFile('LocationImage', item.imageState.file);
+            }
+            return { name: item.name, image: imageId };
+          }),
+        );
+
+        const result = await locationsApi.createLocation({ ...apiData, poi: poiData });
 
         if (result && result.name) {
           toast.success(`Локация "${result.name}" успешно создана!`);
@@ -197,6 +226,8 @@ export function useLocationFormLogic({
   return {
     form,
     isSubmitting,
+    imageItemsRef,
+    poiItemsRef,
     getChapterStatus,
     getChapterErrors,
     onCreate,
