@@ -38,6 +38,8 @@ function toHostname(raw?: string) {
   }
 }
 
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || '';
+
 const API_ORIGIN =
   normalizeApiOrigin(process.env.API_ORIGIN) ??
   normalizeApiOrigin(process.env.NEXT_PUBLIC_API_URL);
@@ -86,8 +88,8 @@ const getSecurityHeaders = (isDev: boolean) => {
 };
 const nextConfig: NextConfig = {
   reactStrictMode: false,
-  basePath: '/admin',
-  assetPrefix: '/admin',
+  basePath: BASE_PATH,
+  assetPrefix: BASE_PATH || undefined,
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -95,6 +97,7 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
+    unoptimized: process.env.NEXT_PUBLIC_IMAGE_UNOPTIMIZED === 'true',
     formats: ['image/webp'],
     remotePatterns: [
       {
@@ -214,8 +217,12 @@ const nextConfig: NextConfig = {
   },
 
   async rewrites() {
-    if (!API_ORIGIN) return [];
-    return [{ source: '/api/:path*', destination: `${API_ORIGIN}/:path*` }];
+    if (!API_ORIGIN) return { beforeFiles: [], afterFiles: [], fallback: [] };
+    return {
+      beforeFiles: [],
+      afterFiles: [],
+      fallback: [{ source: '/api/:path*', destination: `${API_ORIGIN}/:path*` }],
+    };
   },
 
   experimental: {
