@@ -8,7 +8,7 @@ services:
     volumes:
       - ../:/app
     environment:
-      NODE_ENV: production
+      NODE_ENV: staging
     # Используем yarn install для монорепозитория
     command: >
       sh -c "yarn install"
@@ -26,12 +26,11 @@ services:
     volumes:
       - ../:/app
     environment:
-      NODE_ENV: production
+      NODE_ENV: staging
       NODE_OPTIONS: --max-old-space-size=4096
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     env_file:
-      - ../apps/compass-admin/.env.production
-      - ../.env # Твой основной .env перекрывает настройки прода
+      - ../apps/compass-admin/.env.staging
     command: >
       sh -c "yarn build:admin"
     restart: "no"
@@ -50,8 +49,7 @@ services:
       NODE_OPTIONS: --max-old-space-size=4096
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     env_file:
-      - ../apps/compass-driver/.env.staging
-      - ../.env
+      - ../apps/compass-driver-mobile/.env.staging
     command: >
       sh -c "yarn build:driver-mobile"
     restart: "no"
@@ -74,7 +72,6 @@ services:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     env_file:
       - ../apps/compass-terminal/.env.staging
-      - ../.env
     command: >
       sh -c "yarn build:terminal"
     restart: "no"
@@ -100,7 +97,6 @@ services:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     env_file:
       - ../apps/compass-admin/.env.staging
-      - ../.env
     command: >
       sh -c "yarn start:admin"
     networks:
@@ -118,8 +114,7 @@ services:
       NODE_ENV: staging
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     env_file:
-      - ../apps/compass-driver/.env.staging
-      - ../.env
+      - ../apps/compass-driver-mobile/.env.staging
     command: >
       sh -c "yarn start:driver-mobile"
     networks:
@@ -138,7 +133,6 @@ services:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     env_file:
       - ../apps/compass-terminal/.env.staging
-      - ../.env
     command: >
       sh -c "yarn start:terminal"
     networks:
