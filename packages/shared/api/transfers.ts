@@ -135,7 +135,7 @@ export interface CreateTransferDTO {
 
 export const transfersApi = {
   getTransfers: async (filters: TransferFilters = {}): Promise<TransferApiResponse> => {
-    const result = await apiGet<TransferApiResponse>('/Transfer?includes=Passengers', { params: filters });
+    const result = await apiGet<TransferApiResponse>('/Transfer?first=true&includes=Passengers&sortBy=createdAt&sortOrder=Desc', { params: { ...filters } });
 
     if (result.error) {
       throw new Error(result.error.message);
