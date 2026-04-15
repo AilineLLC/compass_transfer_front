@@ -11,7 +11,7 @@ services:
       NODE_ENV: staging
     # Используем yarn install для монорепозитория
     command: >
-      sh -c "yarn install && npm rebuild sharp"
+      sh -c "yarn install && rm -rf /app/node_modules/@img/sharp-win32-x64 /app/node_modules/@img/sharp-darwin-x64 /app/node_modules/@img/sharp-darwin-arm64 2>/dev/null || true"
     restart: "no"
     profiles: ["ops"]
     dns:
