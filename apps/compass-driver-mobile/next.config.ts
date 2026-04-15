@@ -39,6 +39,8 @@ const securityHeaders = [
 ];
 const nextConfig: NextConfig = {
   reactStrictMode: false,
+  basePath: '/driver',
+  assetPrefix: '/driver',
   typescript: {
     ignoreBuildErrors: true,
   },

@@ -65,6 +65,8 @@ const getSecurityHeaders = (isDev: boolean) => {
 };
 const nextConfig: NextConfig = {
   reactStrictMode: false,
+  basePath: '/admin',
+  assetPrefix: '/admin',
   typescript: {
     ignoreBuildErrors: true,
   },

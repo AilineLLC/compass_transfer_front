@@ -39,6 +39,8 @@ const securityHeaders = [
 ];
 const nextConfig: NextConfig = {
   reactStrictMode: false,
+  basePath: '/terminal',
+  assetPrefix: '/terminal',
   typescript: {
     ignoreBuildErrors: true,
   },
