@@ -1,3 +1,4 @@
+'use client';
 import { useRef, useState } from 'react';
 import { Info, Settings, Users, Star, Plus, ImageIcon, Pencil } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/layout';
@@ -191,7 +192,7 @@ export function CarViewContent({ car, onRemoveDriver, onAddFeature, onUpdateImag
             <div>
               <label className='text-sm font-medium text-gray-500'>Тип автомобиля</label>
               <p className='text-base text-gray-900 mt-1'>
-                {CarTypeValues[car.type as CarType] || car.type}
+                {CarTypeValues[car.type]}
               </p>
             </div>
 
@@ -273,8 +274,8 @@ export function CarViewContent({ car, onRemoveDriver, onAddFeature, onUpdateImag
           <CardTitle className='flex items-center gap-2'>
             <Users className='h-5 w-5' />
             Назначенные водители
-            {car.drivers.length >= 2 && (
-              <Badge variant='secondary' className='text-xs ml-2'>
+            {(car?.drivers?.length ?? 0) >= 2 && (
+              <Badge variant="secondary" className="text-xs ml-2">
                 Максимум: 2/2
               </Badge>
             )}
@@ -283,7 +284,7 @@ export function CarViewContent({ car, onRemoveDriver, onAddFeature, onUpdateImag
         <CardContent>
           <CarDriversList
             carId={car.id}
-            drivers={car.drivers}
+            drivers={car.drivers || []}
             onRemoveDriver={onRemoveDriver}
           />
         </CardContent>
