@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  compass-install:
+    image: node:20-alpine3.19
+    working_dir: /app
+    volumes:
+      - ../:/app
+    # Подтягиваем файл из корня проекта на сервере
+    env_file:
+      - ../.env
+    command: npm install
+
+  compass-landing:
+    image: node:20-alpine3.19
+    working_dir: /app
+    volumes:
+      - ../:/app
+    ports:
+      - "${STAGING_PORT_LANDING}:3000"
+    env_file:
+      - ../.env
+    command: sh -c "npm run build --workspace=landing && npm run start --workspace=landing"
+    restart: always
+
+  compass-admin:
+    image: node:20-alpine3.19
+    working_dir: /app
+    volumes:
+      - ../:/app
+    ports:
+      - "${STAGING_PORT_ADMIN}:3000"
+    env_file:
+      - ../.env
+    command: sh -c "npm run build --workspace=admin && npm run start --workspace=admin"
+    restart: always
+
+  compass-driver:
+    image: node:20-alpine3.19
+    working_dir: /app
+    volumes:
+      - ../:/app
+    ports:
+      - "${STAGING_PORT_DRIVER}:3000"
+    env_file:
+      - ../.env
+    command: sh -c "npm run build --workspace=driver && npm run start --workspace=driver"
+    restart: always
+
+  compass-terminal:
+    image: node:20-alpine3.19
+    working_dir: /app
+    volumes:
+      - ../:/app
+    ports:
+      - "${STAGING_PORT_TERMINAL}:3000"
+    env_file:
+      - ../.env
+    command: sh -c "npm run build --workspace=terminal && npm run start --workspace=terminal"
+    restart: always
