@@ -8,9 +8,19 @@ function normalizeApiOrigin(raw?: string) {
   return trimmed.replace(/\/api$/i, '');
 }
 
+function toHostname(raw?: string) {
+  if (!raw) return undefined;
+  try {
+    return new URL(raw.trim()).hostname;
+  } catch {
+    return undefined;
+  }
+}
+
 const API_ORIGIN =
   normalizeApiOrigin(process.env.API_ORIGIN) ??
   normalizeApiOrigin(process.env.NEXT_PUBLIC_API_URL);
+const UPLOADS_HOSTNAME = toHostname(process.env.NEXT_PUBLIC_UPLOADS_URL);
 const securityHeaders = [
   {
     key: 'X-DNS-Prefetch-Control',
@@ -108,6 +118,9 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      ...(UPLOADS_HOSTNAME
+        ? [{ protocol: 'https' as const, hostname: UPLOADS_HOSTNAME, port: '', pathname: '/**' }]
+        : []),
     ],
   },
 
