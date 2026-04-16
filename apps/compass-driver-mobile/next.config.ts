@@ -61,8 +61,15 @@ const nextConfig: NextConfig = {
   },
   images: {
     unoptimized: process.env.NEXT_PUBLIC_IMAGE_UNOPTIMIZED === 'true',
+    loaderFile: BASE_PATH ? './src/image-loader.ts' : undefined,
     formats: ['image/webp'],
     remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'compass.ailine.kg',
+        port: '',
+        pathname: '/**',
+      },
       {
         protocol: 'https',
         hostname: 'via.placeholder.com',

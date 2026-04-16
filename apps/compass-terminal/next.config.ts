@@ -61,12 +61,19 @@ const nextConfig: NextConfig = {
   },
   images: {
     unoptimized: process.env.NEXT_PUBLIC_IMAGE_UNOPTIMIZED === 'true',
+    loaderFile: BASE_PATH ? './src/image-loader.ts' : undefined,
     formats: ['image/webp', 'image/avif'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     minimumCacheTTL: 60 * 60 * 24 * 365,
     dangerouslyAllowSVG: false,
     remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'compass.ailine.kg',
+        port: '',
+        pathname: '/**',
+      },
       {
         protocol: 'https',
         hostname: 'via.placeholder.com',
