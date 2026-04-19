@@ -87,7 +87,6 @@ export function NotificationsProvider({ children }: NotificationsProviderProps) 
       refreshUnreadCount();
     };
 
-    // Подписываемся на единственный эвент нового API
     on('New', handleNotificationUpdate);
 
     return () => {

@@ -12,27 +12,23 @@ export enum NotificationCategory {
   WARNING = 'WARNING'
 }
 
-// Маппинг типов уведомлений к категориям
 const NOTIFICATION_TYPE_TO_CATEGORY: Record<NotificationType, NotificationCategory> = {
   [NotificationType.OrderCreated]: NotificationCategory.ORDER,
-  [NotificationType.OrderConfirmed]: NotificationCategory.ORDER,
+  [NotificationType.OrderUpdated]: NotificationCategory.ORDER,
   [NotificationType.OrderCancelled]: NotificationCategory.ORDER,
   [NotificationType.OrderCompleted]: NotificationCategory.ORDER,
-
   [NotificationType.RideRequest]: NotificationCategory.ORDER,
   [NotificationType.RideAccepted]: NotificationCategory.ORDER,
-  [NotificationType.RideRejected]: NotificationCategory.ORDER,
   [NotificationType.RideStarted]: NotificationCategory.ORDER,
   [NotificationType.RideCompleted]: NotificationCategory.ORDER,
   [NotificationType.RideCancelled]: NotificationCategory.ORDER,
-
+  [NotificationType.RideUpdate]: NotificationCategory.ORDER,
+  [NotificationType.CancelRideRequest]: NotificationCategory.ORDER,
   [NotificationType.DriverHeading]: NotificationCategory.ORDER,
   [NotificationType.DriverArrived]: NotificationCategory.ORDER,
+  [NotificationType.DriverAssigned]: NotificationCategory.ORDER,
   [NotificationType.DriverCancelled]: NotificationCategory.ORDER,
-
-  [NotificationType.Payment]: NotificationCategory.WARNING,
   [NotificationType.PaymentReceived]: NotificationCategory.WARNING,
-  [NotificationType.PaymentFailed]: NotificationCategory.WARNING,
 };
 
 export interface UseNotificationsResult {
@@ -52,6 +48,7 @@ export interface UseNotificationsResult {
     refresh: (category?: NotificationCategory) => Promise<void>;
     markAsRead: (id: string) => Promise<void>;
     deleteNotification: (id: string) => Promise<void>;
+    addOptimisticNotification: (notification: GetNotificationDTO) => void;
   };
 }
 
@@ -174,6 +171,15 @@ export function useNotifications(pageSize: number = 20): UseNotificationsResult 
     }
   }, []);
 
+  // Оптимистичное добавление уведомления (из WS, до API sync)
+  const addOptimisticNotification = useCallback((notification: GetNotificationDTO) => {
+    setNotifications(prev => {
+      if (prev.some(n => n.id === notification.id)) return prev;
+      return [notification, ...prev];
+    });
+    setTotalCount(prev => prev + 1);
+  }, []);
+
   // Удалить уведомление
   const deleteNotification = useCallback(async (id: string) => {
     try {
@@ -222,7 +228,8 @@ export function useNotifications(pageSize: number = 20): UseNotificationsResult 
     refresh,
     markAsRead,
     deleteNotification,
-  }), [loadNotifications, loadMore, refresh, markAsRead, deleteNotification]);
+    addOptimisticNotification,
+  }), [loadNotifications, loadMore, refresh, markAsRead, deleteNotification, addOptimisticNotification]);
 
   return {
     notifications,

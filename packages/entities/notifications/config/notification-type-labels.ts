@@ -2,50 +2,50 @@ import type { NotificationType } from '../enums/NotificationType.enum';
 
 export const NotificationTypeLabels: Record<NotificationType, string> = {
   OrderCreated: 'Заказ создан',
-  OrderConfirmed: 'Заказ подтверждён',
+  OrderUpdated: 'Заказ изменён',
   OrderCancelled: 'Заказ отменён',
   OrderCompleted: 'Заказ завершён',
 
-  RideRequest: 'Запрос поездки',
+  RideRequest: 'Запрос на поездку',
   RideAccepted: 'Поездка принята',
-  RideRejected: 'Поездка отклонена',
-  RideStarted: 'Поездка начата',
+  RideStarted: 'Поездка началась',
   RideCompleted: 'Поездка завершена',
   RideCancelled: 'Поездка отменена',
+  RideUpdate: 'Обновление поездки',
+  CancelRideRequest: 'Отмена запроса на поездку',
+
+  PaymentReceived: 'Платёж получен',
 
   DriverHeading: 'Водитель в пути',
   DriverArrived: 'Водитель прибыл',
+  DriverAssigned: 'Водитель назначен',
   DriverCancelled: 'Водитель отменил',
-
-  Payment: 'Платёж',
-  PaymentReceived: 'Платёж получен',
-  PaymentFailed: 'Ошибка платежа',
 };
 
 export const getNotificationTypeLabel = (type: NotificationType): string => {
-  return NotificationTypeLabels[type] ?? 'Уведомление';
+  return NotificationTypeLabels[type] ?? type;
 };
 
 export const NotificationTypeColors: Record<NotificationType, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   OrderCreated: 'default',
-  OrderConfirmed: 'default',
+  OrderUpdated: 'secondary',
   OrderCancelled: 'destructive',
   OrderCompleted: 'default',
 
   RideRequest: 'outline',
   RideAccepted: 'default',
-  RideRejected: 'destructive',
   RideStarted: 'default',
   RideCompleted: 'default',
   RideCancelled: 'destructive',
+  RideUpdate: 'secondary',
+  CancelRideRequest: 'destructive',
+
+  PaymentReceived: 'default',
 
   DriverHeading: 'secondary',
   DriverArrived: 'default',
+  DriverAssigned: 'default',
   DriverCancelled: 'destructive',
-
-  Payment: 'outline',
-  PaymentReceived: 'default',
-  PaymentFailed: 'destructive',
 };
 
 export const getNotificationTypeColor = (type: NotificationType) => {

@@ -27,6 +27,76 @@ import {
 } from '@shared/ui/navigation/dropdown-menu';
 import { useNotificationContext } from '@entities/notifications/context';
 
+// ──────────────────────────────────────────────────────────────
+// Превью структурированных данных уведомления
+// ──────────────────────────────────────────────────────────────
+
+type NotifData = Record<string, unknown>;
+
+function NotificationDataPreview({ data, type }: { data: unknown; type: string }) {
+  if (!data || typeof data !== 'object') return null;
+
+  const d = data as NotifData;
+
+  // Маршрут (Waypoints)
+  const waypoints = (d.Waypoints || d.waypoints) as Array<{ Location?: { Address?: string; Name?: string }; location?: { address?: string; name?: string } }> | undefined;
+  const start = waypoints?.[0];
+  const end = waypoints?.[waypoints.length - 1];
+  const startAddr = start?.Location?.Address || start?.location?.address;
+  const endAddr = end?.Location?.Address || end?.location?.address;
+  const hasRoute = startAddr && endAddr && waypoints && waypoints.length >= 2;
+
+  // Водитель (RideAccepted / DriverAssigned)
+  const driver = d.Driver as { FullName?: string; fullName?: string; Rating?: number; rating?: number } | undefined;
+  const car = d.Car as { Model?: string; model?: string; Color?: string; color?: string; LicensePlate?: string; licensePlate?: string } | undefined;
+
+  // Номер заказа
+  const orderNumber = d.OrderNumber || d.orderNumber;
+
+  const hasDriver = driver?.FullName || driver?.fullName;
+  const hasCar = car?.Model || car?.model;
+
+  if (!hasRoute && !hasDriver && !orderNumber) return null;
+
+  return (
+    <div className='mt-1 mb-1 space-y-1 text-xs text-muted-foreground border-l-2 border-muted pl-2'>
+      {orderNumber && (
+        <div className='font-medium text-foreground'>№ {String(orderNumber)}</div>
+      )}
+      {hasRoute && (
+        <div className='space-y-0.5'>
+          <div className='flex gap-1'>
+            <span className='text-blue-500'>●</span>
+            <span className='line-clamp-1'>{startAddr}</span>
+          </div>
+          {waypoints && waypoints.length > 2 && (
+            <div className='flex gap-1 text-orange-500'>
+              <span>●</span>
+              <span>+{waypoints.length - 2} остановок</span>
+            </div>
+          )}
+          <div className='flex gap-1'>
+            <span className='text-gray-400'>●</span>
+            <span className='line-clamp-1'>{endAddr}</span>
+          </div>
+        </div>
+      )}
+      {(hasDriver || hasCar) && (
+        <div className='flex flex-wrap gap-x-3'>
+          {hasDriver && (
+            <span>🧑‍✈️ {driver?.FullName || driver?.fullName}
+              {(driver?.Rating || driver?.rating) ? ` ★${driver.Rating || driver.rating}` : ''}
+            </span>
+          )}
+          {hasCar && (
+            <span>🚗 {car?.Model || car?.model} {car?.Color || car?.color} {car?.LicensePlate || car?.licensePlate}</span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface NotificationsSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -190,10 +260,18 @@ export function NotificationsSheet({ open, onOpenChange }: NotificationsSheetPro
                             {notification.title}
                           </h4>
                         </div>
-                        <p className='text-sm text-muted-foreground mb-2 line-clamp-2'>
-                          {notification.content || notification.title}
-                        </p>
-                        <div className='flex items-center justify-between'>
+
+                        {/* Content с поддержкой переносов строк */}
+                        {notification.content && (
+                          <p className='text-sm text-muted-foreground mb-2 whitespace-pre-line'>
+                            {notification.content}
+                          </p>
+                        )}
+
+                        {/* Дополнительные данные из поля data */}
+                        <NotificationDataPreview data={notification.data} type={notification.type} />
+
+                        <div className='flex items-center justify-between mt-2'>
                           <p className='text-xs text-muted-foreground'>
                             {notification.createdAt
                               ? new Date(notification.createdAt).toLocaleString('ru-RU')

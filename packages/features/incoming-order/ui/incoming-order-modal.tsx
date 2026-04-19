@@ -38,40 +38,43 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
   useEffect(() => {
     const handleRideRequest = (notification: SignalREventData) => {
       if (notification && typeof notification === 'object' && 'data' in notification && notification.data && 'orderId' in notification && notification.orderId) {
-        // ID заказа находится в notification.orderId, а данные в notification.data!
-        const signalRData = notification.data as { waypoints: Array<{ location: { address?: string; name?: string } }> };
+        type WsLocation = { Address?: string; Name?: string };
+        type WsWaypoint = { Location?: WsLocation; DepartureTime?: string | null };
+        type WsPassenger = { FirstName?: string; LastName?: string; IsMainPassenger?: boolean; Phone?: string | null };
+        type WsRideRequestData = {
+          Waypoints?: WsWaypoint[];
+          Passengers?: WsPassenger[];
+          InitialPrice?: number;
+          DriverPrice?: number | null;
+          PaymentMethodType?: string | null;
+        };
+
+        const notifData = notification.data as WsRideRequestData;
         const orderId = notification.orderId as string;
         const rideId = (notification as { rideId?: string }).rideId as string;
         const orderTypeValue = (notification as { orderType?: string }).orderType as string;
-        const passangers = (notification.data as { passengers: Array<{ firstName?: string, lastName?: string, isMainPassenger: boolean }> }).passengers || [];
-        // Создаем правильную структуру данных для модального окна
-        const waypoints = signalRData.waypoints || [];
-        const startLocation = waypoints[0]?.location;
-        const endLocation = waypoints[1]?.location;
 
-        const notifData = notification.data as {
-          waypoints: Array<{ location: { address?: string; name?: string } }>;
-          passengers: Array<{ firstName?: string; lastName?: string; isMainPassenger: boolean }>;
-          initialPrice?: number;
-          driverPrice?: number | null;
-          paymentMethodType?: string | null;
-        };
+        const waypoints = notifData.Waypoints || [];
+        const startLocation = waypoints[0]?.Location;
+        const endLocation = waypoints[waypoints.length - 1]?.Location;
+        const passengers = notifData.Passengers || [];
 
-        const tripPrice = notifData.initialPrice || 0;
-        const driverPriceValue = notifData.driverPrice ?? null;
-        const paymentMethod = (notifData.paymentMethodType as PaymentMethodType) || PaymentMethodType.Cash;
+        const tripPrice = notifData.InitialPrice || 0;
+        const driverPriceValue = notifData.DriverPrice ?? null;
+        const paymentMethod = (notifData.PaymentMethodType as PaymentMethodType) || PaymentMethodType.Cash;
 
         const mappedOrderData = {
           id: orderId,
-          orderNumber: orderId.slice(-8), // Последние 8 символов ID как номер
-          startLocationId: startLocation?.address || startLocation?.name || 'Не указано',
-          endLocationId: endLocation?.address || endLocation?.name || 'Не указано',
-          startLocationAddress: startLocation?.address || '',
-          endLocationAddress: endLocation?.address || '',
+          orderNumber: orderId.slice(-8),
+          startLocationId: startLocation?.Address || startLocation?.Name || 'Не указано',
+          endLocationId: endLocation?.Address || endLocation?.Name || 'Не указано',
+          startLocationAddress: startLocation?.Address || '',
+          endLocationAddress: endLocation?.Address || '',
           type: orderTypeValue === 'Instant' ? 'Instant' : 'Scheduled',
           status: OrderStatus.Pending,
-          additionalStops: waypoints.slice(2)?.map((wp: { location: { address?: string; name?: string } }) => wp.location?.address || wp.location?.name || 'Дополнительная остановка') || [],
-          // Добавляем другие поля с дефолтными значениями
+          additionalStops: waypoints.slice(1, -1).map((wp) =>
+            wp.Location?.Address || wp.Location?.Name || 'Дополнительная остановка',
+          ),
           customerId: '',
           driverId: null,
           createdAt: new Date().toISOString(),
@@ -88,7 +91,12 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
           driverPrice: driverPriceValue,
           paymentMethodType: paymentMethod,
           services: [],
-          passengers: passangers.length > 1 ? passangers.filter((passenger) => passenger.isMainPassenger) : passangers
+          passengers: passengers.map((p) => ({
+            firstName: p.FirstName || '',
+            lastName: p.LastName || null,
+            isMainPassenger: p.IsMainPassenger || false,
+            phone: p.Phone || null,
+          })),
         } as unknown as GetOrderDTO;
 
         setCurrentOrder(mappedOrderData);
@@ -106,16 +114,10 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
       }
     };
 
-    const handleNew = (data: unknown) => {
-      if (data && typeof data === 'object' && (data as Record<string, unknown>).type === 'RideRequest') {
-        handleRideRequest(data);
-      }
-    };
-
-    on('New', handleNew);
+    on('RideRequest', handleRideRequest);
 
     return () => {
-      off('New', handleNew);
+      off('RideRequest', handleRideRequest);
       stopSound();
     };
   }, [on, off, playSound, stopSound]);

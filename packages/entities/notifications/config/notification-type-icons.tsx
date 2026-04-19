@@ -1,34 +1,34 @@
 import {
+  Bell,
   Package,
   Car,
   CreditCard,
-  AlertTriangle,
   CheckCircle,
-  Bell,
+  AlertTriangle,
   type LucideProps,
 } from 'lucide-react';
 import type { NotificationType } from '../enums/NotificationType.enum';
 
 export const NotificationTypeIcons: Record<NotificationType, React.ComponentType<LucideProps>> = {
   OrderCreated: Package,
-  OrderConfirmed: CheckCircle,
+  OrderUpdated: Package,
   OrderCancelled: AlertTriangle,
   OrderCompleted: CheckCircle,
 
   RideRequest: Car,
   RideAccepted: CheckCircle,
-  RideRejected: AlertTriangle,
   RideStarted: Car,
   RideCompleted: CheckCircle,
   RideCancelled: AlertTriangle,
+  RideUpdate: Car,
+  CancelRideRequest: AlertTriangle,
+
+  PaymentReceived: CreditCard,
 
   DriverHeading: Car,
   DriverArrived: Bell,
+  DriverAssigned: Car,
   DriverCancelled: AlertTriangle,
-
-  Payment: CreditCard,
-  PaymentReceived: CreditCard,
-  PaymentFailed: AlertTriangle,
 };
 
 export const getNotificationTypeIcon = (type: NotificationType) => {

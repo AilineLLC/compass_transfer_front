@@ -5,7 +5,8 @@ import { cn } from '@shared/lib/utils';
 import { Input } from '@shared/ui/forms/input';
 import { Label } from '@shared/ui/forms/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/forms/select';
-import { NotificationType, NotificationTypeLabels } from '../enums/NotificationType.enum';
+import { NotificationType } from '../enums/NotificationType.enum';
+import { NotificationTypeLabels } from '../config/notification-type-labels';
 import type { NotificationCreateFormData } from '../schemas/notificationCreateSchema';
 
 type OrderType = 'Unknown' | 'Instant' | 'Scheduled' | 'Partner' | 'Shuttle' | 'Subscription';

@@ -1,24 +1,23 @@
 'use client';
 
 import { createContext, useContext } from 'react';
-import type { GetNotificationDTO } from '@shared/api/notifications';
-
-export type NotificationPriority = 'order' | 'completed' | 'important' | 'warning';
+import type { NotificationPriority } from '';
+import type { GetNotificationDTO } from '';
 
 export interface NotificationContextType {
   notifications: GetNotificationDTO[];
-  hasUnreadNotifications: boolean;
-  unreadCount: number;
+  hasUnreadNotifications: boolean; // Простой индикатор для сайдбара
+  unreadCount: number; // Точное количество для страницы
   unreadCountsByPriority: Record<NotificationPriority, number>;
   isLoading: boolean;
   isLoadingMore: boolean;
   error: string | null;
   hasMore: boolean;
   totalCount: number;
-  originalTotalCount: number;
+  originalTotalCount: number; // Исходное количество до дедупликации
   actions: {
     loadMore: () => void;
-    refresh: () => Promise<void>;
+    refresh: () => void;
     markAllAsRead: () => Promise<void>;
     markAllAsReadByPriority: (priority: NotificationPriority) => Promise<void>;
     loadMoreByPriority: (priority: NotificationPriority) => void;
@@ -40,4 +39,4 @@ export const useNotificationContext = () => {
   }
 
   return context;
-};
+}; 

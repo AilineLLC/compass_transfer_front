@@ -72,7 +72,7 @@ export function NotificationEditView({ notificationId }: NotificationEditViewPro
   const logic = useNotificationEditFormLogic({
     notificationId: notificationId,
     initialData: {
-      type: NotificationType.System,
+      type: NotificationType.OrderCreated,
       title: '',
       content: '',
       orderId: '',

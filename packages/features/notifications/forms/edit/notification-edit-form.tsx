@@ -73,54 +73,24 @@ export function useNotificationEditFormLogic({
     async (data: NotificationUpdateFormData) => {
       setIsSubmitting(true);
       try {
-        const apiData = {
-          type: data.type,
-          title: data.title,
-          content: data.content || undefined,
-          orderId: data.orderId || undefined,
-          rideId: data.rideId || undefined,
-          orderType: data.orderType || undefined,
-          isRead: data.isRead,
-        };
-        
-        const result = await notificationsApi.updateNotification(notificationId, apiData);
-
-        if (result && result.title) {
-          toast.success(`Уведомление "${result.title}" успешно обновлено!`);
+        // PUT /Notification отсутствует в API — доступна только отметка прочитанным
+        if (data.isRead && initialData.isRead === false) {
+          await notificationsApi.markAsRead([notificationId]);
+          toast.success('Уведомление отмечено как прочитанное');
         } else {
-          toast.success('Уведомление успешно обновлено!');
+          toast.info('Изменений нет');
         }
         onSuccess();
       } catch (error) {
         logger.warn('Ошибка обновления уведомления:', error);
-        if (error instanceof Error && 'response' in error) {
-          const axiosError = error as AxiosError<ApiError>;
+        const axiosError = error as AxiosError<ApiError>;
 
-          if (axiosError.response?.data?.errors) {
-            const serverErrors = axiosError.response.data.errors;
-
-            Object.keys(serverErrors).forEach(field => {
-              const fieldKey = field as keyof NotificationUpdateFormData;
-
-              if (serverErrors[field] && serverErrors[field].length > 0) {
-                form.setError(fieldKey, {
-                  type: 'server',
-                  message: serverErrors[field][0],
-                });
-              }
-            });
-            toast.error('Исправьте ошибки в форме');
-          } else {
-            toast.error(axiosError.response?.data?.detail || 'Ошибка обновления уведомления');
-          }
-        } else {
-          toast.error('Неизвестная ошибка при обновлении уведомления');
-        }
+        toast.error(axiosError.response?.data?.detail || 'Ошибка обновления уведомления');
       } finally {
         setIsSubmitting(false);
       }
     },
-    [form, onSuccess, notificationId],
+    [onSuccess, notificationId, initialData.isRead],
   );
 
   const getChapterStatus = useMemo(() => {

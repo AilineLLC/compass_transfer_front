@@ -97,16 +97,10 @@ export function IncomingOrderProvider({ children, onOrderAccepted }: IncomingOrd
       }
     };
 
-    const handleNew = (data: unknown) => {
-      if (data && typeof data === 'object' && (data as Record<string, unknown>).type === 'RideRequest') {
-        handleRideRequest(data);
-      }
-    };
-
-    on('New', handleNew);
+    on('RideRequest', handleRideRequest);
 
     return () => {
-      off('New', handleNew);
+      off('RideRequest', handleRideRequest);
     };
   }, [on, off, showOrder]);
 

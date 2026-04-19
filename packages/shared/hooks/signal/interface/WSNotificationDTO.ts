@@ -1,17 +1,16 @@
-import type { NotificationType } from '../enums';
+import type { NotificationType } from '@entities/notifications/enums/NotificationType.enum';
 
-/**
- * Единый интерфейс уведомления от /hubs/WSClient — endpoint New.
- * Все типы уведомлений приходят через одно событие.
- * Поле data содержит тип-специфичные данные (any, т.к. бэкенд возвращает разные структуры).
- */
+export type OrderType = 'Unknown' | 'Instant' | 'Scheduled' | 'Partner' | 'Shuttle' | 'Subscription';
+
 export interface WSNotificationDTO {
-  id?: string;
-  type?: NotificationType;
+  id: string;
+  type: NotificationType;
   title: string;
   content?: string | null;
   orderId?: string | null;
   rideId?: string | null;
-  orderType?: 'Instant' | 'Scheduled';
-  data?: any;
+  orderType?: OrderType;
+  isRead: boolean;
+  data: unknown;
+  createdAt: string;
 }
