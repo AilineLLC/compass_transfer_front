@@ -68,9 +68,13 @@ export const getNotificationCategory = (type: NotificationType): NotificationCat
  * Хук для работы с уведомлениями
  * Использует notification-service для API вызовов
  */
+const NULL_UUID = '00000000-0000-0000-0000-000000000000';
+
 export function useNotifications(pageSize: number = 20): UseNotificationsResult {
-  // Состояние
-  const [notifications, setNotifications] = useState<GetNotificationDTO[]>([]);
+  // WS-only уведомления (не сохранённые в БД, id = null UUID)
+  const [wsNotifications, setWsNotifications] = useState<GetNotificationDTO[]>([]);
+  // Серверные уведомления
+  const [serverNotifications, setServerNotifications] = useState<GetNotificationDTO[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -111,9 +115,9 @@ export function useNotifications(pageSize: number = 20): UseNotificationsResult 
         const newNotifications = result.data || [];
 
         if (append) {
-          setNotifications(prev => [...prev, ...newNotifications]);
+          setServerNotifications(prev => [...prev, ...newNotifications]);
         } else {
-          setNotifications(newNotifications);
+          setServerNotifications(newNotifications);
         }
 
         setTotalCount(result.totalCount || 0);
@@ -156,15 +160,17 @@ export function useNotifications(pageSize: number = 20): UseNotificationsResult 
   // Отметить как прочитанное
   const markAsRead = useCallback(async (id: string) => {
     try {
+      // WS-only уведомления помечаем только локально
+      if (id.startsWith('ws-')) {
+        setWsNotifications(prev =>
+          prev.map(n => n.id === id ? { ...n, isRead: true } : n),
+        );
+        return;
+      }
       await notificationsApi.markAsRead([id]);
-
-      // Обновляем локальное состояние
-      setNotifications(prev =>
-        prev.map(notification =>
-          notification.id === id ? { ...notification, isRead: true } : notification,
-        ),
+      setServerNotifications(prev =>
+        prev.map(n => n.id === id ? { ...n, isRead: true } : n),
       );
-
     } catch (err) {
       logger.error('❌ useNotifications.markAsRead ошибка:', err);
       throw err;
@@ -173,7 +179,14 @@ export function useNotifications(pageSize: number = 20): UseNotificationsResult 
 
   // Оптимистичное добавление уведомления (из WS, до API sync)
   const addOptimisticNotification = useCallback((notification: GetNotificationDTO) => {
-    setNotifications(prev => {
+    if (notification.id === NULL_UUID || !notification.id) {
+      // WS-only: генерируем уникальный временный ID
+      const tempId = `ws-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      setWsNotifications(prev => [{ ...notification, id: tempId, isRead: false }, ...prev]);
+      setTotalCount(prev => prev + 1);
+      return;
+    }
+    setServerNotifications(prev => {
       if (prev.some(n => n.id === notification.id)) return prev;
       return [notification, ...prev];
     });
@@ -183,10 +196,13 @@ export function useNotifications(pageSize: number = 20): UseNotificationsResult 
   // Удалить уведомление
   const deleteNotification = useCallback(async (id: string) => {
     try {
+      if (id.startsWith('ws-')) {
+        setWsNotifications(prev => prev.filter(n => n.id !== id));
+        setTotalCount(prev => Math.max(0, prev - 1));
+        return;
+      }
       await notificationsApi.deleteNotification(id);
-
-      // Обновляем локальное состояние
-      setNotifications(prev => prev.filter(notification => notification.id !== id));
+      setServerNotifications(prev => prev.filter(notification => notification.id !== id));
 
       logger.info('🗑️ useNotifications.deleteNotification успешно:', id);
     } catch (err) {
@@ -195,10 +211,15 @@ export function useNotifications(pageSize: number = 20): UseNotificationsResult 
     }
   }, []);
 
+  // Объединяем WS-only и серверные (WS-only сверху, они новее)
+  const notifications = useMemo(
+    () => [...wsNotifications, ...serverNotifications],
+    [wsNotifications, serverNotifications],
+  );
+
   // Подсчет непрочитанных
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
-  // Подсчет по категориям (для всех уведомлений, не только текущих)
   const categoryCounts: Record<NotificationCategory, number> = {
     [NotificationCategory.ORDER]: 0,
     [NotificationCategory.IMPORTANT]: 0,
@@ -211,7 +232,6 @@ export function useNotifications(pageSize: number = 20): UseNotificationsResult 
     [NotificationCategory.WARNING]: 0,
   };
 
-  // Подсчитываем только для текущих загруженных уведомлений
   notifications.forEach(notification => {
     const category = getNotificationCategory(notification.type);
 

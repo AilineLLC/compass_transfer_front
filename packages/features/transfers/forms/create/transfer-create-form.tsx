@@ -382,7 +382,7 @@ if (!startLocation) { toast.error('Выберите точку отправле�
             <div className='space-y-1.5'>
               <Label htmlFor='price' className='flex items-center gap-1.5 text-xs font-medium'>
                 <Banknote className='h-3.5 w-3.5' />
-                Цена для клиента (сом) <span className='text-red-500'>*</span>
+                Цена за салон (сом) <span className='text-red-500'>*</span>
               </Label>
               <Input
                 id='price'

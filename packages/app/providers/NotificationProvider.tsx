@@ -114,18 +114,18 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     const handleNewNotification = (data: unknown) => {
       logger.info('📨 NotificationProvider: получено новое уведомление через SignalR', data);
 
-      // Оптимистично добавляем уведомление из WS данных сразу
       if (data && typeof data === 'object' && 'id' in data) {
         const wsNotif = data as import('@shared/api/notifications').GetNotificationDTO;
-        addOptimisticNotification({ ...wsNotif, isRead: wsNotif.isRead ?? false });
+        const isWsOnly = !wsNotif.id || wsNotif.id === '00000000-0000-0000-0000-000000000000';
+
+        addOptimisticNotification({ ...wsNotif, isRead: false });
+
+        // Для WS-only уведомлений (null UUID) не делаем refresh — их нет на сервере
+        if (!isWsOnly) {
+          const timer = setTimeout(() => { refresh(); }, 1500);
+          pendingTimers.push(timer);
+        }
       }
-
-      // Синхронизируем с сервером через небольшую задержку (race condition guard)
-      const timer = setTimeout(() => {
-        refresh();
-      }, 1500);
-
-      pendingTimers.push(timer);
     };
 
     signalR.on('New', handleNewNotification);

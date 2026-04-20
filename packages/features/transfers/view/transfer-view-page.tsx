@@ -255,7 +255,7 @@ export function TransferViewPage({ transfer: initialTransfer }: TransferViewPage
           />
           <StatCard
             icon={Banknote}
-            label='Цена'
+            label='Цена за салон'
             value={`${transfer.price.toLocaleString('ru-RU')} сом`}
             accent='bg-green-500'
           />
