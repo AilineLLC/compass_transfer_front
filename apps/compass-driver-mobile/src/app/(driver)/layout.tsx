@@ -5,6 +5,7 @@ import { LocationProvider } from '@features/location-tracking';
 import { NotificationsProvider } from '@features/notifications';
 import { DriverMobileFooter } from '@widgets/footer';
 import { DriverMobileHeader } from '@widgets/header';
+import { redirect } from 'next/navigation';
 
 interface DriverLayoutProps {
   children: React.ReactNode;
@@ -16,6 +17,10 @@ interface DriverLayoutProps {
  */
 export default async function DriverLayout({ children }: DriverLayoutProps) {
   const accessToken = await getRawCookie('.AspNetCore.Identity.Application');
+  
+  if (!accessToken) {
+    redirect('/login');
+  }
 
   return (
     <SignalRProvider accessToken={accessToken || undefined}>

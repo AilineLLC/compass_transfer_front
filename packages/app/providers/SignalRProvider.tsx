@@ -179,8 +179,8 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children, acce
     off,
   };
 
-  // Показываем загрузку пока не подключились или пока не прошло минимальное время
-  if ((!isConnected && !error) || showWelcome) {
+  // Сплэш-экран показывается минимум 3 секунды
+  if (showWelcome) {
     return (
       <SignalRContext.Provider value={value}>
         <div className="flex items-center justify-center h-screen bg-white">
@@ -197,21 +197,7 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children, acce
     );
   }
 
-  // Показываем ошибку если не удалось подключиться
-  if (error) {
-    return (
-      <SignalRContext.Provider value={value}>
-        <div className="flex items-center justify-center h-screen">
-          <div className="text-center">
-            <div className="text-red-500 text-lg mb-2">Ошибка подключения</div>
-            <div >{error}</div>
-          </div>
-        </div>
-      </SignalRContext.Provider>
-    );
-  }
-
-  // Рендерим children только после успешного подключения
+  // После сплэша всегда рендерим children — без WS уведомления работают через REST
   return (
     <SignalRContext.Provider value={value}>
       {children}

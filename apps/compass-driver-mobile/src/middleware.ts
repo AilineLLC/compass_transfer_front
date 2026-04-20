@@ -31,7 +31,7 @@ export async function middleware(request: NextRequest) {
 
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
   const loginUrl = new URL(`${basePath}/login`, request.url);
-
+  console.log(user)
   // Если пользователь не авторизован, перенаправляем на /login
   if (!user) {
     return NextResponse.redirect(loginUrl);
