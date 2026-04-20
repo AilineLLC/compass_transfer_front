@@ -145,16 +145,19 @@ export function TransferViewPage({ transfer: initialTransfer }: TransferViewPage
     }
   };
 
-  const handleReject = async (id: string) => {
-    setProcessingIds(prev => new Set(prev).add(id));
+  const handleReject = async (reservation: TransferReservationDTO) => {
+    setProcessingIds(prev => new Set(prev).add(reservation.id));
     try {
-      await transferReservationsApi.rejectReservation(id);
-      setReservations(prev => prev.map(r => r.id === id ? { ...r, status: 'Rejected' } : r));
+      await transferReservationsApi.rejectReservation({
+        ...reservation,
+        status: 'Rejected'
+      });
+      setReservations(prev => prev.map(r => r.id === reservation.id ? { ...r, status: 'Rejected' } : r));
       toast.success('Заявка отклонена');
     } catch {
       toast.error('Не удалось отклонить заявку');
     } finally {
-      setProcessingIds(prev => { const s = new Set(prev); s.delete(id); return s; });
+      setProcessingIds(prev => { const s = new Set(prev); s.delete(reservation.id); return s; });
     }
   };
 
@@ -595,7 +598,7 @@ export function TransferViewPage({ transfer: initialTransfer }: TransferViewPage
                           variant='outline'
                           className='flex-1 h-7 gap-1 text-red-600 border-red-200 hover:bg-red-50'
                           disabled={isProcessing}
-                          onClick={() => handleReject(r.id)}
+                          onClick={() => handleReject(r)}
                         >
                           <X className='h-3.5 w-3.5' />
                           Отклонить

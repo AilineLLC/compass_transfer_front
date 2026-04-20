@@ -6,7 +6,8 @@
       "Bash(for pkg:*)",
       "Bash(do echo:*)",
       "Bash(find:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(python *)"
     ]
   }
 }

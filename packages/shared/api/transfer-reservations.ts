@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiDelete } from './client';
+import { apiGet, apiPost, apiDelete, apiPut } from './client';
 import type { GetCustomerDTO } from '@entities/users/interface';
 
 export interface TransferReservationDTO {
@@ -52,8 +52,8 @@ export const transferReservationsApi = {
     if (result.error) throw new Error(result.error.message);
   },
 
-  rejectReservation: async (id: string): Promise<void> => {
-    const result = await apiPost<void, object>(`/TransferReservationForm/${id}/reject`, {});
+  rejectReservation: async (r: TransferReservationDTO): Promise<void> => {
+    const result = await apiPut<void, object>(`/TransferReservationForm/${r.id}`, { ...r });
     if (result.error) throw new Error(result.error.message);
   },
 
