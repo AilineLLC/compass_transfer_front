@@ -1,41 +1,63 @@
-/**
- * Интерфейс для маршрута партнера
- * Соответствует API GET /Route/Partner/{partner_id}
- */
 export interface PartnerRouteDTO {
-  /** ID начальной локации */
   startLocationId: string;
-  /** ID конечной локации */
   endLocationId: string;
-  /** Название маршрута */
   name: string;
-  /** Популярный ли маршрут */
   isPopular: boolean;
-  /** ID маршрута */
   id: string;
-  /** Цена маршрута */
   price: number;
+  duration: number;
 }
 
-/**
- * Интерфейс для обновления маршрута партнера
- * Соответствует API PUT /Route/Partner/self
- */
 export interface UpdatePartnerRouteDTO {
-  /** ID маршрута */
   routeId: string;
-  /** Цена маршрута */
   price: number;
 }
 
-/**
- * Данные для создания нового маршрута партнера
- */
 export interface CreatePartnerRouteData {
-  /** Начальная локация */
   startLocationId: string;
-  /** Конечная локация */
   endLocationId: string;
-  /** Цена маршрута */
   price: number;
+}
+
+export interface RouteLocationDTO {
+  id: string;
+  name: string;
+}
+
+export interface RouteDTO {
+  id: string;
+  startLocationId: string;
+  endLocationId: string;
+  name: string;
+  isPopular: boolean;
+  price: number;
+  duration?: number;
+  startLocation?: RouteLocationDTO;
+  endLocation?: RouteLocationDTO;
+}
+
+export interface RouteListResponseDTO {
+  data: RouteDTO[];
+  totalCount: number;
+  pageSize: number;
+  hasPrevious: boolean;
+  hasNext: boolean;
+}
+
+export interface CreateRouteDTO {
+  startLocationId: string;
+  endLocationId: string;
+  name: string;
+  isPopular: boolean;
+  price: number;
+  duration: number;
+}
+
+export interface UpdateRouteDTO {
+  startLocationId?: string;
+  endLocationId?: string;
+  name?: string;
+  isPopular?: boolean;
+  price?: number;
+  duration?: number;
 }

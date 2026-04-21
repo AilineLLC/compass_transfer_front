@@ -58,6 +58,7 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
         const startLocation = waypoints[0]?.Location;
         const endLocation = waypoints[waypoints.length - 1]?.Location;
         const passengers = notifData.Passengers || [];
+        const content = notification.content;
 
         const tripPrice = notifData.InitialPrice || 0;
         const driverPriceValue = notifData.DriverPrice ?? null;
@@ -91,6 +92,7 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
           driverPrice: driverPriceValue,
           paymentMethodType: paymentMethod,
           services: [],
+          content: content,
           passengers: passengers.map((p) => ({
             firstName: p.FirstName || '',
             lastName: p.LastName || null,
@@ -226,7 +228,7 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
 
   // Вычисляем процент для анимации кнопки - теперь считаем оставшееся время
   const progressPercent = (timeLeft / 10) * 100;
-
+console.log(currentOrder)
   return (
     <div className='fixed inset-0 z-50 flex items-center justify-center p-4'>
       <div className='w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300'>
@@ -235,6 +237,7 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
           <h3 className='text-lg font-semibold text-gray-900 mb-1'>
             {currentOrder.passengers[0]?.firstName} {currentOrder.passengers[0]?.lastName}
           </h3>
+          <p className='text-sm font-semibold mt-1'>{currentOrder.content}</p>
         </div>
         <div className='mb-[30px] flex justify-center px-[10px]'>
           <hr className='border-gray-200 border-gray-200 w-full' />

@@ -55,6 +55,7 @@ export function useLocationFormLogic({
       isActive: true,
       popular: false,
       isLandingOnly: false,
+      isLandingPagePinned: false,
       group: '',
     },
   });
@@ -108,6 +109,7 @@ export function useLocationFormLogic({
           isActive: data.isActive,
           popular1: data.popular,
           isLandingOnly: data.isLandingOnly ?? false,
+          isLandingPagePinned: data.isLandingPagePinned ?? false,
           group: data.group,
           images: orderedImageIds,
         };

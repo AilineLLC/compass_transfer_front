@@ -19,6 +19,8 @@ export interface GetOrderDTO {
    */
   orderNumber: number;
 
+  content: string;
+
   /**
    * Тип заказа
    */

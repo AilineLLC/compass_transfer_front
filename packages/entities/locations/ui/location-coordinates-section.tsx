@@ -24,6 +24,7 @@ export function LocationCoordinatesSection({
   const isActive = watch('isActive');
   const popular = watch('popular');
   const isLandingOnly = watch('isLandingOnly');
+  const isLandingPagePinned = watch('isLandingPagePinned');
 
   return (
     <div className="space-y-6">
@@ -88,6 +89,28 @@ export function LocationCoordinatesSection({
             </div>
             {errors.isLandingOnly && (
               <p className="text-sm text-red-600">{errors.isLandingOnly.message}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Закреплена на лендинге */}
+        <div className="flex flex-row items-center space-x-3 rounded-lg border p-4 border-amber-200 bg-amber-50/50">
+          <Checkbox
+            id="isLandingPagePinned"
+            checked={isLandingPagePinned ?? false}
+            onCheckedChange={(checked) => setValue('isLandingPagePinned', checked === true)}
+          />
+          <div className="flex-1 space-y-0.5">
+            <Label htmlFor="isLandingPagePinned" className="text-sm font-medium cursor-pointer">
+              Закрепить в начале списка на лендинге
+            </Label>
+            <div className="text-sm text-muted-foreground">
+              Если включено — локация будет отображаться первой (закреплённой) в списке направлений
+              на лендинг-сайте, независимо от сортировки. Используйте для приоритетных направлений,
+              которые должны сразу бросаться в глаза клиенту.
+            </div>
+            {errors.isLandingPagePinned && (
+              <p className="text-sm text-red-600">{errors.isLandingPagePinned.message}</p>
             )}
           </div>
         </div>

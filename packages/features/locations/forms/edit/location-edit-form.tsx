@@ -46,6 +46,7 @@ export function useLocationEditFormLogic({
     popular: boolean;
     popular2: boolean;
     isLandingOnly?: boolean | null;
+    isLandingPagePinned?: boolean;
     group?: string | null;
     images?: import('@entities/locations').LocationImageDTO[];
     poi?: import('@entities/locations').PoiItemDTO[];
@@ -80,6 +81,7 @@ export function useLocationEditFormLogic({
       popular: initialData.popular,
       popular2: initialData.popular2,
       isLandingOnly: initialData.isLandingOnly ?? false,
+      isLandingPagePinned: initialData.isLandingPagePinned ?? false,
       group: initialData.group || '',
     },
   });
@@ -133,6 +135,7 @@ export function useLocationEditFormLogic({
           popular1: data.popular,
           popular2: data.popular2,
           isLandingOnly: data.isLandingOnly ?? false,
+          isLandingPagePinned: data.isLandingPagePinned ?? false,
           group: data.group || null,
           images: orderedImageIds,
         };

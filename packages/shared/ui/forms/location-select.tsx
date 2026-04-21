@@ -13,7 +13,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@shared/ui/modals/tooltip';
-import type { Location } from '@entities/user';
+import type { LocationDTO as Location } from '@entities/locations/interface/LocationDTO';
 import { Button } from './button';
 import { Input } from './input';
 
@@ -23,6 +23,7 @@ interface LocationSelectProps {
   placeholder?: string;
   className?: string;
   error?: boolean;
+  isLandingOnly?: boolean;
 }
 
 export function LocationSelect({
@@ -31,6 +32,7 @@ export function LocationSelect({
   placeholder = 'Выберите локацию',
   className = '',
   error = false,
+  isLandingOnly,
 }: LocationSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -82,7 +84,19 @@ export function LocationSelect({
   const loadPopularLocations = async () => {
     setIsLoading(true);
     try {
-      const popularLocations = await locationsApi.getPopularLocations(10);
+      let popularLocations: Location[];
+
+      if (isLandingOnly) {
+        const result = await locationsApi.getLocations({
+          isLandingOnly: true,
+          size: 10,
+          sortBy: 'name',
+          sortOrder: 'Asc',
+        });
+        popularLocations = result.data as unknown as Location[];
+      } else {
+        popularLocations = await locationsApi.getPopularLocations(10);
+      }
 
       setLocations(popularLocations);
     } catch (error) {
@@ -95,7 +109,20 @@ export function LocationSelect({
   const searchLocations = async (query: string) => {
     setIsLoading(true);
     try {
-      const searchResults = await locationsApi.searchLocations(query, 10);
+      let searchResults: Location[];
+
+      if (isLandingOnly) {
+        const result = await locationsApi.getLocations({
+          isLandingOnly: true,
+          'FTS.Plain': query,
+          size: 10,
+          sortBy: 'name',
+          sortOrder: 'Asc',
+        });
+        searchResults = result.data as unknown as Location[];
+      } else {
+        searchResults = await locationsApi.searchLocations(query, 10);
+      }
 
       setLocations(searchResults);
     } catch (error) {
@@ -194,7 +221,7 @@ export function LocationSelect({
 
         {/* Выпадающий список */}
         {isOpen && (
-          <Card className='absolute top-full left-0 right-0 z-50 mt-1 max-h-60 overflow-hidden'>
+          <Card className='absolute top-full left-0 right-0 z-50 mt-1 max-h-60 overflow-hidden bg-background shadow-lg border'>
             <CardContent className='p-0'>
               {/* Поиск */}
               {!selectedLocation && (
@@ -209,7 +236,7 @@ export function LocationSelect({
               )}
 
               {/* Список локаций */}
-              <div className='max-h-48 overflow-y-auto'>
+              <div className='max-h-48 overflow-y-auto pb-5'>
                 {isLoading ? (
                   <div className='flex items-center justify-center p-4'>
                     <Loader2 className='h-4 w-4 animate-spin' />

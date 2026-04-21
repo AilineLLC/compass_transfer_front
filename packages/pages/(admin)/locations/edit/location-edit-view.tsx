@@ -101,6 +101,7 @@ export function LocationEditView({ locationId }: LocationEditViewProps) {
         popular: location.popular1 ?? false,
         popular2: location.popular2 ?? false,
         isLandingOnly: location.isLandingOnly ?? false,
+        isLandingPagePinned: location.isLandingPagePinned ?? false,
         group: location.group || '',
       });
     }

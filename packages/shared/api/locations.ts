@@ -106,6 +106,8 @@ interface UpdateLocationDTO {
   popular1?: boolean;
   popular2?: boolean;
   isLandingOnly?: boolean | null;
+  isLandingPagePinned?: boolean;
+  group?: string | null;
   images?: string[];
   poi?: { name: string; image: string }[];
 }

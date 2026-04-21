@@ -1,0 +1,105 @@
+'use client';
+
+import { zodResolver } from '@hookform/resolvers/zod';
+import type { AxiosError } from 'axios';
+import { useState, useCallback } from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { z } from 'zod';
+import { routesApi } from '@shared/api/routes';
+
+const routeCreateSchema = z.object({
+  name: z.string().min(1, 'Обязательное поле').max(255),
+  startLocationId: z.string().min(1, 'Выберите начальную точку'),
+  endLocationId: z.string().min(1, 'Выберите конечную точку'),
+  isPopular: z.boolean(),
+  price: z.number().min(0, 'Цена не может быть отрицательной'),
+  duration: z.number().min(0, 'Длительность не может быть отрицательной').int('Введите целое число'),
+});
+
+export type RouteCreateFormData = z.infer<typeof routeCreateSchema>;
+
+type ApiError = {
+  detail?: string;
+  errors?: Record<string, string[]>;
+};
+
+export function useRouteCreateForm({
+  onBack,
+  onSuccess,
+}: {
+  onBack: () => void;
+  onSuccess: () => void;
+}) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const form = useForm<RouteCreateFormData>({
+    resolver: zodResolver(routeCreateSchema),
+    mode: 'onSubmit',
+    defaultValues: {
+      name: '',
+      startLocationId: '',
+      endLocationId: '',
+      isPopular: false,
+      price: 0,
+      duration: 0,
+    },
+  });
+
+  const onSubmit = useCallback(async (data: RouteCreateFormData) => {
+    setIsSubmitting(true);
+    try {
+      const result = await routesApi.createRoute({
+        name: data.name,
+        startLocationId: data.startLocationId,
+        endLocationId: data.endLocationId,
+        isPopular: data.isPopular,
+        price: data.price,
+        duration: data.duration,
+      });
+
+      toast.success(`Направление "${result.name}" успешно создано!`);
+      onSuccess();
+    } catch (error) {
+      if (error instanceof Error && 'response' in error) {
+        const axiosError = error as AxiosError<ApiError>;
+
+        if (axiosError.response?.data?.errors) {
+          const serverErrors = axiosError.response.data.errors;
+
+          Object.keys(serverErrors).forEach(field => {
+            const fieldKey = field as keyof RouteCreateFormData;
+
+            if (serverErrors[field]?.length > 0) {
+              form.setError(fieldKey, {
+                type: 'server',
+                message: serverErrors[field][0],
+              });
+            }
+          });
+          toast.error('Исправьте ошибки в форме');
+        } else {
+          toast.error(axiosError.response?.data?.detail || 'Ошибка создания направления');
+        }
+      } else {
+        toast.error('Неизвестная ошибка при создании направления');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [form, onSuccess]);
+
+  const onCreate = useCallback(async () => {
+    const isValid = await form.trigger();
+
+    if (!isValid) return;
+    await form.handleSubmit(onSubmit)();
+  }, [form, onSubmit]);
+
+  return {
+    form,
+    isSubmitting,
+    onCreate,
+    onBack,
+  };
+}

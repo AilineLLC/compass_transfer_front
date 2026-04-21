@@ -66,6 +66,9 @@ export interface LocationDTO {
   /** Отображать на лендинг-сайте */
   isLandingOnly: boolean | null;
 
+  /** Закреплена в начале списка на лендинге */
+  isLandingPagePinned?: boolean;
+
   /** Группа локации */
   group?: string | null;
 

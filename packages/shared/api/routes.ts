@@ -1,17 +1,14 @@
 import type {
   PartnerRouteDTO,
   UpdatePartnerRouteDTO,
+  RouteDTO,
+  RouteListResponseDTO,
+  CreateRouteDTO,
+  UpdateRouteDTO,
 } from '@entities/routes/interface/PartnerRouteDTO';
-import { apiGet, apiPost, apiPut } from './client';
+import { apiGet, apiPost, apiPut, apiDelete } from './client';
 
-/**
- * API для работы с маршрутами
- */
 export const routesApi = {
-  /**
-   * Обновление маршрута партнера
-   * PUT /Route/Partner/self
-   */
   updatePartnerRoute: async (
     routeId: string,
     data: UpdatePartnerRouteDTO,
@@ -28,10 +25,6 @@ export const routesApi = {
     return result.data!;
   },
 
-  /**
-   * Получение маршрутов партнера
-   * GET /Route/Partner/{partner_id}
-   */
   getPartnerRoutes: async (partnerId: string): Promise<PartnerRouteDTO[]> => {
     const result = await apiGet<PartnerRouteDTO[]>(`/Route/Partner/${partnerId}`);
 
@@ -42,10 +35,6 @@ export const routesApi = {
     return result.data!;
   },
 
-  /**
-   * Создание нового маршрута партнера
-   * POST /Route/Partner/self
-   */
   createPartnerRoute: async (data: {
     startLocationId: string;
     endLocationId: string;
@@ -58,5 +47,57 @@ export const routesApi = {
     }
 
     return result.data!;
+  },
+
+  getRoutes: async (): Promise<RouteListResponseDTO> => {
+    const result = await apiGet<RouteListResponseDTO>('/Route', {
+      params: { Includes: ['StartLocation', 'EndLocation'] },
+    });
+
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+
+    return result.data!;
+  },
+
+  getRouteById: async (id: string): Promise<RouteDTO> => {
+    const result = await apiGet<RouteDTO>(`/Route/${id}`);
+
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+
+    return result.data!;
+  },
+
+  createRoute: async (data: CreateRouteDTO): Promise<RouteDTO> => {
+    const body = { ...data };
+    const result = await apiPost<RouteDTO, typeof body>('/Route', body);
+
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+
+    return result.data!;
+  },
+
+  updateRoute: async (id: string, data: UpdateRouteDTO): Promise<RouteDTO> => {
+    const body = { ...data };
+    const result = await apiPut<RouteDTO, typeof body>(`/Route/${id}`, body);
+
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+
+    return result.data!;
+  },
+
+  deleteRoute: async (id: string): Promise<void> => {
+    const result = await apiDelete(`/Route/${id}`);
+
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
   },
 };

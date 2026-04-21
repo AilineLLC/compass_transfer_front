@@ -146,8 +146,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   const contextValue: NotificationContextType = {
     // Данные
     notifications: deduplicatedNotifications(),
-    hasUnreadNotifications: unreadCount > 0,
-    unreadCount,
+    hasUnreadNotifications: counts.totalUnread > 0,
+    unreadCount: counts.totalUnread,
     unreadCountsByPriority: counts.priorityCounts,
     isLoading,
     isLoadingMore,

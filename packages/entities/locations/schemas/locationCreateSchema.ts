@@ -82,6 +82,10 @@ export const locationCreateSchema = z.object({
     .nullable()
     .default(false),
 
+  isLandingPagePinned: z
+    .boolean()
+    .default(false),
+
   images: z
     .array(z.string())
     .optional()

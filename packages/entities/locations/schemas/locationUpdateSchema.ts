@@ -88,6 +88,10 @@ export const locationUpdateSchema = z.object({
     .nullable()
     .default(false),
 
+  isLandingPagePinned: z
+    .boolean()
+    .default(false),
+
   images: z
     .array(z.string())
     .optional()
