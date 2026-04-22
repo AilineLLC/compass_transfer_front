@@ -155,4 +155,9 @@ export interface GetOrderDTO {
    * Метод оплаты (Наличные / Безналичный)
    */
   paymentMethodType?: PaymentMethodType | null;
+
+  /**
+   * ID предпочитаемого автомобиля пассажиров
+   */
+  requestedCar?: string | null;
 }

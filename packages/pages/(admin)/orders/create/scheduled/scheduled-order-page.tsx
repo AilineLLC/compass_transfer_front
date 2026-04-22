@@ -1091,12 +1091,10 @@ export function ScheduledOrderPage({
         {/* Статус заказа справа (только для редактирования) */}
         {mode === 'edit' && (
           <div className='flex flex-col justify-end items-end'>
-            <div className='flex flex-row items-end gap-3'>
-              <div className='text-sm text-muted-foreground'>Статус заказа</div>
-            </div>
 
             {/* Выбор нового статуса */}
-            <div className='flex flex-row items-end gap-3'>
+            <div className='flex flex-row items-center gap-3'>
+            <div className='text-sm text-muted-foreground'>Статус заказа:</div>
               <div className='flex flex-row gap-2'>
                 <div className='flex flex-row items-center gap-3 justify-center'>
                   {orderStatus !== originalOrderStatus && (
@@ -1123,10 +1121,10 @@ export function ScheduledOrderPage({
             </div>
 
             {/* Выбор подстатуса */}
-            <div className='flex flex-row items-end gap-3 mt-4'>
+            <div className='flex flex-row items-end gap-3 mt-2'>
               <div className='flex flex-row gap-2'>
                 <div className='flex flex-row items-center gap-3 justify-center'>
-                  <div className='text-sm text-muted-foreground'>Подстатус заказа</div>
+                  <div className='text-sm text-muted-foreground'>Подстатус заказа:</div>
                   <select
                     value={orderSubStatus}
                     onChange={e => {
@@ -1250,6 +1248,7 @@ export function ScheduledOrderPage({
                       }
                       rides={existingOrder?.rides} // Передаем rides для режима редактирования
                       orderStatus={existingOrder?.status} // Передаем статус для проверки удаления ride
+                      requestedCarId={existingOrder?.requestedCar}
                       methods={methods}
                       // Кастомная цена
                       useCustomPrice={useCustomPrice}

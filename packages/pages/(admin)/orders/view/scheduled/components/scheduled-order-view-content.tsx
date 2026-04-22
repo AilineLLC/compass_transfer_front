@@ -13,6 +13,7 @@ import { useDriverById, useUserById } from '@features/users';
 import { DriverSheet } from '@widgets/sidebar/ui/driver-sheet';
 import { RideDetailCard } from '@entities/rides';
 import { useUsdRate } from '@shared/hooks';
+import { useCarById } from '@shared/hooks/useCarById';
 import { formatPriceWithUsd } from '@shared/utils/format-price-with-usd';
 
 interface ScheduledOrderViewContentProps {
@@ -37,6 +38,7 @@ export function ScheduledOrderViewContent({ order, userRole }: ScheduledOrderVie
   // Получаем данные выбранного водителя
   const { driver: selectedDriver } = useDriverById(selectedDriverId);
   const usdRate = useUsdRate();
+  const { car: requestedCar, isLoading: requestedCarLoading } = useCarById(order.requestedCar);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('ru-RU', {
@@ -410,6 +412,23 @@ export function ScheduledOrderViewContent({ order, userRole }: ScheduledOrderVie
             <div className='text-sm text-muted-foreground'>Создан</div>
             <div className='font-medium'>{formatDate(order.createdAt)}</div>
           </div>
+          {order.requestedCar && (
+            <div>
+              <div className='text-sm text-muted-foreground'>Предпочитаемый автомобиль</div>
+              <div className='font-medium flex items-center gap-2'>
+                <Car className='h-4 w-4 text-blue-600' />
+                {requestedCarLoading ? (
+                  <Skeleton className='h-4 w-40' />
+                ) : requestedCar ? (
+                  <span>
+                    {requestedCar.make} {requestedCar.model} · {requestedCar.licensePlate}
+                  </span>
+                ) : (
+                  <span className='text-muted-foreground text-sm'>{order.requestedCar}</span>
+                )}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -568,6 +568,8 @@ export function InstantOrderPage({
                           // Передаем и получаем выбранного водителя
                           selectedDriver={selectedDriver}
                           setSelectedDriver={setSelectedDriver}
+                          // Предпочитаемый автомобиль пассажиров
+                          requestedCarId={orderData?.requestedCar}
                         />
                       );
 

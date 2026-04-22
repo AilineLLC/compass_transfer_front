@@ -4,6 +4,8 @@ import { Car, MapPin } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import type { RoutePoint, ActiveDriverDTO } from '@shared/components/map/types';
 import { Button } from '@shared/ui/forms/button';
+import { Skeleton } from '@shared/ui/data-display/skeleton';
+import { useCarById } from '@shared/hooks/useCarById';
 import type { GetRideDTO } from '@entities/orders/interface';
 import type { GetDriverDTO } from '@entities/users/interface';
 import { useDeleteRide } from '@entities/orders/hooks';
@@ -31,6 +33,9 @@ interface MapTabProps {
   setSelectedDriver?: (driver: GetDriverDTO | null) => void;
   dynamicMapCenter?: { latitude: number; longitude: number } | null;
 
+  // ID предпочитаемого автомобиля пассажиров
+  requestedCarId?: string | null;
+
   // Для моментальных заказов - показывать радиус водителей
   showDriverRadius?: boolean;
   isInstantOrder?: boolean; // Флаг для моментальных заказов
@@ -51,6 +56,7 @@ export function MapTab({
   additionalStops = [],
   mode = 'create',
   rides,
+  requestedCarId,
   // Внешнее состояние
   routePoints: externalRoutePoints,
   setRoutePoints: setExternalRoutePoints,
@@ -69,6 +75,8 @@ export function MapTab({
   onRouteDistanceChange,
   onRouteLoadingChange,
 }: MapTabProps) {
+  const { car: requestedCar, isLoading: requestedCarLoading } = useCarById(requestedCarId);
+
   // Состояние для отслеживания ошибки маршрута и загрузки
   const [routeError, setRouteError] = useState(false);
   const [routeLoading, setRouteLoading] = useState(false);
@@ -197,6 +205,9 @@ export function MapTab({
     );
   }
 
+  const getUploadUrl = (path: string) =>
+    `${process.env.NEXT_PUBLIC_UPLOADS_URL}/Uploads/${path}`;
+  
   return (
     <div className='flex flex-col lg:flex-row gap-0 h-full'>
       {/* Левая колонка - Построение маршрута */}
@@ -209,6 +220,31 @@ export function MapTab({
           onPointClear={handlePointClear}
           onAddIntermediatePoint={addIntermediatePoint}
         />
+        {requestedCarId && (
+          <div className='mx-4 flex flex-col gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800'>
+           <div className='flex items-center gap-x-2'>
+            <Car className='h-4 w-4 shrink-0' />
+            <span className='font-medium'>Предпочитаемый автомобиль:&nbsp;</span>
+           </div>
+            {requestedCarLoading ? (
+              <Skeleton className='h-4 w-32' />
+            ) : requestedCar ? (
+              <div className='flex gap-x-3'>
+                 <img
+                    src={getUploadUrl(requestedCar?.image?.path || '') || ''}
+                    alt={requestedCar.make + ' ' + requestedCar.model}
+                    className='w-[95px] h-16 rounded-md'
+                 />
+                 <span>
+                    <p className='font-semibold mb-1'>{requestedCar.make + ' ' + requestedCar.model}</p>
+                    <p>{requestedCar.serviceClass} • {requestedCar.type} • {requestedCar.year}</p>
+                 </span>
+              </div>
+            ) : (
+              <span className='text-blue-600'>{requestedCarId}</span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Правая колонка - Карта */}
