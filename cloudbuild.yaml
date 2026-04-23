@@ -6,9 +6,6 @@ steps:
       - "-t"
       - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
         -admin:${SHORT_SHA}"
-      - "-t"
-      - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
-        -admin:latest"
       - "--cache-from"
       - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
         -admin:latest"
@@ -33,9 +30,6 @@ steps:
       - "-t"
       - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
         -driver:${SHORT_SHA}"
-      - "-t"
-      - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
-        -driver:latest"
       - "--cache-from"
       - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
         -driver:latest"
@@ -60,9 +54,6 @@ steps:
       - "-t"
       - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
         -terminal:${SHORT_SHA}"
-      - "-t"
-      - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
-        -terminal:latest"
       - "--cache-from"
       - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
         -terminal:latest"
@@ -87,9 +78,6 @@ steps:
       - "-t"
       - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
         -customer:${SHORT_SHA}"
-      - "-t"
-      - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
-        -customer:latest"
       - "--cache-from"
       - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
         -customer:latest"
@@ -111,36 +99,32 @@ steps:
     id: "push-compass-admin"
     args:
       - "push"
-      - "--all-tags"
       - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
-        -admin"
+        -admin:${SHORT_SHA}"
     waitFor: [ "build-compass-admin" ]
 
   - name: "gcr.io/cloud-builders/docker"
     id: "push-compass-driver"
     args:
       - "push"
-      - "--all-tags"
       - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
-        -driver"
+        -driver:${SHORT_SHA}"
     waitFor: [ "build-compass-driver" ]
 
   - name: "gcr.io/cloud-builders/docker"
     id: "push-compass-terminal"
     args:
       - "push"
-      - "--all-tags"
       - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
-        -terminal"
+        -terminal:${SHORT_SHA}"
     waitFor: [ "build-compass-terminal" ]
 
   - name: "gcr.io/cloud-builders/docker"
     id: "push-compass-customer"
     args:
       - "push"
-      - "--all-tags"
       - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
-        -customer"
+        -customer:${SHORT_SHA}"
     waitFor: [ "build-compass-customer" ]
 
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
@@ -219,17 +203,9 @@ substitutions:
 images:
   - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass-adm\
     in:${SHORT_SHA}"
-  - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass-adm\
-    in:latest"
   - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass-dri\
     ver:${SHORT_SHA}"
-  - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass-dri\
-    ver:latest"
   - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass-ter\
     minal:${SHORT_SHA}"
-  - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass-ter\
-    minal:latest"
   - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass-cus\
     tomer:${SHORT_SHA}"
-  - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass-cus\
-    tomer:latest"
