@@ -95,6 +95,24 @@ steps:
         -terminal:${SHORT_SHA}"
     waitFor: [ "build-compass-terminal" ]
 
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    id: "deploy-to-gke"
+    entrypoint: "gcloud"
+    args:
+      - "deploy"
+      - "releases"
+      - "create"
+      - "release-${SHORT_SHA}"
+      - "--delivery-pipeline=compass-frontend-pipeline"
+      - "--region=${_REGION}"
+      - "--source=."
+      - "--images=compass-admin=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ART\
+        IFACT_REGISTRY}/compass-admin:${SHORT_SHA},compass-driver=${_REGION}-do\
+        cker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass-driver:${SHOR\
+        T_SHA},compass-terminal=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ART\
+        IFACT_REGISTRY}/compass-terminal:${SHORT_SHA}"
+    waitFor: [ "push-compass-admin", "push-compass-driver", "push-compass-terminal" ]
+
 timeout: 1800s
 
 options:
