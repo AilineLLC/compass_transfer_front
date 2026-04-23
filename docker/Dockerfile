@@ -18,7 +18,7 @@ COPY .yarn ./.yarn
 COPY .yarnrc.yml ./
 
 RUN apk add --no-cache python3 make g++ && \
-    yarn install --frozen-lockfile && \
+    yarn install && \
     apk del python3 make g++
 
 COPY . .
@@ -55,7 +55,7 @@ COPY --from=build --chown=nextjs:nodejs /app/.yarnrc.yml ./
 
 COPY --from=build --chown=nextjs:nodejs /app/apps/compass-${APP_TYPE}/.next ./apps/compass-${APP_TYPE}/.next
 COPY --from=build --chown=nextjs:nodejs /app/apps/compass-${APP_TYPE}/public ./apps/compass-${APP_TYPE}/public
-COPY --from=build --chown=nextjs:nodejs /app/apps/compass-${APP_TYPE}/next.config.mjs ./apps/compass-${APP_TYPE}/
+COPY --from=build --chown=nextjs:nodejs /app/apps/compass-${APP_TYPE}/next.config.ts ./apps/compass-${APP_TYPE}/
 COPY --from=build --chown=nextjs:nodejs /app/apps/compass-${APP_TYPE}/package.json ./apps/compass-${APP_TYPE}/
 
 USER nextjs
