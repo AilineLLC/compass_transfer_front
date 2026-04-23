@@ -1,0 +1,235 @@
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+    id: "build-compass-admin"
+    args:
+      - "build"
+      - "-t"
+      - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
+        -admin:${SHORT_SHA}"
+      - "-t"
+      - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
+        -admin:latest"
+      - "--cache-from"
+      - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
+        -admin:latest"
+      - "--build-arg"
+      - "BUILDKIT_INLINE_CACHE=1"
+      - "--build-arg"
+      - "APP_TYPE=admin"
+      - "--build-arg"
+      - "PORT=3027"
+      - "--build-arg"
+      - "NODE_VERSION=20"
+      - "--build-arg"
+      - "ALPINE_VERSION=3.19"
+      - "-f"
+      - "docker/Dockerfile"
+      - "."
+
+  - name: "gcr.io/cloud-builders/docker"
+    id: "build-compass-driver"
+    args:
+      - "build"
+      - "-t"
+      - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
+        -driver:${SHORT_SHA}"
+      - "-t"
+      - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
+        -driver:latest"
+      - "--cache-from"
+      - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
+        -driver:latest"
+      - "--build-arg"
+      - "BUILDKIT_INLINE_CACHE=1"
+      - "--build-arg"
+      - "APP_TYPE=driver-mobile"
+      - "--build-arg"
+      - "PORT=3028"
+      - "--build-arg"
+      - "NODE_VERSION=20"
+      - "--build-arg"
+      - "ALPINE_VERSION=3.19"
+      - "-f"
+      - "docker/Dockerfile"
+      - "."
+
+  - name: "gcr.io/cloud-builders/docker"
+    id: "build-compass-terminal"
+    args:
+      - "build"
+      - "-t"
+      - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
+        -terminal:${SHORT_SHA}"
+      - "-t"
+      - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
+        -terminal:latest"
+      - "--cache-from"
+      - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
+        -terminal:latest"
+      - "--build-arg"
+      - "BUILDKIT_INLINE_CACHE=1"
+      - "--build-arg"
+      - "APP_TYPE=terminal"
+      - "--build-arg"
+      - "PORT=3029"
+      - "--build-arg"
+      - "NODE_VERSION=20"
+      - "--build-arg"
+      - "ALPINE_VERSION=3.19"
+      - "-f"
+      - "docker/Dockerfile"
+      - "."
+
+  - name: "gcr.io/cloud-builders/docker"
+    id: "build-compass-customer"
+    args:
+      - "build"
+      - "-t"
+      - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
+        -customer:${SHORT_SHA}"
+      - "-t"
+      - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
+        -customer:latest"
+      - "--cache-from"
+      - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
+        -customer:latest"
+      - "--build-arg"
+      - "BUILDKIT_INLINE_CACHE=1"
+      - "--build-arg"
+      - "APP_TYPE=customer"
+      - "--build-arg"
+      - "PORT=3030"
+      - "--build-arg"
+      - "NODE_VERSION=20"
+      - "--build-arg"
+      - "ALPINE_VERSION=3.19"
+      - "-f"
+      - "docker/Dockerfile"
+      - "."
+
+  - name: "gcr.io/cloud-builders/docker"
+    id: "push-compass-admin"
+    args:
+      - "push"
+      - "--all-tags"
+      - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
+        -admin"
+    waitFor: [ "build-compass-admin" ]
+
+  - name: "gcr.io/cloud-builders/docker"
+    id: "push-compass-driver"
+    args:
+      - "push"
+      - "--all-tags"
+      - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
+        -driver"
+    waitFor: [ "build-compass-driver" ]
+
+  - name: "gcr.io/cloud-builders/docker"
+    id: "push-compass-terminal"
+    args:
+      - "push"
+      - "--all-tags"
+      - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
+        -terminal"
+    waitFor: [ "build-compass-terminal" ]
+
+  - name: "gcr.io/cloud-builders/docker"
+    id: "push-compass-customer"
+    args:
+      - "push"
+      - "--all-tags"
+      - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass\
+        -customer"
+    waitFor: [ "build-compass-customer" ]
+
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    id: "deploy-frontend"
+    entrypoint: "gcloud"
+    args:
+      - "deploy"
+      - "releases"
+      - "create"
+      - "release-${SHORT_SHA}"
+      - "--delivery-pipeline=compass-frontend-pipeline"
+      - "--region=${_REGION}"
+      - "--images=compass-admin=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ART\
+        IFACT_REGISTRY}/compass-admin:${SHORT_SHA},compass-driver=${_REGION}-do\
+        cker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass-driver:${SHOR\
+        T_SHA},compass-terminal=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ART\
+        IFACT_REGISTRY}/compass-terminal:${SHORT_SHA},compass-customer=${_REGIO\
+        N}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass-customer\
+        :${SHORT_SHA}"
+    waitFor:
+      [
+        "push-compass-admin",
+        "push-compass-driver",
+        "push-compass-terminal",
+        "push-compass-customer",
+      ]
+
+  - name: "gcr.io/cloud-builders/curl"
+    id: "notify-success"
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        curl -X POST "https://api.telegram.org/bot${_TELEGRAM_BOT_TOKEN}/sendMessage" \
+          -d "chat_id=${_TELEGRAM_CHAT_ID}" \
+          -d "text=Frontend build and deploy successful: ${SHORT_SHA} (${BRANCH_NAME})"
+    waitFor: [ "deploy-frontend" ]
+
+  - name: "gcr.io/cloud-builders/git"
+    id: "update-images-json"
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        apt-get update && apt-get install -y jq
+        git config --global user.email "cloudbuild@compass-transfer-prod.iam.gserviceaccount.com"
+        git config --global user.name "Cloud Build"
+        git clone https://github.com/AilineLLC-Org/compass-automation.git /workspace/repo
+        cd /workspace/repo
+        jq '.prod["compass-admin"] = "${SHORT_SHA}" | .prod["compass-driver"] = "${SHORT_SHA}" | .prod["compass-terminal"] = "${SHORT_SHA}" | .prod["compass-customer"] = "${SHORT_SHA}"' images.json > images.json.tmp
+        mv images.json.tmp images.json
+        git add images.json
+        git commit -m "Update frontend images to ${SHORT_SHA}" || echo "No changes to commit"
+        git push origin main || echo "Push failed, continuing"
+    waitFor: [ "notify-success" ]
+
+timeout: 1800s
+
+options:
+  machineType: "N1_HIGHCPU_8"
+  logging: CLOUD_LOGGING_ONLY
+  substitutionOption: "ALLOW_LOOSE"
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/${_PROJECT_ID}/secrets/telegram-bot-token/versions/latest
+      env: "TELEGRAM_BOT_TOKEN"
+    - versionName: projects/${_PROJECT_ID}/secrets/telegram-chat-id/versions/latest
+      env: "TELEGRAM_CHAT_ID"
+
+substitutions:
+  _REGION: "europe-west4"
+  _PROJECT_ID: "compass-transfer-prod"
+  _ARTIFACT_REGISTRY: "compass-images"
+
+images:
+  - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass-adm\
+    in:${SHORT_SHA}"
+  - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass-adm\
+    in:latest"
+  - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass-dri\
+    ver:${SHORT_SHA}"
+  - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass-dri\
+    ver:latest"
+  - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass-ter\
+    minal:${SHORT_SHA}"
+  - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass-ter\
+    minal:latest"
+  - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass-cus\
+    tomer:${SHORT_SHA}"
+  - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY}/compass-cus\
+    tomer:latest"
