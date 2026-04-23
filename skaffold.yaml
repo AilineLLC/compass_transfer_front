@@ -1,0 +1,33 @@
+apiVersion: skaffold/v4beta6
+kind: Config
+metadata:
+  name: compass-frontend
+build:
+  artifacts:
+    - image: compass-admin
+      docker:
+        dockerfile: docker/Dockerfile
+        buildArgs:
+          APP_TYPE: admin
+    - image: compass-driver
+      docker:
+        dockerfile: docker/Dockerfile
+        buildArgs:
+          APP_TYPE: driver-mobile
+    - image: compass-terminal
+      docker:
+        dockerfile: docker/Dockerfile
+        buildArgs:
+          APP_TYPE: terminal
+manifests:
+  kustomize:
+    paths:
+      - https://github.com/AilineLLC-Org/compass-automation.git//k8s/overlays/prod/frontend
+deploy:
+  kubectl: {}
+profiles:
+  - name: prod
+    manifests:
+      kustomize:
+        paths:
+          - https://github.com/AilineLLC-Org/compass-automation.git//k8s/overlays/prod/frontend
