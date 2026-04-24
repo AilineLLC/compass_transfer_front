@@ -142,6 +142,11 @@ export interface GetOrderDTO {
   notes?: string | null;
 
   /**
+   * Заметки операторов (не видны водителям и контрагентам)
+   */
+  operatorNotes?: string | null;
+
+  /**
    * Доход водителя с поездки
    */
   driverProfit?: number | null;

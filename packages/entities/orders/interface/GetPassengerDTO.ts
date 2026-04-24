@@ -29,4 +29,5 @@ export interface GetPassengerDTO {
    * Главный пассажир
    */
   isMainPassenger: boolean;
+  IsMainPassenger: boolean;
 }

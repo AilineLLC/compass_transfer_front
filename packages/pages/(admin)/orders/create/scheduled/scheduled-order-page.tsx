@@ -320,6 +320,7 @@ export function ScheduledOrderPage({
     userRole === 'partner' ? PaymentMethodType.Card : PaymentMethodType.Cash,
   );
   const [driverPrice, setDriverPrice] = useState<string>('');
+  const [operatorNotes, setOperatorNotes] = useState<string>('');
 
   // Состояние для включения доп.точек в стоимость
   const [includeIntermediateInPrice, setIncludeIntermediateInPrice] = useState<boolean>(true);
@@ -655,6 +656,9 @@ export function ScheduledOrderPage({
         methods.setValue('airFlight', existingOrder.airFlight || '');
         methods.setValue('flyReis', existingOrder.flyReis || '');
         methods.setValue('notes', existingOrder.notes || '');
+        if (existingOrder.operatorNotes) {
+          setOperatorNotes(existingOrder.operatorNotes);
+        }
 
         // Локации маршрута (сервер может вернуть как объект startLocation, так и ID startLocationId)
         const startLocId = existingOrder.startLocation?.id || existingOrder.startLocationId;
@@ -955,6 +959,10 @@ export function ScheduledOrderPage({
 
           return value && typeof value === 'string' ? value : null;
         })(),
+        operatorNotes:
+          userRole === 'admin' || userRole === 'operator'
+            ? operatorNotes.trim() || null
+            : null,
         paymentMethodType: userRole === 'partner' ? PaymentMethodType.Card : paymentMethodType,
         driverPrice:
           (userRole === 'admin' || userRole === 'operator') && driverPrice
@@ -1262,6 +1270,8 @@ export function ScheduledOrderPage({
                       setPaymentMethodType={setPaymentMethodType}
                       driverPrice={driverPrice}
                       setDriverPrice={setDriverPrice}
+                      operatorNotes={operatorNotes}
+                      setOperatorNotes={setOperatorNotes}
                       // Управление доп.точками в стоимости
                       includeIntermediateInPrice={includeIntermediateInPrice}
                       onIncludeIntermediateChange={setIncludeIntermediateInPrice}

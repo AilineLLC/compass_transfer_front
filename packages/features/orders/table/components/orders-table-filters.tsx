@@ -55,6 +55,8 @@ interface ColumnVisibility {
 interface OrdersTableFiltersProps {
   searchTerm: string;
   setSearchTerm: (term: string) => void;
+  searchByPassengers: string;
+  setSearchByPassengers: (term: string) => void;
   typeFilter: OrderType[];
   handleTypeFilterChange: (types: OrderType[]) => void;
   statusFilter: OrderStatus[];
@@ -82,6 +84,8 @@ interface OrdersTableFiltersProps {
 export function OrdersTableFilters({
   searchTerm,
   setSearchTerm,
+  searchByPassengers,
+  setSearchByPassengers,
   typeFilter,
   handleTypeFilterChange,
   statusFilter,
@@ -156,6 +160,16 @@ export function OrdersTableFilters({
               placeholder='Точный номер заказа...'
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
+              className='pl-10 w-full md:w-80'
+            />
+          </div>
+
+          <div className='relative'>
+            <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
+            <Input
+              placeholder='По имени пассажира...'
+              value={searchByPassengers}
+              onChange={e => setSearchByPassengers(e.target.value)}
               className='pl-10 w-full md:w-80'
             />
           </div>

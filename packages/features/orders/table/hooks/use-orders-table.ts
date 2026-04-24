@@ -58,6 +58,7 @@ export function useOrdersTable(initialFilters?: {
 
   // Фильтры
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchByPassengers, setSearchByPassengers] = useState('');
   const [orderNumberFilter, setOrderNumberFilter] = useState(initialFilters?.orderNumber || '');
   const [typeFilter, setTypeFilter] = useState<OrderType[]>(
     initialFilters?.type ? [initialFilters.type as OrderType] : [],
@@ -224,6 +225,9 @@ export function useOrdersTable(initialFilters?: {
         params.orderNumber = searchTerm;
         params.orderNumberOp = 'Equal';
       }
+      if (searchByPassengers) {
+        params.mainPassengerName = searchByPassengers;
+      }
 
       // Для партнеров используем API для заказов созданных ими
       const response =
@@ -256,6 +260,7 @@ export function useOrdersTable(initialFilters?: {
     airFlightFilter,
     flyReisFilter,
     searchTerm,
+    searchByPassengers,
     userRole,
   ]);
 
@@ -454,6 +459,7 @@ export function useOrdersTable(initialFilters?: {
 
     // Фильтры
     searchTerm,
+    searchByPassengers,
     orderNumberFilter,
     typeFilter,
     statusFilter,
@@ -483,6 +489,13 @@ export function useOrdersTable(initialFilters?: {
     // Сеттеры
     setSearchTerm: (term: string) => {
       setSearchTerm(term);
+      setCursorsHistory([]);
+      setCurrentCursor(null);
+      setIsFirstPage(true);
+      setCurrentPageNumber(1);
+    },
+    setSearchByPassengers: (name: string) => {
+      setSearchByPassengers(name);
       setCursorsHistory([]);
       setCurrentCursor(null);
       setIsFirstPage(true);

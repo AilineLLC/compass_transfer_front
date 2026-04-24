@@ -6,6 +6,7 @@ export default async function OrdersPage({
 }: {
   searchParams: Promise<{
     orderNumber?: string;
+    mainPassengerName?: string;
     type?: string;
     status?: string;
     subStatus?: string;

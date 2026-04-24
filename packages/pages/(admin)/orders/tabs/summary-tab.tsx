@@ -66,6 +66,10 @@ interface SummaryTabProps {
   paymentMethodType?: PaymentMethodType;
   setPaymentMethodType?: (value: PaymentMethodType) => void;
 
+  // Заметки операторов (только Admin/Operator)
+  operatorNotes?: string;
+  setOperatorNotes?: (value: string) => void;
+
   // Управление включением доп.точек в стоимость
   includeIntermediateInPrice?: boolean;
   onIncludeIntermediateChange?: (include: boolean) => void;
@@ -143,6 +147,10 @@ export function SummaryTab({
   setDriverPrice,
   paymentMethodType = PaymentMethodType.Cash,
   setPaymentMethodType,
+
+  // Заметки операторов
+  operatorNotes = '',
+  setOperatorNotes,
 
   // Управление доп.точками
   includeIntermediateInPrice = true,
@@ -482,6 +490,26 @@ export function SummaryTab({
               />
             </CardContent>
           </Card>
+
+          {/* Заметки операторов (только Admin/Operator) */}
+          {(userRole === 'admin' || userRole === 'operator') && (
+            <Card className='mb-4 border-amber-200 bg-amber-50'>
+              <CardHeader className='pb-2 pt-3 px-4'>
+                <CardTitle className='text-sm font-medium text-amber-800 flex items-center gap-2'>
+                  <Info className='h-4 w-4' />
+                  Заметки операторов
+                </CardTitle>
+              </CardHeader>
+              <CardContent className='px-4 pb-4 pt-0'>
+                <Textarea
+                  placeholder='Заметки для операторов (не видны водителям и контрагентам)'
+                  value={operatorNotes}
+                  onChange={e => setOperatorNotes?.(e.target.value)}
+                  className='min-h-[80px] bg-white border-amber-300 focus:border-amber-500 focus:ring-amber-200'
+                />
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Правая колонка */}

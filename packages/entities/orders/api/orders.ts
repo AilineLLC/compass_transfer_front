@@ -26,6 +26,9 @@ export interface CreateScheduledOrderRequest extends CreateScheduledOrderDTO {
   /** Комментарии к заказу */
   notes?: string | null;
 
+  /** Заметки операторов (не видны водителям и контрагентам) */
+  operatorNotes?: string | null;
+
   /** Метод оплаты */
   paymentMethodType?: PaymentMethodType | null;
 
@@ -336,6 +339,21 @@ export class OrdersApi {
 
     if (response.error) {
       throw new Error(response.error.message || 'Failed to delete ride');
+    }
+  }
+
+  /**
+   * Смена водителя для запланированного заказа
+   * POST /Order/scheduled/{uuid}/change-driver
+   */
+  static async changeDriver(
+    orderId: string,
+    data: CreateScheduledRideDTO,
+  ): Promise<void> {
+    const response = await apiPost<void>(`/Order/scheduled/${orderId}/change-driver`, data);
+
+    if (response.error) {
+      throw new Error(response.error.message || 'Failed to change driver');
     }
   }
 

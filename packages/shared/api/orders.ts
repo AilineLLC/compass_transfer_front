@@ -14,6 +14,7 @@ export interface OrderFilters {
   includes?: string;
   orderNumber?: string | number;
   orderNumberOp?: 'GreaterThan' | 'GreaterThanOrEqual' | 'Equal' | 'LessThanOrEqual' | 'LessThan';
+  mainPassengerName?: string;
   type?: OrderType[];
   status?: OrderStatus[];
   subStatus?: OrderSubStatus[];

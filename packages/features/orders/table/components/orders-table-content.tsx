@@ -3,6 +3,7 @@
 import { Edit, Trash2, ChevronUp, ChevronDown, MoreHorizontal, Eye } from 'lucide-react';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import React, { useState, useEffect } from 'react';
+import { DriverCell } from './driver-cell';
 import { Badge } from '@shared/ui/data-display/badge';
 import {
   Table,
@@ -229,7 +230,7 @@ export function OrdersTableContent({
                 Подстатус
               </SortableHeader>
             )}
-            {columnVisibility.carLicensePlate && <TableHead>Номер автомобиля</TableHead>}
+            {columnVisibility.carLicensePlate && <TableHead>Водитель</TableHead>}
             {/* {columnVisibility.initialPrice && <SortableHeader field='initialPrice' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Начальная цена</SortableHeader>} */}
             {columnVisibility.finalPrice && (
               <SortableHeader
@@ -261,8 +262,9 @@ export function OrdersTableContent({
           {paginatedOrders.map(order => (
             <TableRow key={order.id} className='hover:bg-muted/50'>
               {columnVisibility.orderNumber && (
-                <TableCell className='font-medium'>
+                <TableCell className='flex items-center font-medium'>
                   {orderNumberToString(order.orderNumber)}
+                  {(!order.creatorId || order.requestedCar) && <span className='text-[#1B59F8] animate-pulse text-xl mb-1 ml-2'>•</span> }
                 </TableCell>
               )}
               {columnVisibility.startLocation && (
@@ -303,9 +305,9 @@ export function OrdersTableContent({
                   </Badge>
                 </TableCell>
               )}
-              {columnVisibility.initialPrice && (
+              {columnVisibility.carLicensePlate && (
                 <TableCell>
-                  {order.rides && order.rides.length > 0 ? order.rides[0].licensePlate : '—'}
+                  <DriverCell order={order} onRefetch={onRefetch} />
                 </TableCell>
               )}
               {/* {columnVisibility.initialPrice && (

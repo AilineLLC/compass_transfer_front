@@ -34,6 +34,18 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
   const { playSound, stopSound } = useNotificationSound();
   const { addToStack } = useOrderStack();
 
+  const dateformat = (date: string) => {
+    const newDate = new Date(date)
+    return newDate.toLocaleString('ru-RU', {
+      timeZone: 'Asia/Bishkek',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }) ;
+  }
+
   // SignalR слушатель входящих заказов
   useEffect(() => {
     const handleRideRequest = (notification: SignalREventData) => {
@@ -47,6 +59,7 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
           InitialPrice?: number;
           DriverPrice?: number | null;
           PaymentMethodType?: string | null;
+          ScheduledTime: string;
         };
 
         const notifData = notification.data as WsRideRequestData;
@@ -58,7 +71,7 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
         const startLocation = waypoints[0]?.Location;
         const endLocation = waypoints[waypoints.length - 1]?.Location;
         const passengers = notifData.Passengers || [];
-        const content = notification.content;
+        const content = dateformat(notifData.ScheduledTime)
 
         const tripPrice = notifData.InitialPrice || 0;
         const driverPriceValue = notifData.DriverPrice ?? null;
@@ -100,7 +113,7 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
             phone: p.Phone || null,
           })),
         } as unknown as GetOrderDTO;
-
+        
         setCurrentOrder(mappedOrderData);
         setCurrentOrderId(orderId);
         setCurrentRideId(rideId);
@@ -228,16 +241,21 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
 
   // Вычисляем процент для анимации кнопки - теперь считаем оставшееся время
   const progressPercent = (timeLeft / 10) * 100;
-console.log(currentOrder)
+
+  const passenger = currentOrder.passengers.find(item => item?.IsMainPassenger) 
+  ?? currentOrder.passengers[0]
+
+  const passengerFullname = `${passenger?.firstName || '-'} ${passenger?.lastName || ''}`
+
   return (
     <div className='fixed inset-0 z-50 flex items-center justify-center p-4'>
       <div className='w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300'>
         {/*  информация о пользователе */}
         <div className='px-6 pt-8 pb-4 text-left'>
           <h3 className='text-lg font-semibold text-gray-900 mb-1'>
-            {currentOrder.passengers[0]?.firstName} {currentOrder.passengers[0]?.lastName}
+            {passengerFullname}
           </h3>
-          <p className='text-sm font-semibold mt-1'>{currentOrder.content}</p>
+          <p className='text-sm font-semibold mt-1'>Запланированное время: {currentOrder.content}</p>
         </div>
         <div className='mb-[30px] flex justify-center px-[10px]'>
           <hr className='border-gray-200 border-gray-200 w-full' />

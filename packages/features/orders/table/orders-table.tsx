@@ -9,6 +9,7 @@ export function OrdersTable({
 }: {
   initialFilters?: {
     orderNumber?: string;
+    mainPassengerName?: string;
     type?: string;
     status?: string;
     subStatus?: string;
@@ -21,6 +22,7 @@ export function OrdersTable({
     loading,
     error,
     searchTerm,
+    searchByPassengers,
     typeFilter,
     statusFilter,
     subStatusFilter,
@@ -36,6 +38,7 @@ export function OrdersTable({
     sortBy,
     sortOrder,
     setSearchTerm,
+    setSearchByPassengers,
     setAirFlightInput,
     setFlyReisInput,
     setShowAdvancedFilters,
@@ -72,6 +75,8 @@ export function OrdersTable({
       <OrdersTableFilters
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
+        searchByPassengers={searchByPassengers}
+        setSearchByPassengers={setSearchByPassengers}
         typeFilter={typeFilter}
         handleTypeFilterChange={handleTypeFilterChange}
         statusFilter={statusFilter}

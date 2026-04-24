@@ -1,6 +1,6 @@
 'use client'
 
-import { Calendar, MapPin, User, Car, Info, DollarSign, Plane, ExternalLink, Settings } from 'lucide-react';
+import { Calendar, MapPin, User, Car, Info, DollarSign, Plane, ExternalLink, Settings, StickyNote } from 'lucide-react';
 import { useState } from 'react';
 import { useServices } from '@shared/hooks/useServices';
 import { useTariffById } from '@shared/hooks/useTariffById';
@@ -128,6 +128,21 @@ export function ScheduledOrderViewContent({ order, userRole }: ScheduledOrderVie
           )}
         </CardContent>
       </Card>
+
+      {/* Заметки операторов (только Admin/Operator) */}
+      {(userRole === 'admin' || userRole === 'operator') && order.operatorNotes && (
+        <Card className='border-amber-200 bg-amber-50'>
+          <CardHeader className='pb-2'>
+            <CardTitle className='flex items-center gap-2 text-amber-800 text-sm font-medium'>
+              <StickyNote className='h-4 w-4' />
+              Заметки операторов
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className='text-sm text-amber-900 whitespace-pre-wrap'>{order.operatorNotes}</p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Маршрут */}
       <Card>

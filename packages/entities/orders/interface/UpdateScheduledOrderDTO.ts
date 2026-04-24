@@ -60,6 +60,9 @@ export interface UpdateScheduledOrderDTO {
   /** Комментарии к заказу */
   notes?: string | null;
 
+  /** Заметки операторов (не видны водителям и контрагентам) */
+  operatorNotes?: string | null;
+
   /** Метод оплаты */
   paymentMethodType?: PaymentMethodType | null;
 
