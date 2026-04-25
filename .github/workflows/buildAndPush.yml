@@ -1,0 +1,62 @@
+name: buildAndPush
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  GCP_PROJECT: compass-transfer-prod
+  GCP_REGION: europe-west4
+  ARTIFACT_REPO: compass-images
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, 'deploy to prod')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          version: 'latest'
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          project_id: ${{ env.GCP_PROJECT }}
+
+      - name: Configure Docker auth for Artifact Registry
+        run: gcloud auth configure-docker ${GCP_REGION}-docker.pkg.dev -q
+
+      - name: Build and push multiple frontend images
+        run: |
+          TAG=${{ github.sha }}
+          for IMAGE_NAME in compass-admin compass-driver compass-terminal compass-customer; do
+            if [ -d "./services/${IMAGE_NAME}" ]; then
+              docker build -t ${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT}/${ARTIFACT_REPO}/${IMAGE_NAME}:${TAG} ./services/${IMAGE_NAME}
+            else
+              docker build -t ${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT}/${ARTIFACT_REPO}/${IMAGE_NAME}:${TAG} .
+            fi
+            docker push ${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT}/${ARTIFACT_REPO}/${IMAGE_NAME}:${TAG}
+          done
+
+      - name: Update images.json in compass-automation
+        env:
+          REPO: AilineLLC-Org/compass-automation
+          BRANCH: main
+          PAT: ${{ secrets.REPO_PAT }}
+          TAG: ${{ github.sha }}
+        run: |
+          git clone https://x-access-token:${PAT}@github.com/${REPO}.git /tmp/compass-automation
+          cd /tmp/compass-automation
+          for IMAGE in compass-admin compass-driver compass-terminal compass-customer; do
+            jq ".prod += {\"${IMAGE}\": \"${TAG}\"}" images.json > images.json.tmp || true
+            mv images.json.tmp images.json
+          done
+          git add images.json
+          git commit -m "Automation framework: update images.json frontends to ${TAG}" || true
+          git push origin ${BRANCH}
