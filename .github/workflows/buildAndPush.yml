@@ -1,62 +1,103 @@
-name: buildAndPush
+name: Build and Push
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
-  workflow_dispatch:
 
 permissions:
   contents: read
-  packages: write
+  id-token: write
 
 env:
   GCP_PROJECT: compass-transfer-prod
   GCP_REGION: europe-west4
   ARTIFACT_REPO: compass-images
+  REGISTRY: europe-west4-docker.pkg.dev
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, 'deploy to prod')
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v1
+      - name: Set short SHA
+        id: sha
+        run: echo "tag=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
         with:
-          version: 'latest'
-          service_account_key: ${{ secrets.GCP_SA_KEY }}
-          project_id: ${{ env.GCP_PROJECT }}
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Configure Docker auth for Artifact Registry
-        run: gcloud auth configure-docker ${GCP_REGION}-docker.pkg.dev -q
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
 
-      - name: Build and push multiple frontend images
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGISTRY }} -q
+
+      - name: Build and push compass-admin
+        env:
+          TAG: ${{ steps.sha.outputs.tag }}
         run: |
-          TAG=${{ github.sha }}
-          for IMAGE_NAME in compass-admin compass-driver compass-terminal compass-customer; do
-            if [ -d "./services/${IMAGE_NAME}" ]; then
-              docker build -t ${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT}/${ARTIFACT_REPO}/${IMAGE_NAME}:${TAG} ./services/${IMAGE_NAME}
-            else
-              docker build -t ${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT}/${ARTIFACT_REPO}/${IMAGE_NAME}:${TAG} .
-            fi
-            docker push ${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT}/${ARTIFACT_REPO}/${IMAGE_NAME}:${TAG}
-          done
+          IMAGE=${{ env.REGISTRY }}/${{ env.GCP_PROJECT }}/${{ env.ARTIFACT_REPO }}/compass-admin:${TAG}
+          docker build -f docker/Dockerfile --build-arg APP_TYPE=admin --build-arg PORT=3027 -t ${IMAGE} .
+          docker push ${IMAGE}
+
+      - name: Build and push compass-driver
+        env:
+          TAG: ${{ steps.sha.outputs.tag }}
+        run: |
+          IMAGE=${{ env.REGISTRY }}/${{ env.GCP_PROJECT }}/${{ env.ARTIFACT_REPO }}/compass-driver:${TAG}
+          docker build -f docker/Dockerfile --build-arg APP_TYPE=driver --build-arg PORT=3028 -t ${IMAGE} .
+          docker push ${IMAGE}
+
+      - name: Build and push compass-terminal
+        env:
+          TAG: ${{ steps.sha.outputs.tag }}
+        run: |
+          IMAGE=${{ env.REGISTRY }}/${{ env.GCP_PROJECT }}/${{ env.ARTIFACT_REPO }}/compass-terminal:${TAG}
+          docker build -f docker/Dockerfile --build-arg APP_TYPE=terminal --build-arg PORT=3029 -t ${IMAGE} .
+          docker push ${IMAGE}
+
+      - name: Generate GitHub App token
+        id: app-token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.GH_APP_ID }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
 
       - name: Update images.json in compass-automation
         env:
-          REPO: AilineLLC-Org/compass-automation
-          BRANCH: main
-          PAT: ${{ secrets.REPO_PAT }}
-          TAG: ${{ github.sha }}
+          TOKEN: ${{ steps.app-token.outputs.token }}
+          TAG: ${{ steps.sha.outputs.tag }}
         run: |
-          git clone https://x-access-token:${PAT}@github.com/${REPO}.git /tmp/compass-automation
+          git clone https://x-access-token:${TOKEN}@github.com/AilineLLC-Org/compass-automation.git /tmp/compass-automation
           cd /tmp/compass-automation
-          for IMAGE in compass-admin compass-driver compass-terminal compass-customer; do
-            jq ".prod += {\"${IMAGE}\": \"${TAG}\"}" images.json > images.json.tmp || true
-            mv images.json.tmp images.json
-          done
+          jq --arg tag "${TAG}" \
+            '.prod["compass-admin"] = $tag | .prod["compass-driver"] = $tag | .prod["compass-terminal"] = $tag' \
+            images.json > images.json.tmp
+          mv images.json.tmp images.json
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
           git add images.json
-          git commit -m "Automation framework: update images.json frontends to ${TAG}" || true
-          git push origin ${BRANCH}
+          git commit -m "ci: update compass-transfer-front images to ${TAG}" || true
+          git push origin main
+
+      - name: Notify Telegram
+        if: always()
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          STATUS: ${{ job.status }}
+          TAG: ${{ steps.sha.outputs.tag }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ "$STATUS" = "success" ]; then EMOJI="✅"; else EMOJI="❌"; fi
+          TEXT="${EMOJI} compass-transfer-front build ${STATUS}\nImages: compass-admin:${TAG}, compass-driver:${TAG}, compass-terminal:${TAG}\nRun: ${RUN_URL}"
+          curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+            -H "Content-Type: application/json" \
+            -d "{\"chat_id\":\"${CHAT_ID}\",\"text\":\"${TEXT}\"}"
