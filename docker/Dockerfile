@@ -25,8 +25,6 @@ COPY . .
 
 RUN if [ "$APP_TYPE" = "admin" ]; then \
     yarn build:admin; \
-    elif [ "$APP_TYPE" = "driver" ]; then \
-    yarn build:driver; \
     elif [ "$APP_TYPE" = "driver-mobile" ]; then \
     yarn build:driver-mobile; \
     elif [ "$APP_TYPE" = "terminal" ]; then \
@@ -69,8 +67,6 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
 
 CMD if [ "$APP_TYPE" = "admin" ]; then \
     yarn start:admin; \
-    elif [ "$APP_TYPE" = "driver" ]; then \
-    yarn start:driver; \
     elif [ "$APP_TYPE" = "driver-mobile" ]; then \
     yarn start:driver-mobile; \
     elif [ "$APP_TYPE" = "terminal" ]; then \

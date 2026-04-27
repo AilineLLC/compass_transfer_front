@@ -52,7 +52,7 @@ jobs:
           TAG: ${{ steps.sha.outputs.tag }}
         run: |
           IMAGE=${{ env.REGISTRY }}/${{ env.GCP_PROJECT }}/${{ env.ARTIFACT_REPO }}/compass-driver:${TAG}
-          docker build -f docker/Dockerfile --build-arg APP_TYPE=driver --build-arg PORT=3028 -t ${IMAGE} .
+          docker build -f docker/Dockerfile --build-arg APP_TYPE=driver-mobile --build-arg PORT=3028 -t ${IMAGE} .
           docker push ${IMAGE}
 
       - name: Build and push compass-terminal
