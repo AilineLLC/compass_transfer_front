@@ -48,8 +48,19 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
 
   // SignalR слушатель входящих заказов
   useEffect(() => {
-    const handleRideRequest = (notification: SignalREventData) => {
+    const handleRideRequest = async (notification: SignalREventData) => {
       if (notification && typeof notification === 'object' && 'data' in notification && notification.data && 'orderId' in notification && notification.orderId) {
+        // Если у водителя уже есть активный заказ — не показываем модалку.
+        // Заказ уже назначен и виден в списке запланированных.
+        try {
+          const rides = await ridesApi.getMyAssignedRides();
+          const hasActive = rides.data.some(r =>
+            ['Accepted', 'Arrived', 'InProgress'].includes(r.status)
+          );
+          if (hasActive) return;
+        } catch {
+          // При ошибке проверки показываем модалку как обычно
+        }
         type WsLocation = { Address?: string; Name?: string };
         type WsWaypoint = { Location?: WsLocation; DepartureTime?: string | null };
         type WsPassenger = { FirstName?: string; LastName?: string; IsMainPassenger?: boolean; Phone?: string | null };

@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { logger } from '@shared/lib';
 import { ChangePasswordModal } from "@features/auth/ui/modal/change-password-modal"
 import { apiPost } from '@shared/api';
+import { MyCarsSection } from './my-cars-section';
 
 export default function SettingsPage() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -59,6 +60,9 @@ export default function SettingsPage() {
               </Link>
             </div>
           </div>
+
+          {/* Мои автомобили */}
+          <MyCarsSection />
 
           {/* Безопасность */}
           <div className='bg-white rounded-2xl shadow-sm'>

@@ -48,6 +48,7 @@ export function ActiveOrderCard({ order, onStatusUpdate }: ActiveOrderCardProps)
   const [isUpdating, setIsUpdating] = useState(false);
   const [showPassengers, setShowPassengers] = useState(false);
   const [showServices, setShowServices] = useState(false);
+  const [waitingForPayment, setWaitingForPayment] = useState(false);
   const statusInfo = getStatusText(order.status);
 
   // Получаем активную поездку из заказа
@@ -158,9 +159,24 @@ export function ActiveOrderCard({ order, onStatusUpdate }: ActiveOrderCardProps)
     setIsUpdating(true);
     try {
       await ridesApi.rideFinished(activeRide.id);
-      onStatusUpdate?.();
+      setWaitingForPayment(true);
     } catch {
       toast.error('Ошибка при обновлении статуса "Завершил поездку"');
+    } finally {
+      setIsUpdating(false);
+    }
+  }, [activeRide?.id, isUpdating]);
+
+  const handlePaymentCompleted = useCallback(async () => {
+    if (!activeRide?.id || isUpdating) return;
+
+    setIsUpdating(true);
+    try {
+      await ridesApi.paymentCompleted(activeRide.id);
+      setWaitingForPayment(false);
+      onStatusUpdate?.();
+    } catch {
+      toast.error('Ошибка при подтверждении оплаты');
     } finally {
       setIsUpdating(false);
     }
@@ -318,6 +334,19 @@ export function ActiveOrderCard({ order, onStatusUpdate }: ActiveOrderCardProps)
           variant: 'default' as const,
         },
       ];
+    } else if (
+      order.subStatus === OrderSubStatus.RideFinished ||
+      order.subStatus === OrderSubStatus.PaymentPending
+    ) {
+      // Поездка завершена, ждём подтверждения оплаты
+      return [
+        {
+          label: 'Оплата выполнена',
+          action: handlePaymentCompleted,
+          icon: Banknote,
+          variant: 'default' as const,
+        },
+      ];
     }
 
     // Если статус InProgress без подстатуса - водитель в пути с клиентом
@@ -335,7 +364,9 @@ export function ActiveOrderCard({ order, onStatusUpdate }: ActiveOrderCardProps)
     return [];
   };
 
-  const availableActions = getAvailableActions();
+  const availableActions = waitingForPayment
+    ? [{ label: 'Оплата выполнена', action: handlePaymentCompleted, icon: Banknote, variant: 'default' as const }]
+    : getAvailableActions();
 
   return (
     <Card className='p-4 border-l-4 border-l-blue-500 bg-blue-50/50 pb-20'>

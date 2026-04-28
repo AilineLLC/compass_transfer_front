@@ -5,8 +5,9 @@ import type {
   VehicleStatus,
   CarFeature,
 } from '@entities/cars/enums';
-import type { GetCarDTO } from '@entities/cars/interface';
+import type { GetCarDTO, GetCarDTOKeysetPaginationResult } from '@entities/cars/interface';
 import { apiGet, apiPost, apiPut, apiDelete } from './client';
+import type { GetMyCarParams } from './cars/cars-api';
 
 // Операторы поиска
 type SearchOperator =
@@ -106,6 +107,17 @@ interface UpdateCarDTO {
 }
 
 export const carsApi = {
+  // Получение автомобилей текущего водителя
+  getMyCars: async (params?: GetMyCarParams): Promise<GetCarDTOKeysetPaginationResult> => {
+    const result = await apiGet<GetCarDTOKeysetPaginationResult>('/Car/my', { params });
+
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+
+    return result.data!;
+  },
+
   // Получение списка автомобилей
   getCars: async (params?: CarFilters): Promise<CarApiResponse> => {
     const result = await apiGet<CarApiResponse>('/Car', { params });
@@ -182,6 +194,15 @@ export const carsApi = {
   // Удалить привязку водителя
   removeDriver: async (carId: string, driverId: string): Promise<void> => {
     const result = await apiDelete(`/Car/${carId}/drivers/${driverId}`);
+
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+  },
+
+  // Установить автомобиль активным для текущего водителя
+  setActiveCar: async (carId: string): Promise<void> => {
+    const result = await apiPost(`/Car/my/${carId}/set-active`, true);
 
     if (result.error) {
       throw new Error(result.error.message);

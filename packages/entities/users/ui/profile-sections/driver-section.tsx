@@ -21,6 +21,7 @@ import type { GetDriverDTO } from '@entities/users/interface';
 import type { SectionWithMapProps } from '@entities/users/ui/profile-sections/types';
 import { getServiceClassLabel, getLicenseCategoryLabel, getCitizenshipLabel } from '@entities/users/utils';
 import { getLanguageLabel } from '@entities/users/utils/language-utils';
+import type { DriverAnalytics } from '@shared/api/analytics';
 
 // Переводы для цветов автомобилей
 const carColorLabels: Record<CarColor, string> = {
@@ -92,10 +93,14 @@ function isDriverData(profile: SectionWithMapProps['profile']): profile is GetDr
 
 interface DriverSectionProps extends SectionWithMapProps {
   onAssignCar?: () => void;
+  analytics: DriverAnalytics | null;
+  loading: boolean
 }
 
 export function DriverSection({
   profile,
+  analytics,
+  loading,
   openMapSheet: _openMapSheet,
   onAssignCar
 }: DriverSectionProps) {
@@ -118,40 +123,36 @@ export function DriverSection({
             <div className='border-l-4 border-green-200 pl-4 flex flex-col gap-2'>
               <label className='text-sm font-medium text-muted-foreground'>Общий доход</label>
               <p className='text-lg font-bold text-green-600'>
-                {/* TODO: Интегрировать с API для получения общего дохода */}
-                0 сом
+                {analytics?.totalRevenue.toLocaleString()} сом
               </p>
             </div>
 
             <div className='border-l-4 border-blue-200 pl-4 flex flex-col gap-2'>
               <label className='text-sm font-medium text-muted-foreground'>Доход за месяц</label>
               <p className='text-lg font-bold text-blue-600'>
-                {/* TODO: Интегрировать с API для получения дохода за месяц */}
-                0 сом
+                {analytics?.monthlyRevenue.toLocaleString()} сом
               </p>
             </div>
 
             <div className='border-l-4 border-purple-200 pl-4 flex flex-col gap-2'>
               <label className='text-sm font-medium text-muted-foreground'>Средний доход</label>
               <p className='text-lg font-bold text-purple-600'>
-                {/* TODO: Интегрировать с API для получения среднего дохода */}
-                0 сом
+                {analytics?.averageRevenue.toLocaleString()} сом
               </p>
             </div>
 
             <div className='border-l-4 border-orange-200 pl-4 flex flex-col gap-2'>
               <label className='text-sm font-medium text-muted-foreground'>Ожидает выплат</label>
               <p className='text-lg font-bold text-orange-600'>
-                {/* TODO: Интегрировать с API для получения ожидающих выплат */}
-                0 сом
+                {analytics?.pendingPayout.toLocaleString()} сом
               </p>
             </div>
           </div>
 
-          <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+          {/* <div className='flex items-center gap-2 text-sm text-muted-foreground'>
             <TrendingUp className='h-4 w-4' />
             <span>Данные за последние 30 дней</span>
-          </div>
+          </div> */}
         </CardContent>
       </Card>
 
@@ -172,15 +173,15 @@ export function DriverSection({
 
             <div className='border-l-4 border-green-200 pl-4 flex flex-col gap-2'>
               <label className='text-sm font-medium text-muted-foreground'>Всего поездок</label>
-              <p className='text-sm font-medium'>{driverProfile.totalRides}</p>
+              <p className='text-sm font-medium'>{analytics?.totalRides}</p>
             </div>
 
-            <div className='border-l-4 border-purple-200 pl-4 flex flex-col gap-2'>
+            {/* <div className='border-l-4 border-purple-200 pl-4 flex flex-col gap-2'>
               <label className='text-sm font-medium text-muted-foreground'>Общий пробег</label>
               <p className='text-sm font-medium'>
                 {driverProfile.totalDistance.toLocaleString()} км
               </p>
-            </div>
+            </div> */}
           </div>
 
           <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>

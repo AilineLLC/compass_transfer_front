@@ -195,6 +195,17 @@ export const ridesApi = {
   },
 
   /**
+   * Оплата выполнена
+   */
+  async paymentCompleted(rideId: string): Promise<void> {
+    const result = await apiClient.post(`/Ride/${rideId}/status/payment-completed`);
+
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+  },
+
+  /**
    * Принятие запланированной поездки водителем
    */
   async acceptScheduledRide(rideId: string): Promise<void> {

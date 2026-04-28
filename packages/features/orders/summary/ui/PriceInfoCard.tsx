@@ -93,10 +93,13 @@ export function PriceInfoCard({
             <span className='text-sm'>Базовая стоимость:</span>
             <span>{basePrice}</span>
           </div>
-          <div className='flex justify-between items-center'>
-            <span className='text-sm'>Стоимость за расстояние:</span>
-            <span>{distancePrice}</span>
-          </div>
+          {
+            userRole !== 'partner' && 
+            <div className='flex justify-between items-center'>
+              <span className='text-sm'>Стоимость за расстояние:</span>
+              <span>{distancePrice}</span>
+            </div>
+          }
 
           {/* Дополнительные услуги */}
           {selectedServices && selectedServices.length > 0 && (

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { carsApi } from '@shared/api/cars';
 import { usersApi } from '@shared/api/users';
+import { analyticsApi, type DriverAnalytics } from '@shared/api/analytics';
 import {
   getRoleLabel,
   getPageTitle,
@@ -28,6 +29,7 @@ import {
 } from '@features/users';
 import { AssignCarModal } from './components/assign-car-modal';
 import { ManageDriverCarsModal } from './components/manage-driver-cars-modal';
+import { useRouter } from 'next/navigation'
 
 type UserData = GetOperatorDTO | GetDriverDTO | GetCustomerDTO | GetAdminDTO | GetPartnerDTO | GetTerminalDTO;
 
@@ -37,6 +39,8 @@ interface ProfileViewProps {
 }
 
 export function ProfileView({ userId, userRole }: ProfileViewProps) {
+  const router = useRouter()
+
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +49,10 @@ export function ProfileView({ userId, userRole }: ProfileViewProps) {
   // Состояния для модальных окон управления автомобилями
   const [isAssignCarModalOpen, setIsAssignCarModalOpen] = useState(false);
   const [isManageCarsModalOpen, setIsManageCarsModalOpen] = useState(false);
+
+  // Аналитика водителя
+  const [driverAnalytics, setDriverAnalytics] = useState<DriverAnalytics | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
   // Загрузка данных пользователя
   useEffect(() => {
@@ -80,6 +88,14 @@ export function ProfileView({ userId, userRole }: ProfileViewProps) {
         }
 
         setUser(userData);
+
+        if (userRole === 'Driver') {
+          setAnalyticsLoading(true);
+          analyticsApi.getDriverAnalytics(userId)
+            .then(setDriverAnalytics)
+            .catch(() => setDriverAnalytics(null))
+            .finally(() => setAnalyticsLoading(false));
+        }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : `Ошибка загрузки ${getRoleLabel(userRole)}`;
 
@@ -157,6 +173,8 @@ export function ProfileView({ userId, userRole }: ProfileViewProps) {
             profile={user}
             openMapSheet={openMapSheet}
             onAssignCar={() => setIsAssignCarModalOpen(true)}
+            analytics={driverAnalytics} 
+            loading={analyticsLoading}
           />
         );
       case 'Admin':
@@ -176,7 +194,7 @@ export function ProfileView({ userId, userRole }: ProfileViewProps) {
 
   // Обработчик кнопки "Назад"
   const handleBackToList = () => {
-    window.location.href = '/users';
+    router.back()
   };
 
   // Функция рендера контента табов
