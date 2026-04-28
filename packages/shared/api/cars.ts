@@ -88,7 +88,7 @@ interface CreateCarDTO {
   status: VehicleStatus;
   passengerCapacity: number;
   features: CarFeature[];
-  image?: string | null;
+  images?: string[];
 }
 
 // DTO для обновления автомобиля
@@ -103,7 +103,7 @@ interface UpdateCarDTO {
   status?: VehicleStatus;
   passengerCapacity?: number;
   features?: CarFeature[];
-  image?: string | null;
+  images?: string[];
 }
 
 export const carsApi = {
@@ -132,7 +132,7 @@ export const carsApi = {
   // Получение автомобиля по ID
   getCarById: async (id: string): Promise<GetCarDTO> => {
     const result = await apiGet<GetCarDTO>(`/Car/${id}`, {
-      params: { Includes: 'Image' },
+      params: { Includes: 'Images' },
     });
 
     if (result.error) {

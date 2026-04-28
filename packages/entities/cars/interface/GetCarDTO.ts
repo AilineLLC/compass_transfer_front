@@ -41,5 +41,5 @@ export interface GetCarDTO {
   features: CarFeature[];
   id: string;
   drivers?: Array<CarDriverRelation>;
-  image?: CarImageDTO | null;
+  images?: CarImageDTO[];
 }
