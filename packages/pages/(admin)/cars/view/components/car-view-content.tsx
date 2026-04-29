@@ -7,14 +7,14 @@ import { Badge } from '@shared/ui/data-display/badge';
 import type { GetCarDTO } from '@entities/cars/interface';
 import { ServiceClass, ServiceClassValues, CarType, CarTypeValues } from '@entities/tariffs/enums';
 import { CarFeature } from '@entities/cars/enums';
-import { CarImageSection, type CarImageItem } from '@entities/cars';
+import { CarImagesSection, type CarImagesItem } from '@entities/cars';
 import { CarDriversList } from './car-drivers-list';
 
 interface CarViewContentProps {
   car: GetCarDTO;
   onRemoveDriver?: (driverId: string) => Promise<void>;
   onAddFeature?: () => void;
-  onUpdateImage?: (item: CarImageItem) => Promise<void>;
+  onUpdateImages?: (items: CarImagesItem[]) => Promise<void>;
 }
 
 // Переводы опций автомобиля
@@ -44,42 +44,42 @@ const carFeatureLabels: Record<CarFeature, string> = {
   [CarFeature.BikeRack]: 'Велосипедная стойка',
 };
 
-export function CarViewContent({ car, onRemoveDriver, onAddFeature, onUpdateImage }: CarViewContentProps) {
-  const [isEditingImage, setIsEditingImage] = useState(false);
-  const [isSavingImage, setIsSavingImage] = useState(false);
-  const imageItemRef = useRef<CarImageItem>(
-    car.image ? { kind: 'existing', id: car.image.id, path: car.image.path } : null,
+export function CarViewContent({ car, onRemoveDriver, onAddFeature, onUpdateImages }: CarViewContentProps) {
+  const [isEditingImages, setIsEditingImages] = useState(false);
+  const [isSavingImages, setIsSavingImages] = useState(false);
+  const imageItemsRef = useRef<CarImagesItem[]>(
+    (car.images ?? []).map(img => ({ kind: 'existing', id: img.id, path: img.path })),
   );
 
   const getUploadUrl = (path: string) =>
     `${process.env.NEXT_PUBLIC_UPLOADS_URL}/Uploads/${path}`;
 
-  const handleSaveImage = async () => {
-    if (!onUpdateImage) return;
-    setIsSavingImage(true);
+  const handleSaveImages = async () => {
+    if (!onUpdateImages) return;
+    setIsSavingImages(true);
     try {
-      await onUpdateImage(imageItemRef.current);
-      setIsEditingImage(false);
+      await onUpdateImages(imageItemsRef.current);
+      setIsEditingImages(false);
     } finally {
-      setIsSavingImage(false);
+      setIsSavingImages(false);
     }
   };
 
   return (
     <div className='space-y-6'>
-      {/* Фотография */}
+      {/* Фотографии */}
       <Card>
         <CardHeader>
           <div className='flex items-center justify-between'>
             <CardTitle className='flex items-center gap-2'>
               <ImageIcon className='h-5 w-5' />
-              Фотография
+              Фотографии
             </CardTitle>
-            {onUpdateImage && !isEditingImage && (
+            {onUpdateImages && !isEditingImages && (
               <Button
                 variant='outline'
                 size='sm'
-                onClick={() => setIsEditingImage(true)}
+                onClick={() => setIsEditingImages(true)}
                 className='flex items-center gap-2'
               >
                 <Pencil className='h-4 w-4' />
@@ -89,43 +89,49 @@ export function CarViewContent({ car, onRemoveDriver, onAddFeature, onUpdateImag
           </div>
         </CardHeader>
         <CardContent>
-          {isEditingImage ? (
+          {isEditingImages ? (
             <div className='space-y-3'>
-              <CarImageSection
-                existingImageId={car.image?.id}
-                existingImagePath={car.image?.path}
-                onImageChange={item => { imageItemRef.current = item; }}
+              <CarImagesSection
+                existingImages={car.images ?? []}
+                onItemsChange={items => { imageItemsRef.current = items; }}
               />
               <div className='flex gap-2 justify-end'>
                 <Button
                   variant='outline'
                   size='sm'
                   onClick={() => {
-                    imageItemRef.current = car.image
-                      ? { kind: 'existing', id: car.image.id, path: car.image.path }
-                      : null;
-                    setIsEditingImage(false);
+                    imageItemsRef.current = (car.images ?? []).map(img => ({
+                      kind: 'existing' as const,
+                      id: img.id,
+                      path: img.path,
+                    }));
+                    setIsEditingImages(false);
                   }}
-                  disabled={isSavingImage}
+                  disabled={isSavingImages}
                 >
                   Отмена
                 </Button>
-                <Button size='sm' onClick={handleSaveImage} disabled={isSavingImage}>
-                  {isSavingImage ? 'Сохранение...' : 'Сохранить'}
+                <Button size='sm' onClick={handleSaveImages} disabled={isSavingImages}>
+                  {isSavingImages ? 'Сохранение...' : 'Сохранить'}
                 </Button>
               </div>
             </div>
-          ) : car.image ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={getUploadUrl(car.image.path)}
-              alt={`${car.make} ${car.model}`}
-              className='w-full max-h-72 object-cover rounded-lg'
-            />
+          ) : car.images && car.images.length > 0 ? (
+            <div className='flex flex-col gap-2'>
+              {car.images.map((img, index) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={img.id}
+                  src={getUploadUrl(img.path)}
+                  alt={`${car.make} ${car.model} — фото ${index + 1}`}
+                  className='w-full max-h-72 object-cover rounded-lg'
+                />
+              ))}
+            </div>
           ) : (
             <div className='flex flex-col items-center justify-center py-8 text-gray-400'>
               <ImageIcon className='h-12 w-12 mb-2' />
-              <p className='text-sm'>Фотография не добавлена</p>
+              <p className='text-sm'>Фотографии не добавлены</p>
             </div>
           )}
         </CardContent>

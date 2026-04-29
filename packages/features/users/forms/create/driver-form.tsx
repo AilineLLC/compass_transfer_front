@@ -201,7 +201,7 @@ export function useDriverFormLogic({
           avatarUrl: data.avatarUrl || null,
           profile: {
             ...formDataWithoutConfirm.profile,
-            citizenshipCountry: typeof formDataWithoutConfirm.profile.citizenshipCountry === 'string' 
+            citizenshipCountry: typeof formDataWithoutConfirm.profile.citizenshipCountry === 'string'
               ? formDataWithoutConfirm.profile.citizenshipCountry as CitizenshipCountry
               : formDataWithoutConfirm.profile.citizenshipCountry,
           },

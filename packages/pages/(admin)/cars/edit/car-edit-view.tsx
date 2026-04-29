@@ -7,7 +7,7 @@ import { carsApi } from '@shared/api/cars';
 import { Card, CardContent } from '@shared/ui/layout';
 import { ChapterHeader } from '@shared/ui/layout/chapter-header';
 import { FormSidebar } from '@shared/ui/layout/form-sidebar';
-import { CarBasicSection, CarFeaturesSection, CarImageSection, type CarImageItem } from '@entities/cars';
+import { CarBasicSection, CarFeaturesSection, CarImagesSection, type CarImagesItem } from '@entities/cars';
 import { VehicleStatus, VehicleType, CarColor } from '@entities/cars/enums';
 import type { GetCarDTO } from '@entities/cars/interface';
 import { CAR_FORM_CHAPTERS } from '@entities/cars/model/form-chapters/car-chapters';
@@ -22,8 +22,8 @@ interface CarEditViewProps {
 interface CarEditFormViewProps {
   form: UseFormReturn<CarUpdateFormData>;
   isSubmitting: boolean;
-  imageItemRef: React.MutableRefObject<CarImageItem>;
-  carImage?: { id: string; path: string } | null;
+  imageItemsRef: React.MutableRefObject<CarImagesItem[]>;
+  existingImages: { id: string; path: string }[];
   getChapterStatus: (chapterId: string) => 'complete' | 'warning' | 'error' | 'pending';
   getChapterErrors: (chapterId: string) => string[];
   onUpdate: () => void;
@@ -94,12 +94,14 @@ export function CarEditView({ carId }: CarEditViewProps) {
         passengerCapacity: car.passengerCapacity || 4,
         features: car.features || [],
       });
-      // Инициализируем ref изображения
-      logic.imageItemRef.current = car.image
-        ? { kind: 'existing', id: car.image.id, path: car.image.path }
-        : null;
+      // Инициализируем ref изображений
+      logic.imageItemsRef.current = (car.images ?? []).map(img => ({
+        kind: 'existing' as const,
+        id: img.id,
+        path: img.path,
+      }));
     }
-  }, [car, logic.form, logic.imageItemRef]);
+  }, [car, logic.form, logic.imageItemsRef]);
 
   if (isLoading) {
     return (
@@ -116,14 +118,14 @@ export function CarEditView({ carId }: CarEditViewProps) {
     notFound();
   }
 
-  return <CarEditFormView {...logic} carImage={car.image} />;
+  return <CarEditFormView {...logic} existingImages={car!.images ?? []} />;
 }
 
 function CarEditFormView({
   form,
   isSubmitting,
-  imageItemRef,
-  carImage,
+  imageItemsRef,
+  existingImages,
   getChapterStatus,
   getChapterErrors,
   onUpdate,
@@ -182,19 +184,18 @@ function CarEditFormView({
                   </div>
                 </div>
 
-                {/* Глава 3: Фотография */}
+                {/* Глава 3: Фотографии */}
                 <div id='chapter-image' className='relative flex flex-col gap-4'>
                   <ChapterHeader
                     number={3}
-                    title='Фотография'
+                    title='Фотографии'
                     status='pending'
                   />
                   <div className='relative ml-12'>
                     <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
-                    <CarImageSection
-                      existingImageId={carImage?.id}
-                      existingImagePath={carImage?.path}
-                      onImageChange={item => { imageItemRef.current = item; }}
+                    <CarImagesSection
+                      existingImages={existingImages}
+                      onItemsChange={items => { imageItemsRef.current = items; }}
                     />
                   </div>
                 </div>
