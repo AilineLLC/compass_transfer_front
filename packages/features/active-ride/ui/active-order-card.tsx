@@ -159,20 +159,24 @@ export function ActiveOrderCard({ order, onStatusUpdate }: ActiveOrderCardProps)
     setIsUpdating(true);
     try {
       await ridesApi.rideFinished(activeRide.id);
-      setWaitingForPayment(true);
+      if (order.paymentMethodType !== PaymentMethodType.Card) {
+        setWaitingForPayment(true);
+      } else {
+        onStatusUpdate?.();
+      }
     } catch {
       toast.error('Ошибка при обновлении статуса "Завершил поездку"');
     } finally {
       setIsUpdating(false);
     }
-  }, [activeRide?.id, isUpdating]);
+  }, [activeRide?.id, isUpdating, order.paymentMethodType, onStatusUpdate]);
 
   const handlePaymentCompleted = useCallback(async () => {
     if (!activeRide?.id || isUpdating) return;
 
     setIsUpdating(true);
     try {
-      await ridesApi.paymentCompleted(activeRide.id);
+      await ridesApi.markCashReceived(activeRide.id);
       setWaitingForPayment(false);
       onStatusUpdate?.();
     } catch {
@@ -338,15 +342,18 @@ export function ActiveOrderCard({ order, onStatusUpdate }: ActiveOrderCardProps)
       order.subStatus === OrderSubStatus.RideFinished ||
       order.subStatus === OrderSubStatus.PaymentPending
     ) {
-      // Поездка завершена, ждём подтверждения оплаты
-      return [
-        {
-          label: 'Оплата выполнена',
-          action: handlePaymentCompleted,
-          icon: Banknote,
-          variant: 'default' as const,
-        },
-      ];
+      // Кнопка оплаты только при наличном расчёте
+      if (order.paymentMethodType !== PaymentMethodType.Card) {
+        return [
+          {
+            label: 'Оплата выполнена',
+            action: handlePaymentCompleted,
+            icon: Banknote,
+            variant: 'default' as const,
+          },
+        ];
+      }
+      return [];
     }
 
     // Если статус InProgress без подстатуса - водитель в пути с клиентом
@@ -364,7 +371,8 @@ export function ActiveOrderCard({ order, onStatusUpdate }: ActiveOrderCardProps)
     return [];
   };
 
-  const availableActions = waitingForPayment
+  const isCashPayment = order.paymentMethodType !== PaymentMethodType.Card;
+  const availableActions = waitingForPayment && isCashPayment
     ? [{ label: 'Оплата выполнена', action: handlePaymentCompleted, icon: Banknote, variant: 'default' as const }]
     : getAvailableActions();
 

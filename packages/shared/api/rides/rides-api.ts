@@ -195,10 +195,10 @@ export const ridesApi = {
   },
 
   /**
-   * Оплата выполнена
+   * Подтверждение получения наличных от пассажира
    */
-  async paymentCompleted(rideId: string): Promise<void> {
-    const result = await apiClient.post(`/Ride/${rideId}/status/payment-completed`);
+  async markCashReceived(rideId: string): Promise<void> {
+    const result = await apiClient.put(`/Ride/${rideId}/cash-received`, true);
 
     if (result.error) {
       throw new Error(result.error.message);
