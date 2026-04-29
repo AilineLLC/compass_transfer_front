@@ -15,9 +15,8 @@ interface OrderDetailPageProps {
 export function OrderDetailPage({ order, onBack }: OrderDetailPageProps) {
   const [selectedMapService, setSelectedMapService] = useState<string | null>(null);
 
-  // Получаем начальную и конечную точки
-  const startLocation = order.waypoints?.[0]?.location;
-  const endLocation = order.waypoints?.[order.waypoints.length - 1]?.location;
+  const startLocation = order.startLocation;
+  const endLocation = order.endLocation;
 
   // Функции для открытия карт
   const openInYandexMaps = () => {
@@ -205,16 +204,14 @@ export function OrderDetailPage({ order, onBack }: OrderDetailPageProps) {
             </div>
 
             {/* Промежуточные точки */}
-            {order.waypoints && order.waypoints.length > 2 && (
+            {order.additionalStops && order.additionalStops.length > 0 && (
               <div className='space-y-3'>
-                {order.waypoints.slice(1, -1).map((waypoint, index) => (
-                  <div key={waypoint.locationId} className='flex items-start space-x-3'>
+                {order.additionalStops.map((stopId, index) => (
+                  <div key={stopId} className='flex items-start space-x-3'>
                     <div className='w-4 h-4 rounded-full bg-yellow-500 mt-1 flex-shrink-0' />
                     <div className='flex-1'>
                       <p className='text-sm text-gray-500'>Остановка {index + 1}</p>
-                      <p className='font-medium text-gray-900'>
-                        {waypoint.location.name || waypoint.location.address}
-                      </p>
+                      <p className='font-medium text-gray-900'>{stopId}</p>
                     </div>
                   </div>
                 ))}
@@ -269,27 +266,6 @@ export function OrderDetailPage({ order, onBack }: OrderDetailPageProps) {
         </div>
 
 
-        {/* Дополнительная информация */}
-        {(order.distance || order.duration) && (
-          <div className='bg-white rounded-xl p-4 shadow-sm'>
-            <h2 className='text-lg font-semibold mb-4'>Дополнительная информация</h2>
-            
-            <div className='grid grid-cols-2 gap-4'>
-              {order.distance && (
-                <div>
-                  <p className='text-sm text-gray-500'>Расстояние</p>
-                  <p className='font-medium'>{order.distance.toFixed(1)} км</p>
-                </div>
-              )}
-              {order.duration && (
-                <div>
-                  <p className='text-sm text-gray-500'>Длительность</p>
-                  <p className='font-medium'>{order.duration}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
