@@ -122,7 +122,7 @@ export function useLocationFormLogic({
             } else if (item.imageState.kind === 'pending' && !item.imageState.error) {
               imageId = await filesApi.uploadFile('LocationImage', item.imageState.file);
             }
-            return { name: item.name, image: imageId };
+            return { name: item.name, image: imageId, type: 'Restaraunt' };
           }),
         );
 
