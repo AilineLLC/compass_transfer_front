@@ -46,6 +46,7 @@ export function useTariffFormLogic({
       minimumPrice: 0,
       perKmPrice: undefined,
       freeWaitingTimeMinutes: undefined,
+      isLanding: false,
     },
   });
 
@@ -73,6 +74,7 @@ export function useTariffFormLogic({
           minimumPrice: 0, // Всегда передаем 0
           perKmPrice: data.perKmPrice,
           freeWaitingTimeMinutes: data.freeWaitingTimeMinutes,
+          isLanding: data.isLanding,
         };
 
         const result = await tariffsApi.createTariff(apiData);

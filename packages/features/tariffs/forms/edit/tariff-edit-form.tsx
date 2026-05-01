@@ -41,6 +41,7 @@ export function useTariffEditFormLogic({
     minimumPrice: number;
     perKmPrice: number;
     freeWaitingTimeMinutes: number;
+    isLanding: boolean | null;
   };
   onBack: () => void;
   onSuccess: () => void;
@@ -59,6 +60,7 @@ export function useTariffEditFormLogic({
       minimumPrice: 0, // Всегда 0
       perKmPrice: initialData.perKmPrice,
       freeWaitingTimeMinutes: initialData.freeWaitingTimeMinutes,
+      isLanding: initialData.isLanding,
     },
   });
 
@@ -85,6 +87,7 @@ export function useTariffEditFormLogic({
           minimumPrice: 0, // Всегда передаем 0
           perKmPrice: data.perKmPrice,
           freeWaitingTimeMinutes: data.freeWaitingTimeMinutes,
+          isLanding: data.isLanding,
         };
         
         const result = await tariffsApi.updateTariff(tariffId, apiData);

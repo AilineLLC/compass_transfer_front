@@ -69,6 +69,7 @@ export function TariffEditView({ tariffId }: TariffEditViewProps) {
       minimumPrice: 0, // Всегда 0
       perKmPrice: 0,
       freeWaitingTimeMinutes: 0,
+      isLanding: false,
     },
     onBack: () => router.push('/tariffs'),
     onSuccess: () => router.push('/tariffs'),
@@ -86,6 +87,7 @@ export function TariffEditView({ tariffId }: TariffEditViewProps) {
         minimumPrice: 0, // Всегда 0, игнорируем значение из API
         perKmPrice: tariff.perKmPrice || 0,
         freeWaitingTimeMinutes: tariff.freeWaitingTimeMinutes || 0,
+        isLanding: tariff.isLanding ?? false,
       });
     }
   }, [tariff, logic.form]);
