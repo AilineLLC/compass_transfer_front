@@ -5,7 +5,7 @@ import { useSignalR } from '@shared/hooks/signal/useSignalR';
 import { logger } from '@shared/lib/logger';
 import { NotificationContext, type NotificationContextType } from '@entities/notifications/context';
 import { deduplicateNotificationsByOrder } from '@entities/notifications/utils';
-import { useNotifications } from '@features/notifications/hooks';
+import { useNotifications, useNotificationSound } from '@features/notifications/hooks';
 
 // Простой тип для приоритета уведомлений
 type NotificationPriority = 'order' | 'completed' | 'important' | 'warning';
@@ -36,6 +36,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   const signalR = useSignalR();
   
   // Используем новый хук useNotifications - правильная архитектура!
+  const { playSound } = useNotificationSound({ loop: false });
+
   const {
     notifications,
     isLoading,
@@ -113,6 +115,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
     const handleNewNotification = (data: unknown) => {
       logger.info('📨 NotificationProvider: получено новое уведомление через SignalR', data);
+      playSound();
 
       if (data && typeof data === 'object' && 'id' in data) {
         const wsNotif = data as import('@shared/api/notifications').GetNotificationDTO;

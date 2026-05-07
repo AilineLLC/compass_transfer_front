@@ -1,6 +1,6 @@
 'use client';
 
-import { Search, User, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { Search, User, ChevronDown, ChevronUp, X, CalendarDays } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useDebounce } from '@shared/hooks/use-debounce';
 import { Badge } from '@shared/ui/data-display/badge';
@@ -24,6 +24,7 @@ interface DriverPanelProps {
   getDriverById?: (id: string) => GetDriverDTO | null; // Функция для получения полных данных водителя
   isInstantOrder?: boolean; // Флаг для моментальных заказов - отключает выбор водителей
   userRole?: 'admin' | 'operator' | 'driver'; // Роль пользователя
+  onViewDriverOrders?: (driverId: string, driverName: string) => void; // Колбэк открытия виджета расписания
 }
 
 export function DriverPanel({
@@ -34,6 +35,7 @@ export function DriverPanel({
   getDriverById,
   isInstantOrder = false,
   userRole: _userRole = 'operator',
+  onViewDriverOrders,
 }: DriverPanelProps) {
   // Хуки должны быть вызваны всегда, независимо от условий
   const [searchQuery, setSearchQuery] = useState('');
@@ -127,7 +129,6 @@ export function DriverPanel({
       setIsCollapsed(true);
     }
   };
-  console.log('Selected Driver:', selectedDriver);
   return (
     <div className='absolute bottom-4 left-4 right-4 z-[1000] max-w-xl mx-auto'>
       <Card className='backdrop-blur-sm bg-white/55 rounded-t-2xl border'>
@@ -188,15 +189,26 @@ export function DriverPanel({
                         </div>
                       </div>
                     </div>
-                    {!isInstantOrder && (
-                      <button
-                        onClick={onClose}
-                        className='p-1 rounded-full hover:bg-blue-100 transition-colors'
-                        title='Отменить выбор водителя'
-                      >
-                        <X className='h-4 w-4 text-gray-500' />
-                      </button>
-                    )}
+                    <div className='flex items-center gap-1'>
+                      {!isInstantOrder && onViewDriverOrders && (
+                        <button
+                          onClick={() => onViewDriverOrders(selectedDriver.id, driverName)}
+                          className='p-1 rounded-full hover:bg-blue-100 transition-colors'
+                          title='Расписание водителя'
+                        >
+                          <CalendarDays className='h-4 w-4 text-blue-600' />
+                        </button>
+                      )}
+                      {!isInstantOrder && (
+                        <button
+                          onClick={onClose}
+                          className='p-1 rounded-full hover:bg-blue-100 transition-colors'
+                          title='Отменить выбор водителя'
+                        >
+                          <X className='h-4 w-4 text-gray-500' />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
@@ -301,13 +313,31 @@ export function DriverPanel({
                           </div>
 
                           <div className='flex-1 min-w-0'>
-                            <div className='flex items-center gap-2 mb-1'>
-                              <span className='font-medium text-sm text-gray-900 truncate'>
-                                {driverName}
-                              </span>
-                              <span className='text-xs text-gray-500'>
-                                {driver.online ? 'Онлайн' : 'Оффлайн'}
-                              </span>
+                            <div className='flex items-center justify-between gap-2 mb-1'>
+                              <div className='flex items-center gap-2 min-w-0'>
+                                <span className='font-medium text-sm text-gray-900 truncate'>
+                                  {driverName}
+                                </span>
+                                <span className='text-xs text-gray-500 flex-shrink-0'>
+                                  {driver.online ? 'Онлайн' : 'Оффлайн'}
+                                </span>
+                              </div>
+
+                              {!isInstantOrder && onViewDriverOrders && (
+                                <Button
+                                  variant='ghost'
+                                  size='sm'
+                                  className='h-6 px-1.5 flex-shrink-0 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    onViewDriverOrders(driver.id, driverName);
+                                  }}
+                                  title='Расписание водителя'
+                                >
+                                  <CalendarDays className='h-3.5 w-3.5 mr-1' />
+                                  Заказы
+                                </Button>
+                              )}
                             </div>
 
                             {driverPhone && (
@@ -315,7 +345,6 @@ export function DriverPanel({
                             )}
 
                             <div className='flex gap-1 flex-wrap'>
-                              {/* Классы обслуживания с переводом */}
                               {serviceClasses.slice(0, 2).map((cls: string) => (
                                 <Badge
                                   key={cls}
@@ -326,14 +355,12 @@ export function DriverPanel({
                                 </Badge>
                               ))}
 
-                              {/* Тип автомобиля */}
                               {carTypeTranslated && (
                                 <Badge variant='secondary' className='text-xs px-1.5 py-0.5'>
                                   {carTypeTranslated}
                                 </Badge>
                               )}
 
-                              {/* Госномер */}
                               {licensePlate && (
                                 <Badge
                                   variant='outline'
