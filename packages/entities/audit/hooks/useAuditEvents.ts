@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { auditApi } from '../api/audit-api';
