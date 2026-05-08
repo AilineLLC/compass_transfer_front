@@ -3,6 +3,8 @@ import { Badge } from '@shared/ui/data-display/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/layout';
 import { Separator } from '@shared/ui/layout/separator';
 import type { LocationDTO } from '@entities/locations/interface';
+import { AuditEntityType } from '@entities/audit';
+import { AuditSection } from '@features/audit';
 
 interface LocationViewContentProps {
   location: LocationDTO;
@@ -136,6 +138,8 @@ export function LocationViewContent({ location }: LocationViewContentProps) {
           </CardContent>
         </Card>
       )}
+
+      <AuditSection entityType={AuditEntityType.Location} entityId={location.id} />
     </div>
   );
 }

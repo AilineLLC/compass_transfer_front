@@ -35,6 +35,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@dmsnell/diff-match-patch@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "@dmsnell/diff-match-patch@npm:1.1.0"
+  checksum: 10/fe4127b57a3f972839688d8b6abf325c2633106a1ee1da900e584c3057ed543797f009749fb6b77879e3dac0096755b09a9a224f9bd97a40eefba8f4665d5ace
+  languageName: node
+  linkType: hard
+
 "@dnd-kit/accessibility@npm:^3.1.1":
   version: 3.1.1
   resolution: "@dnd-kit/accessibility@npm:3.1.1"
@@ -4063,6 +4070,7 @@ __metadata:
     imagemin-webp: "npm:^8.0.0"
     jose: "npm:^6.0.11"
     js-cookie: "npm:^3.0.5"
+    jsondiffpatch: "npm:^0.7.3"
     leaflet: "npm:^1.9.4"
     lottie-react: "npm:^2.4.1"
     lucide-react: "npm:^0.525.0"
@@ -7130,6 +7138,17 @@ __metadata:
   bin:
     json5: lib/cli.js
   checksum: 10/1db67b853ff0de3534085d630691d3247de53a2ed1390ba0ddff681ea43e9b3e30ecbdb65c5e9aab49435e44059c23dbd6fee8ee619419ba37465bb0dd7135da
+  languageName: node
+  linkType: hard
+
+"jsondiffpatch@npm:^0.7.3":
+  version: 0.7.3
+  resolution: "jsondiffpatch@npm:0.7.3"
+  dependencies:
+    "@dmsnell/diff-match-patch": "npm:^1.1.0"
+  bin:
+    jsondiffpatch: bin/jsondiffpatch.js
+  checksum: 10/c7ad8f63c4d6283f79a9a1883d101544ea1ed675cf45200cd1a6fbe802f761a36c07c46caaa4071e73b7142fc7d7839ec4df7873cc878b48013252c2fc265032
   languageName: node
   linkType: hard
 

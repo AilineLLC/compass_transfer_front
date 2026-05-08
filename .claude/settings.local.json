@@ -12,7 +12,9 @@
       "Bash(xargs ls *)",
       "Bash(Get-ChildItem -Path \"D:\\\\dev\\\\compass_transfer_front\\\\apps\\\\compass-driver-mobile\" -Recurse -Directory)",
       "Bash(Select-Object -First 20)",
-      "Bash(Format-Table FullName)"
+      "Bash(Format-Table FullName)",
+      "Bash(pnpm add *)",
+      "Bash(yarn add *)"
     ]
   }
 }

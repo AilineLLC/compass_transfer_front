@@ -17,7 +17,7 @@ import {
   PartnerSection,
   TerminalSection
 } from '@entities/users';
-import type { Role } from '@entities/users/enums';
+import { Role } from '@entities/users/enums';
 import type { GetOperatorDTO, GetDriverDTO, GetCustomerDTO, GetAdminDTO, GetPartnerDTO, GetTerminalDTO } from '@entities/users/interface';
 import {
   ProfileActions,
@@ -29,7 +29,10 @@ import {
 } from '@features/users';
 import { AssignCarModal } from './components/assign-car-modal';
 import { ManageDriverCarsModal } from './components/manage-driver-cars-modal';
-import { useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation';
+import { useUserRole } from '@shared/contexts/user-role-context';
+import { AuditEntityType } from '@entities/audit';
+import { AuditSection } from '@features/audit';
 
 type UserData = GetOperatorDTO | GetDriverDTO | GetCustomerDTO | GetAdminDTO | GetPartnerDTO | GetTerminalDTO;
 
@@ -39,12 +42,15 @@ interface ProfileViewProps {
 }
 
 export function ProfileView({ userId, userRole }: ProfileViewProps) {
-  const router = useRouter()
+  const router = useRouter();
+  const { userRole: currentUserRole } = useUserRole();
 
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ProfileTab>('basic');
+
+  const canViewAudit = currentUserRole === Role.Admin || currentUserRole === Role.Operator;
 
   // Состояния для модальных окон управления автомобилями
   const [isAssignCarModalOpen, setIsAssignCarModalOpen] = useState(false);
@@ -211,6 +217,8 @@ export function ProfileView({ userId, userRole }: ProfileViewProps) {
         );
       case 'rides':
         return <UserRidesSection userId={userId} />;
+      case 'audit':
+        return <AuditSection entityType={AuditEntityType.User} entityId={userId} />;
       default:
         return null;
     }
@@ -251,7 +259,7 @@ export function ProfileView({ userId, userRole }: ProfileViewProps) {
           <div className='lg:col-span-3 flex flex-col gap-6'>
             {/* Табы для переключения между секциями */}
             <div className='px-4'>
-              <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} hideMy />
+              <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} hideMy showAudit={canViewAudit} />
             </div>
             {/* Контент выбранной вкладки */}
             {renderTabContent()}

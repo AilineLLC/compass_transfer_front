@@ -1,6 +1,8 @@
 'use client';
 import { useRef, useState } from 'react';
 import { Info, Settings, Users, Star, Plus, ImageIcon, Pencil } from 'lucide-react';
+import { AuditEntityType } from '@entities/audit';
+import { AuditSection } from '@features/audit';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/layout';
 import { Button } from '@shared/ui/forms/button';
 import { Badge } from '@shared/ui/data-display/badge';
@@ -225,7 +227,7 @@ export function CarViewContent({ car, onRemoveDriver, onAddFeature, onUpdateImag
               <Star className='h-5 w-5' />
               Дополнительные опции
             </CardTitle>
-            {onAddFeature && (
+            {/* {onAddFeature && (
               <Button
                 variant='outline'
                 size='sm'
@@ -235,7 +237,7 @@ export function CarViewContent({ car, onRemoveDriver, onAddFeature, onUpdateImag
                 <Plus className='h-4 w-4' />
                 Добавить опцию
               </Button>
-            )}
+            )} */}
           </div>
         </CardHeader>
         <CardContent>
@@ -273,6 +275,8 @@ export function CarViewContent({ car, onRemoveDriver, onAddFeature, onUpdateImag
           )}
         </CardContent>
       </Card>
+
+      <AuditSection entityType={AuditEntityType.Car} entityId={car.id} />
 
       {/* Назначенные водители */}
       <Card>

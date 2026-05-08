@@ -1,18 +1,19 @@
 'use client';
 
-import { User, Car, DollarSign } from 'lucide-react';
+import { User, Car, DollarSign, History } from 'lucide-react';
 import { Button } from '@shared/ui/forms/button';
 
-export type ProfileTab = 'basic' | 'rides' | 'payments';
+export type ProfileTab = 'basic' | 'rides' | 'payments' | 'audit';
 
 interface ProfileTabsProps {
   activeTab: ProfileTab;
   onTabChange: (tab: ProfileTab) => void;
   hideMy?: boolean;
   showPayments?: boolean;
+  showAudit?: boolean;
 }
 
-export function ProfileTabs({ activeTab, onTabChange, hideMy = false, showPayments = false }: ProfileTabsProps) {
+export function ProfileTabs({ activeTab, onTabChange, hideMy = false, showPayments = false, showAudit = false }: ProfileTabsProps) {
   const tabs = [
     {
       id: 'basic' as ProfileTab,
@@ -28,6 +29,11 @@ export function ProfileTabs({ activeTab, onTabChange, hideMy = false, showPaymen
       id: 'payments' as ProfileTab,
       label: hideMy ? 'Платежи' : 'Мои платежи',
       icon: DollarSign,
+    }] : []),
+    ...(showAudit ? [{
+      id: 'audit' as ProfileTab,
+      label: 'Журнал',
+      icon: History,
     }] : []),
   ];
 

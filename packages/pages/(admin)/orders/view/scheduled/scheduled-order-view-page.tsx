@@ -9,6 +9,8 @@ import { ScheduledOrderViewContent } from './components/scheduled-order-view-con
 import { ScheduledOrderViewError } from './components/scheduled-order-view-error';
 import { ScheduledOrderViewHeader } from './components/scheduled-order-view-header';
 import { ScheduledOrderViewLoading } from './components/scheduled-order-view-loading';
+import { AuditEntityType } from '@entities/audit';
+import { AuditSection } from '@features/audit';
 
 interface ScheduledOrderViewPageProps {
   orderId: string;
@@ -55,8 +57,9 @@ export function ScheduledOrderViewPage({ orderId, userRole }: ScheduledOrderView
       {/* Двухколоночный layout */}
       <div className='grid grid-cols-1 lg:grid-cols-4 gap-6'>
         {/* Левая колонка - основная информация (3/4 ширины) */}
-        <div className='lg:col-span-3'>
+        <div className='lg:col-span-3 space-y-6'>
           <ScheduledOrderViewContent order={order} userRole={userRole} />
+          <AuditSection entityType={AuditEntityType.Order} entityId={order.id} />
         </div>
 
         {/* Правая колонка - кнопки действий (1/4 ширины) */}

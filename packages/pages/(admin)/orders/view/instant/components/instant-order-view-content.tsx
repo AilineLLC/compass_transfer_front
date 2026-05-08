@@ -1,6 +1,8 @@
 'use client'
 
 import { MapPin, User, Car, Info, DollarSign, ExternalLink, Settings } from 'lucide-react';
+import { AuditEntityType } from '@entities/audit';
+import { AuditSection } from '@features/audit';
 import { useState } from 'react';
 import { useServices } from '@shared/hooks/useServices';
 import { useTariffById } from '@shared/hooks/useTariffById';
@@ -407,6 +409,9 @@ export function InstantOrderViewContent({ order }: InstantOrderViewContentProps)
           </div>
         </CardContent>
       </Card>
+
+      {/* Журнал изменений */}
+      <AuditSection entityType={AuditEntityType.Order} entityId={order.id} />
 
       {/* Driver Sheet */}
       <DriverSheet

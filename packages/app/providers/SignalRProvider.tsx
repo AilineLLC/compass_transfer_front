@@ -80,9 +80,20 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children, acce
             const errorMessage = JSON.parse(cleanData);
 
             logger.error('Ошибка от сервера:', errorMessage);
-            setError(errorMessage.error || 'Ошибка сервера');
+            const errText: string = errorMessage.error || 'Ошибка сервера';
+            setError(errText);
             setIsConnected(false);
             setConnection(null);
+
+            // Если сервер отклонил соединение из-за авторизации — перенаправляем на логин
+            const isAuthError =
+              errText.toLowerCase().includes('unauthorized') ||
+              errText.toLowerCase().includes('401') ||
+              errText.toLowerCase().includes('auth') ||
+              errText.toLowerCase().includes('token');
+            if (isAuthError) {
+              window.location.replace('/login');
+            }
 
             return;
           }

@@ -1,27 +1,53 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+function isJWTExpired(token: string): boolean {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return false;
+    const paddedPayload = parts[1] + '='.repeat((4 - (parts[1].length % 4)) % 4);
+    const decoded = JSON.parse(Buffer.from(paddedPayload, 'base64').toString('utf-8'));
+    if (!decoded.exp) return false;
+    return decoded.exp * 1000 < Date.now();
+  } catch {
+    return false;
+  }
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Проверяем различные возможные куки аутентификации
-  const authToken = request.cookies.get('auth-token') ||
+  const authCookie =
+    request.cookies.get('auth-token') ||
     request.cookies.get('.AspNetCore.Identity.Application') ||
     request.cookies.get('__Host-auth-token');
 
-  // Публичные страницы, которые не требуют аутентификации
   const publicPages = ['/login', '/forgot-password', '/reset-password', '/register'];
-
-  // Проверяем, является ли текущая страница публичной
   const isPublicPage = publicPages.some(page => pathname.startsWith(page));
 
-  // Если пользователь не авторизован и пытается получить доступ к защищенной странице
-  if (!authToken && !isPublicPage) {
-    return NextResponse.redirect(new URL('/login', request.url));
+  const tokenExpired = authCookie ? isJWTExpired(authCookie.value) : false;
+  const isAuthenticated = !!authCookie && !tokenExpired;
+
+  if (!isAuthenticated && !isPublicPage) {
+    const response = NextResponse.redirect(new URL('/login', request.url));
+    // Очищаем протухшую куку, чтобы избежать бесконечного редиректа
+    if (authCookie && tokenExpired) {
+      const cookieName = process.env.AUTH_COOKIE_NAME || '.AspNetCore.Identity.Application';
+      const domain = process.env.NEXT_PUBLIC_DOMAIN || '.compass.local';
+      response.cookies.set(cookieName, '', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        domain,
+        path: '/',
+        maxAge: 0,
+        expires: new Date(0),
+      });
+    }
+    return response;
   }
 
-  // Если пользователь авторизован и пытается получить доступ к странице входа
-  if (authToken && isPublicPage) {
+  if (isAuthenticated && isPublicPage) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 

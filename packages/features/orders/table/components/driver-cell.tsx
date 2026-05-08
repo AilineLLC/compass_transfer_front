@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Settings, User, UserCog } from 'lucide-react';
+import { Search, Settings, User } from 'lucide-react';
+import { toast } from 'sonner';
 import { useDebounce } from '@shared/hooks/use-debounce';
 import { Input } from '@shared/ui/forms/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/ui/layout/popover';
@@ -55,17 +56,27 @@ export function DriverCell({ order, onRefetch }: DriverCellProps) {
 
   const handleSelectDriver = async (selected: GetDriverDTO) => {
     if (!order.id || isChanging) return;
+
+    if (!selected.activeCar?.id) {
+      toast.error(`У водителя ${selected.fullName} нет активного автомобиля. Назначьте ему машину перед привязкой к заказу.`);
+      return;
+    }
+
     try {
       setIsChanging(true);
 
       await OrdersApi.changeDriver(order.id, {
         driverId: selected.id,
-        carId: selected.activeCar?.id ?? '',
+        carId: selected.activeCar.id,
       });
       setOpen(false);
       onRefetch?.();
-    } catch {
-      // no-op: could add toast
+    } catch (err) {
+      const message =
+        err instanceof Error && err.message
+          ? err.message
+          : 'Не удалось сменить водителя. Попробуйте ещё раз.';
+      toast.error(message);
     } finally {
       setIsChanging(false);
     }
@@ -122,10 +133,13 @@ export function DriverCell({ order, onRefetch }: DriverCellProps) {
                   <div
                     className={`h-2 w-2 shrink-0 rounded-full ${d.online ? 'bg-green-500' : 'bg-gray-300'}`}
                   />
-                  <div className='min-w-0'>
+                  <div className='min-w-0 flex-1'>
                     <p className='truncate font-medium'>{d.fullName}</p>
                     {d.phoneNumber && (
                       <p className='truncate text-xs text-gray-500'>{d.phoneNumber}</p>
+                    )}
+                    {!d.activeCar?.id && (
+                      <p className='text-xs text-amber-600'>Нет активного авто</p>
                     )}
                   </div>
                 </div>
