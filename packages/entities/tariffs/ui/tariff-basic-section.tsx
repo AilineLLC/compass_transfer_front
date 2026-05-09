@@ -1,6 +1,7 @@
 'use client';
 
 import { useFormContext } from 'react-hook-form';
+import { Checkbox } from '@shared/ui/forms/checkbox';
 import { Input } from '@shared/ui/forms/input';
 import { Label } from '@shared/ui/forms/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/forms/select';
@@ -34,6 +35,7 @@ export function TariffBasicSection({
 
   const serviceClass = watch('serviceClass');
   const carType = watch('carType');
+  const isLanding = watch('isLanding');
 
   return (
     <div className="space-y-6">
@@ -101,6 +103,28 @@ export function TariffBasicSection({
         {errors.carType && (
           <p className="text-sm text-red-600">{errors.carType.message}</p>
         )}
+      </div>
+
+      {/* Лендинг */}
+      <div className="flex flex-row items-center space-x-3 rounded-lg border p-4 border-blue-200 bg-blue-50/50">
+        <Checkbox
+          id="isLanding"
+          checked={isLanding ?? false}
+          onCheckedChange={(checked) => setValue('isLanding', checked === true ? true : false)}
+        />
+        <div className="flex-1 space-y-0.5">
+          <Label htmlFor="isLanding" className="text-sm font-medium cursor-pointer">
+            Показывать на лендинг-сайте
+          </Label>
+          <div className="text-sm text-muted-foreground">
+            Если включено — тариф будет отображаться на публичном лендинг-сайте как доступный
+            вариант для онлайн-бронирования трансфера. Используйте только для тарифов,
+            которые должны быть видны клиентам при самостоятельном выборе услуги.
+          </div>
+          {errors.isLanding && (
+            <p className="text-sm text-red-600">{errors.isLanding.message}</p>
+          )}
+        </div>
       </div>
     </div>
   );

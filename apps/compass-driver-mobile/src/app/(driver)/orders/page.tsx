@@ -11,7 +11,7 @@ export default function OrdersPage() {
     <div className='min-h-full bg-gray-50 p-4'>
       <div className='max-w-md mx-auto'>
         {/* Заголовок */}
-        <div className='mb-6'>
+        <div className='mb-7'>
           <h1 className='text-2xl font-bold text-gray-900'>
             Мои заказы
           </h1>

@@ -1,6 +1,6 @@
 'use client';
 
-import { Car, MapPin } from 'lucide-react';
+import { Car, MapPin, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import type { RoutePoint, ActiveDriverDTO } from '@shared/components/map/types';
 import { Button } from '@shared/ui/forms/button';
@@ -10,6 +10,7 @@ import type { GetRideDTO } from '@entities/orders/interface';
 import type { GetDriverDTO } from '@entities/users/interface';
 import { useDeleteRide } from '@entities/orders/hooks';
 import { DriverPanel } from '@features/orders/components/DriverPanel';
+import { DriverOrdersWidget } from '@features/orders/components/DriverOrdersWidget';
 import { LocationSelectionModal } from '@features/orders/components/LocationSelectionModal';
 import { useOrderLocations, RoutePointsList, LocationMap } from '@features/orders/locations';
 
@@ -36,6 +37,9 @@ interface MapTabProps {
   // ID предпочитаемого автомобиля пассажиров
   requestedCarId?: string | null;
 
+  // Запланированное время заказа (для виджета конфликтов водителя)
+  scheduledTime?: string | null;
+
   // Для моментальных заказов - показывать радиус водителей
   showDriverRadius?: boolean;
   isInstantOrder?: boolean; // Флаг для моментальных заказов
@@ -57,6 +61,7 @@ export function MapTab({
   mode = 'create',
   rides,
   requestedCarId,
+  scheduledTime,
   // Внешнее состояние
   routePoints: externalRoutePoints,
   setRoutePoints: setExternalRoutePoints,
@@ -85,6 +90,9 @@ export function MapTab({
   // Состояние для управления видимостью маркеров
   const [showDrivers, setShowDrivers] = useState<boolean>(true);
   const [showLocations, setShowLocations] = useState<boolean>(true);
+
+  // Состояние виджета расписания водителя
+  const [ordersWidget, setOrdersWidget] = useState<{ driverId: string; driverName: string } | null>(null);
 
   // Хук для удаления ride при нажатии X в DriverPanel
   const { deleteRide } = useDeleteRide({
@@ -231,7 +239,7 @@ export function MapTab({
             ) : requestedCar ? (
               <div className='flex gap-x-3'>
                  <img
-                    src={getUploadUrl(requestedCar?.image?.path || '') || ''}
+                    src={getUploadUrl(requestedCar?.images?.[0]?.path || '') || ''}
                     alt={requestedCar.make + ' ' + requestedCar.model}
                     className='w-[95px] h-16 rounded-md'
                  />
@@ -312,6 +320,27 @@ export function MapTab({
           getDriverById={getDriverById}
           loadDriverData={loadDriverData}
         />
+        {/* Виджет расписания водителя */}
+        {ordersWidget && (
+          <div className='absolute left-4 top-4 z-[600] w-80 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden'>
+            <div className='flex items-center justify-between px-3 py-2 border-b border-gray-100 bg-gray-50'>
+              <span className='text-xs font-medium text-gray-700 truncate pr-2'>{ordersWidget.driverName}</span>
+              <button
+                onClick={() => setOrdersWidget(null)}
+                className='flex-shrink-0 p-0.5 rounded hover:bg-gray-200 transition-colors'
+              >
+                <X className='h-3.5 w-3.5 text-gray-500' />
+              </button>
+            </div>
+            <div className='p-3'>
+              <DriverOrdersWidget
+                driverId={ordersWidget.driverId}
+                currentOrderScheduledTime={scheduledTime}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Панель водителя - скрыта для партнеров */}
         {userRole !== 'partner' && (
           <DriverPanel
@@ -332,6 +361,7 @@ export function MapTab({
             }}
             isInstantOrder={isInstantOrder}
             userRole={userRole}
+            onViewDriverOrders={(driverId, driverName) => setOrdersWidget({ driverId, driverName })}
           />
         )}
       </div>

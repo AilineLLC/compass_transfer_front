@@ -5,6 +5,7 @@ import axios, {
   type AxiosRequestConfig,
   type AxiosResponse,
 } from 'axios';
+import type { InternalAxiosRequestConfig } from 'axios';
 
 // Базовый URL API
 const getApiUrl = () => {
@@ -155,6 +156,40 @@ export const handleApiError = (error: unknown): ApiError => {
     originalError: error,
   };
 };
+// Состояние для координации обновления токена между параллельными запросами
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value: unknown) => void;
+  reject: (reason: unknown) => void;
+}> = [];
+
+function processQueue(error: unknown): void {
+  failedQueue.forEach(({ resolve, reject }) => {
+    if (error) reject(error);
+    else resolve(undefined);
+  });
+  failedQueue = [];
+}
+
+async function tryRefreshToken(): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_URL}/Auth/refresh`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+function redirectToLogin(): void {
+  if (typeof window !== 'undefined') {
+    window.location.replace('/login');
+  }
+}
+
 /**
  * Создает и настраивает экземпляр axios для работы с API
  */
@@ -210,7 +245,43 @@ export const createApiClient = (config?: ApiClientConfig): AxiosInstance => {
     response => {
       return response;
     },
-    (error: unknown) => {
+    async (error: unknown) => {
+      // Автоматическое обновление токена при 401 (только на клиенте)
+      if (isAxiosError(error) && error.response?.status === 401) {
+        const originalRequest = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
+        const isAuthEndpoint = originalRequest?.url?.includes('/Auth/');
+
+        if (!isAuthEndpoint && originalRequest && !originalRequest._retry) {
+          if (isRefreshing) {
+            return new Promise((resolve, reject) => {
+              failedQueue.push({ resolve, reject });
+            })
+              .then(() => client(originalRequest))
+              .catch(() => Promise.reject(handleApiError(error)));
+          }
+
+          originalRequest._retry = true;
+          isRefreshing = true;
+
+          const refreshed = await tryRefreshToken();
+          isRefreshing = false;
+
+          if (refreshed) {
+            processQueue(null);
+            return client(originalRequest);
+          }
+
+          processQueue(new Error('Session expired'));
+          redirectToLogin();
+          return Promise.reject(handleApiError(error));
+        }
+
+        // Auth-эндпоинт или повторный запрос тоже вернул 401 — выходим
+        if (!isAuthEndpoint) {
+          redirectToLogin();
+        }
+      }
+
       // Обрабатываем ошибку
       const apiError = handleApiError(error);
 

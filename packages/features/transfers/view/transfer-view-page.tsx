@@ -33,6 +33,8 @@ import { Button } from '@shared/ui/forms/button';
 import { transfersApi, type GetTransferDTO, type TransferPassenger } from '@shared/api/transfers';
 import { transferReservationsApi, type TransferReservationDTO } from '@shared/api/transfer-reservations';
 import { DeleteConfirmationModal } from '@shared/ui/modals';
+import { AuditEntityType } from '@entities/audit';
+import { AuditSection } from '@features/audit';
 
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleString('ru-RU', {
@@ -611,6 +613,11 @@ export function TransferViewPage({ transfer: initialTransfer }: TransferViewPage
             </div>
           )}
         </SectionCard>
+
+        {/* Журнал изменений */}
+        {transfer && (
+          <AuditSection entityType={AuditEntityType.Transfer} entityId={transfer.id} />
+        )}
 
         {/* Метаданные */}
         <div className='flex items-center gap-6 text-xs text-muted-foreground px-1'>

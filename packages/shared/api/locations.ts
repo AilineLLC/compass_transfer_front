@@ -87,7 +87,7 @@ interface CreateLocationDTO {
   isLandingOnly?: boolean | null;
   group?: string | null;
   images?: string[];
-  poi?: { name: string; image: string }[];
+  poi?: { name: string; image: string; type: string }[];
 }
 
 // DTO для обновления локации
@@ -109,7 +109,7 @@ interface UpdateLocationDTO {
   isLandingPagePinned?: boolean;
   group?: string | null;
   images?: string[];
-  poi?: { name: string; image: string }[];
+  poi?: { name: string; image: string; type: string }[];
 }
 
 // DTO для отправки текущих координат водителя

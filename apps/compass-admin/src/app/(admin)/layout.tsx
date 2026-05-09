@@ -76,7 +76,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                   <div className='flex flex-1 overflow-hidden'>
                     <div className='flex-1 overflow-hidden h-full'>{children}</div>
                   </div>
-                <AppFooter
+                {/* <AppFooter
                   footerLinks={[
                     { name: 'Техническая поддержка', href: '/support' },
                     { name: 'Документация', href: '/documentation' },
@@ -85,7 +85,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                     { name: 'О нас', href: '/about' },
                   ]}
                   className='pt-2'
-                />
+                /> */}
               </SidebarInset>
             </SidebarProvider>
           </SheetProvider>

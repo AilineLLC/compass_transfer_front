@@ -1257,6 +1257,7 @@ export function ScheduledOrderPage({
                       rides={existingOrder?.rides} // Передаем rides для режима редактирования
                       orderStatus={existingOrder?.status} // Передаем статус для проверки удаления ride
                       requestedCarId={existingOrder?.requestedCar}
+                      scheduledTime={(methods.getValues('scheduledTime') as string) || existingOrder?.scheduledTime}
                       methods={methods}
                       // Кастомная цена
                       useCustomPrice={useCustomPrice}

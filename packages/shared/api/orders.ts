@@ -362,6 +362,35 @@ export const driverActiveOrdersApi = {
       result.data || { data: [], totalCount: 0, pageSize: 10, hasPrevious: false, hasNext: false }
     );
   },
+
+  // Получение заказов конкретного водителя для диспетчера (анализ конфликтов)
+  getDriverOrders: async (
+    driverId: string,
+    filters?: { scheduledTimeFrom?: string },
+  ): Promise<OrderApiResponse> => {
+    const params = new URLSearchParams();
+
+    params.append('ParticipantId', driverId);
+    params.append('Type', 'Scheduled');
+    params.append('Status', 'Scheduled');
+    if (filters?.scheduledTimeFrom) {
+      params.append('ScheduledTime', filters.scheduledTimeFrom);
+      params.append('ScheduledTimeOp', 'GreaterThanOrEqual');
+    }
+    params.append('SortBy', 'ScheduledTime');
+    params.append('SortOrder', 'Asc');
+    params.append('Size', '100');
+
+    const result = await apiGet<OrderApiResponse>(`/Order?${params.toString()}`);
+
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+
+    return (
+      result.data || { data: [], totalCount: 0, pageSize: 100, hasPrevious: false, hasNext: false }
+    );
+  },
 };
 
 export type { GetOrderDTO };

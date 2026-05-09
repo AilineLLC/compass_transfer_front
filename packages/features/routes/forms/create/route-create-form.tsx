@@ -66,21 +66,32 @@ export function useRouteCreateForm({
 
         if (axiosError.response?.data?.errors) {
           const serverErrors = axiosError.response.data.errors;
+          const formFields: (keyof RouteCreateFormData)[] = [
+            'name', 'startLocationId', 'endLocationId', 'isPopular', 'price', 'duration',
+          ];
+          const nonFieldMessages: string[] = [];
 
           Object.keys(serverErrors).forEach(field => {
-            const fieldKey = field as keyof RouteCreateFormData;
-
-            if (serverErrors[field]?.length > 0) {
-              form.setError(fieldKey, {
-                type: 'server',
-                message: serverErrors[field][0],
-              });
+            if ((formFields as string[]).includes(field)) {
+              const fieldKey = field as keyof RouteCreateFormData;
+              if (serverErrors[field]?.length > 0) {
+                form.setError(fieldKey, { type: 'server', message: serverErrors[field][0] });
+              }
+            } else if (serverErrors[field]?.length > 0) {
+              nonFieldMessages.push(...serverErrors[field]);
             }
           });
-          toast.error('Исправьте ошибки в форме');
+
+          if (nonFieldMessages.length > 0) {
+            toast.error(nonFieldMessages[0]);
+          } else {
+            toast.error('Исправьте ошибки в форме');
+          }
         } else {
           toast.error(axiosError.response?.data?.detail || 'Ошибка создания направления');
         }
+      } else if (error instanceof Error) {
+        toast.error(error.message);
       } else {
         toast.error('Неизвестная ошибка при создании направления');
       }

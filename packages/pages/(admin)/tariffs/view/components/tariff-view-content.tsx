@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/layout';
 import { Separator } from '@shared/ui/layout/separator';
 import type { GetTariffDTOWithArchived } from '@entities/tariffs/interface';
 import { ServiceClass, ServiceClassValues, CarType, CarTypeValues } from '@entities/tariffs/enums';
+import { AuditEntityType } from '@entities/audit';
+import { AuditSection } from '@features/audit';
 
 interface TariffViewContentProps {
   tariff: GetTariffDTOWithArchived;
@@ -127,7 +129,7 @@ export function TariffViewContent({ tariff }: TariffViewContentProps) {
             <div className='flex items-start gap-2'>
               <span className='font-medium text-gray-900'>3.</span>
               <span>
-                Бесплатное ожидание: {tariff.freeWaitingTimeMinutes} мин, 
+                Бесплатное ожидание: {tariff.freeWaitingTimeMinutes} мин,
                 затем дополнительная плата
               </span>
             </div>
@@ -138,6 +140,8 @@ export function TariffViewContent({ tariff }: TariffViewContentProps) {
           </div>
         </CardContent>
       </Card>
+
+      <AuditSection entityType={AuditEntityType.Tariff} entityId={tariff.id} />
     </div>
   );
 }
