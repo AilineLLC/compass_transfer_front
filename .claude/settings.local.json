@@ -14,7 +14,8 @@
       "Bash(Select-Object -First 20)",
       "Bash(Format-Table FullName)",
       "Bash(pnpm add *)",
-      "Bash(yarn add *)"
+      "Bash(yarn add *)",
+      "Bash(dir \"C:\\\\Users\\\\DragonPC\\\\Desktop\\\\compass_transfer_front\\\\apps\\\\web\")"
     ]
   }
 }

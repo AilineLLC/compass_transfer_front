@@ -81,7 +81,9 @@ export interface CustomerOrderFormListResponse {
 }
 
 export interface CustomerOrderFormFilters {
-  page?: number;
+  first?: boolean;
+  after?: string;
+  before?: string;
   size?: number;
   status?: CustomerOrderFormStatus;
   sortBy?: string;
