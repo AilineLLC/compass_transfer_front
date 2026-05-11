@@ -27,10 +27,11 @@ export function useTransfersTable() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Пагинация (offset-based, поскольку API возвращает page/size)
-  const [currentPage, setCurrentPage] = useState(1);
+  const paginationModeRef = useRef<'first' | 'after' | 'before'>('first');
+  const afterCursorRef = useRef<string | null>(null);
+  const beforeCursorRef = useRef<string | null>(null);
+  const [loadTrigger, setLoadTrigger] = useState(0);
   const [currentPageNumber, setCurrentPageNumber] = useState(1);
-  const [cursorsHistory, setCursorsHistory] = useState<number[]>([]);
   const [pageSize, setPageSize] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('transfers-page-size');
@@ -39,14 +40,10 @@ export function useTransfersTable() {
     return 10;
   });
   const [totalCount, setTotalCount] = useState(0);
-  const [hasNext, setHasNext] = useState(false);
-  const [hasPrevious, setHasPrevious] = useState(false);
 
-  // Сортировка
   const [sortBy, setSortBy] = useState<string>('departureTime');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-  // Видимость колонок
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('transfers-column-visibility');
@@ -84,11 +81,18 @@ export function useTransfersTable() {
 
     try {
       const params: TransferFilters = {
-        page: currentPage,
         size: pageSize,
         sortBy,
         sortOrder: sortOrder === 'asc' ? 'Asc' : 'Desc',
       };
+
+      if (paginationModeRef.current === 'after' && afterCursorRef.current) {
+        params.after = afterCursorRef.current;
+      } else if (paginationModeRef.current === 'before' && beforeCursorRef.current) {
+        params.before = beforeCursorRef.current;
+      } else {
+        params.first = true;
+      }
 
       const [response, reservationsResponse] = await Promise.all([
         transfersApi.getTransfers(params),
@@ -97,8 +101,11 @@ export function useTransfersTable() {
 
       setTransfers(response.data);
       setTotalCount(response.totalCount);
-      setHasNext(response.hasNext);
-      setHasPrevious(response.hasPrevious);
+
+      if (response.data.length > 0) {
+        afterCursorRef.current = response.data[response.data.length - 1].id;
+        beforeCursorRef.current = response.data[0].id;
+      }
 
       const map: Record<string, number> = {};
       for (const r of reservationsResponse.data) {
@@ -111,36 +118,37 @@ export function useTransfersTable() {
       setLoading(false);
       loadingRef.current = false;
     }
-  }, [currentPage, pageSize, sortBy, sortOrder]);
+  }, [loadTrigger, pageSize, sortBy, sortOrder]);
 
   useEffect(() => {
     loadTransfers();
   }, [loadTransfers]);
 
   const handleNextPage = () => {
-    setCursorsHistory(prev => [...prev, currentPage]);
-    setCurrentPage(prev => prev + 1);
+    paginationModeRef.current = 'after';
     setCurrentPageNumber(prev => prev + 1);
+    setLoadTrigger(prev => prev + 1);
   };
 
   const handlePrevPage = () => {
-    const newHistory = [...cursorsHistory];
-    newHistory.pop();
-    setCursorsHistory(newHistory);
-    setCurrentPage(prev => Math.max(1, prev - 1));
+    paginationModeRef.current = 'before';
     setCurrentPageNumber(prev => Math.max(1, prev - 1));
+    setLoadTrigger(prev => prev + 1);
   };
 
   const handleFirstPage = () => {
-    setCursorsHistory([]);
-    setCurrentPage(1);
+    paginationModeRef.current = 'first';
+    afterCursorRef.current = null;
+    beforeCursorRef.current = null;
     setCurrentPageNumber(1);
+    setLoadTrigger(prev => prev + 1);
   };
 
   const handlePageSizeChange = (size: number) => {
+    paginationModeRef.current = 'first';
+    afterCursorRef.current = null;
+    beforeCursorRef.current = null;
     setPageSize(size);
-    setCursorsHistory([]);
-    setCurrentPage(1);
     setCurrentPageNumber(1);
     if (typeof window !== 'undefined') {
       localStorage.setItem('transfers-page-size', size.toString());
@@ -148,13 +156,16 @@ export function useTransfersTable() {
   };
 
   const handleSort = (field: string) => {
+    paginationModeRef.current = 'first';
+    afterCursorRef.current = null;
+    beforeCursorRef.current = null;
+    setCurrentPageNumber(1);
     if (sortBy === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
       setSortBy(field);
       setSortOrder('asc');
     }
-    handleFirstPage();
   };
 
   const handleColumnVisibilityChange = (column: keyof ColumnVisibility, visible: boolean) => {
@@ -164,6 +175,9 @@ export function useTransfersTable() {
       localStorage.setItem('transfers-column-visibility', JSON.stringify(newVisibility));
     }
   };
+
+  const hasNext = currentPageNumber * pageSize < totalCount;
+  const hasPrevious = currentPageNumber > 1;
 
   return {
     transfers,

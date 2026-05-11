@@ -36,6 +36,20 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children, acce
     eventHandlers.current.set('New', handlers);
   }, []);
 
+  const performLogoutAndRedirect = useCallback(async () => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+
+    await Promise.allSettled([
+      apiUrl
+        ? fetch(`${apiUrl}/Auth/logout`, { method: 'POST', credentials: 'include' })
+        : Promise.resolve(),
+      fetch(`${basePath}/api/auth/logout`, { method: 'POST', credentials: 'include' }),
+    ]);
+
+    window.location.replace(`${basePath}/login`);
+  }, []);
+
   const connect = useCallback(async (): Promise<void> => {
     try {
       hasFailed.current = false;
@@ -81,18 +95,21 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children, acce
 
             logger.error('Ошибка от сервера:', errorMessage);
             const errText: string = errorMessage.error || 'Ошибка сервера';
+
+            hasFailed.current = true;
+            newConnection.close();
             setError(errText);
             setIsConnected(false);
             setConnection(null);
 
-            // Если сервер отклонил соединение из-за авторизации — перенаправляем на логин
+            // Если сервер отклонил соединение из-за авторизации — выходим и перенаправляем на логин
             const isAuthError =
               errText.toLowerCase().includes('unauthorized') ||
               errText.toLowerCase().includes('401') ||
               errText.toLowerCase().includes('auth') ||
               errText.toLowerCase().includes('token');
             if (isAuthError) {
-              window.location.replace('/login');
+              performLogoutAndRedirect();
             }
 
             return;
@@ -128,7 +145,7 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children, acce
       setError(err instanceof Error ? err.message : 'Ошибка подключения');
       setIsConnecting(false);
     }
-  }, [accessToken, setupNotificationHandlers]);
+  }, [accessToken, setupNotificationHandlers, performLogoutAndRedirect]);
 
   const disconnect = useCallback(async (): Promise<void> => {
     if (connection) {

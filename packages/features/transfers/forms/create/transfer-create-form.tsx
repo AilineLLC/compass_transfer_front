@@ -286,6 +286,7 @@ const [allowPartialReservations, setAllowPartialReservations] = useState(
 
   const handleSubmit = async () => {
     if (!departureTime) { toast.error('Укажите время отправления'); return; }
+    if (new Date(departureTime) <= new Date()) { toast.error('Время отправления не может быть в прошлом'); return; }
     if (!price || isNaN(Number(price)) || Number(price) <= 0) { toast.error('Укажите корректную цену'); return; }
 if (!startLocation) { toast.error('Выберите точку отправления'); return; }
     if (!endLocation) { toast.error('Выберите точку назначения'); return; }
@@ -374,6 +375,7 @@ if (!startLocation) { toast.error('Выберите точку отправле�
                 id='departureTime'
                 type='datetime-local'
                 value={departureTime}
+                min={toDatetimeLocal(new Date().toISOString())}
                 onChange={e => setDepartureTime(e.target.value)}
                 className='h-10'
               />
@@ -432,6 +434,7 @@ if (!startLocation) { toast.error('Выберите точку отправле�
               id='allowPartialReservations'
               checked={allowPartialReservations}
               onCheckedChange={val => setAllowPartialReservations(!!val)}
+              onClick={(e) => e.stopPropagation()}
               className='mt-0.5 shrink-0'
             />
             <div className='space-y-1'>
@@ -470,7 +473,7 @@ if (!startLocation) { toast.error('Выберите точку отправле�
             }`}
             onClick={() => setIsHot(prev => !prev)}
           >
-            <Switch checked={isHot} onCheckedChange={setIsHot} className='mt-0.5 shrink-0' />
+            <Switch checked={isHot} onCheckedChange={setIsHot} onClick={(e) => e.stopPropagation()} className='mt-0.5 shrink-0' />
             <div className='space-y-1'>
               <Label className='text-sm font-semibold cursor-pointer flex items-center gap-1.5'>
                 <Flame className='h-4 w-4 text-orange-500' />

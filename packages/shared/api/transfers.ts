@@ -102,7 +102,9 @@ export interface TransferApiResponse {
 }
 
 export interface TransferFilters {
-  page?: number;
+  first?: boolean;
+  after?: string;
+  before?: string;
   size?: number;
   sortBy?: string;
   sortOrder?: 'Asc' | 'Desc';
@@ -110,6 +112,7 @@ export interface TransferFilters {
   departureTimeTo?: string;
   startLocationId?: string;
   endLocationId?: string;
+  includes?: string;
 }
 
 export interface CreateTransferPassengerDTO {
@@ -135,7 +138,7 @@ export interface CreateTransferDTO {
 
 export const transfersApi = {
   getTransfers: async (filters: TransferFilters = {}): Promise<TransferApiResponse> => {
-    const result = await apiGet<TransferApiResponse>('/Transfer?first=true&includes=Passengers&sortBy=createdAt&sortOrder=Desc', { params: { ...filters } });
+    const result = await apiGet<TransferApiResponse>('/Transfer', { params: { includes: 'Passengers', ...filters } });
 
     if (result.error) {
       throw new Error(result.error.message);

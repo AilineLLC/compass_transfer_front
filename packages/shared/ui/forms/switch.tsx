@@ -7,10 +7,11 @@ interface SwitchProps {
   disabled?: boolean;
   id?: string;
   className?: string;
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
 }
 
 const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
-  ({ checked, onCheckedChange, disabled, id, className }, ref) => {
+  ({ checked, onCheckedChange, disabled, id, className, onClick }, ref) => {
     return (
       <button
         ref={ref}
@@ -19,7 +20,7 @@ const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
         role='switch'
         aria-checked={checked}
         disabled={disabled}
-        onClick={() => onCheckedChange(!checked)}
+        onClick={(e) => { onCheckedChange(!checked); onClick?.(e); }}
         className={cn(
           'relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
           checked ? 'bg-primary' : 'bg-input',

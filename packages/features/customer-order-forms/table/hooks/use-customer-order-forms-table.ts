@@ -16,9 +16,11 @@ export function useCustomerOrderFormsTable(initialStatus?: CustomerOrderFormStat
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [currentPage, setCurrentPage] = useState(1);
+  const paginationModeRef = useRef<'first' | 'after' | 'before'>('first');
+  const afterCursorRef = useRef<string | null>(null);
+  const beforeCursorRef = useRef<string | null>(null);
+  const [loadTrigger, setLoadTrigger] = useState(0);
   const [currentPageNumber, setCurrentPageNumber] = useState(1);
-  const [cursorsHistory, setCursorsHistory] = useState<number[]>([]);
   const [pageSize, setPageSize] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('order-forms-page-size');
@@ -27,8 +29,6 @@ export function useCustomerOrderFormsTable(initialStatus?: CustomerOrderFormStat
     return 10;
   });
   const [totalCount, setTotalCount] = useState(0);
-  const [hasNext, setHasNext] = useState(false);
-  const [hasPrevious, setHasPrevious] = useState(false);
 
   const [statusFilter, setStatusFilter] = useState<CustomerOrderFormStatus | undefined>(initialStatus);
   const [sortBy, setSortBy] = useState<string>('createdAt');
@@ -45,55 +45,66 @@ export function useCustomerOrderFormsTable(initialStatus?: CustomerOrderFormStat
 
     try {
       const params: CustomerOrderFormFilters = {
-        page: currentPage,
         size: pageSize,
         sortBy,
         sortOrder: sortOrder === 'asc' ? 'Asc' : 'Desc',
         ...(statusFilter ? { status: statusFilter } : {}),
       };
 
+      if (paginationModeRef.current === 'after' && afterCursorRef.current) {
+        params.after = afterCursorRef.current;
+      } else if (paginationModeRef.current === 'before' && beforeCursorRef.current) {
+        params.before = beforeCursorRef.current;
+      } else {
+        params.first = true;
+      }
+
       const response = await customerOrderFormsApi.getForms(params);
 
       setForms(response.data);
       setTotalCount(response.totalCount);
-      setHasNext(response.hasNext);
-      setHasPrevious(response.hasPrevious);
+
+      if (response.data.length > 0) {
+        afterCursorRef.current = response.data[response.data.length - 1].id;
+        beforeCursorRef.current = response.data[0].id;
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Неизвестная ошибка');
     } finally {
       setLoading(false);
       loadingRef.current = false;
     }
-  }, [currentPage, pageSize, sortBy, sortOrder, statusFilter]);
+  }, [loadTrigger, pageSize, sortBy, sortOrder, statusFilter]);
 
   useEffect(() => {
     loadForms();
   }, [loadForms]);
 
   const handleNextPage = () => {
-    setCursorsHistory(prev => [...prev, currentPage]);
-    setCurrentPage(prev => prev + 1);
+    paginationModeRef.current = 'after';
     setCurrentPageNumber(prev => prev + 1);
+    setLoadTrigger(prev => prev + 1);
   };
 
   const handlePrevPage = () => {
-    const newHistory = [...cursorsHistory];
-    newHistory.pop();
-    setCursorsHistory(newHistory);
-    setCurrentPage(prev => Math.max(1, prev - 1));
+    paginationModeRef.current = 'before';
     setCurrentPageNumber(prev => Math.max(1, prev - 1));
+    setLoadTrigger(prev => prev + 1);
   };
 
   const handleFirstPage = () => {
-    setCursorsHistory([]);
-    setCurrentPage(1);
+    paginationModeRef.current = 'first';
+    afterCursorRef.current = null;
+    beforeCursorRef.current = null;
     setCurrentPageNumber(1);
+    setLoadTrigger(prev => prev + 1);
   };
 
   const handlePageSizeChange = (size: number) => {
+    paginationModeRef.current = 'first';
+    afterCursorRef.current = null;
+    beforeCursorRef.current = null;
     setPageSize(size);
-    setCursorsHistory([]);
-    setCurrentPage(1);
     setCurrentPageNumber(1);
     if (typeof window !== 'undefined') {
       localStorage.setItem('order-forms-page-size', size.toString());
@@ -101,19 +112,28 @@ export function useCustomerOrderFormsTable(initialStatus?: CustomerOrderFormStat
   };
 
   const handleSort = (field: string) => {
+    paginationModeRef.current = 'first';
+    afterCursorRef.current = null;
+    beforeCursorRef.current = null;
+    setCurrentPageNumber(1);
     if (sortBy === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
       setSortBy(field);
       setSortOrder('asc');
     }
-    handleFirstPage();
   };
 
   const handleStatusFilterChange = (status: CustomerOrderFormStatus | undefined) => {
+    paginationModeRef.current = 'first';
+    afterCursorRef.current = null;
+    beforeCursorRef.current = null;
+    setCurrentPageNumber(1);
     setStatusFilter(status);
-    handleFirstPage();
   };
+
+  const hasNext = currentPageNumber * pageSize < totalCount;
+  const hasPrevious = currentPageNumber > 1;
 
   return {
     forms,
