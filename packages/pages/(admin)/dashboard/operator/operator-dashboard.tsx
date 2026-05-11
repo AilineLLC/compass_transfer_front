@@ -55,7 +55,7 @@ export function OperatorDashboard(_props: OperatorDashboardProps) {
           <div className='space-y-6'>
             <div className='text-right'>
               <h2 className='text-3xl font-bold text-gray-900'>
-                Наш автопорк для тарифа {selectedTariff.name}
+                Наш автапорк для тарифа {selectedTariff.name}
               </h2>
             </div>
 

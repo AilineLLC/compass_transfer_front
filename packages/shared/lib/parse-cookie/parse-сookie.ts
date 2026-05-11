@@ -123,6 +123,21 @@ export function getUserFromJWTCookie(
   request: NextRequest,
 ): { id: string; role: string; fullName: string } | null {
   const authCookieName = process.env.AUTH_COOKIE_NAME || '.AspNetCore.Identity.Application';
+  const rawToken = getRawCookieFromRequest(request, authCookieName);
+
+  if (!rawToken) {
+    return null;
+  }
+
+  // Проверяем истёк ли токен
+  const decoded = decodeJWT(rawToken);
+  if (!decoded) {
+    return null;
+  }
+  if (decoded.exp && (decoded.exp as number) * 1000 < Date.now()) {
+    return null;
+  }
+
   const cookieData = parseCookieFromRequest(request, authCookieName);
 
   if (!cookieData) {

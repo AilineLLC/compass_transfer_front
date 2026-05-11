@@ -13,6 +13,18 @@ export interface SignalRProviderProps {
   accessToken?: string;
 }
 
+function isTokenExpired(token: string): boolean {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return false;
+    const paddedPayload = parts[1] + '='.repeat((4 - (parts[1].length % 4)) % 4);
+    const payload = JSON.parse(atob(paddedPayload));
+    return payload.exp ? Math.floor(Date.now() / 1000) > payload.exp : false;
+  } catch {
+    return false;
+  }
+}
+
 export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children, accessToken }) => {
   const [connection, setConnection] = useState<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
@@ -55,8 +67,10 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children, acce
       hasFailed.current = false;
       setIsConnecting(true);
       setError(null);
-      if (!accessToken) {
-        throw new Error('JWT токен не найден');
+      if (!accessToken || isTokenExpired(accessToken)) {
+        hasFailed.current = true;
+        await performLogoutAndRedirect();
+        return;
       }
       setupNotificationHandlers();
       const wsBaseUrl = process.env.NEXT_PUBLIC_WS_BASE_URL!;
