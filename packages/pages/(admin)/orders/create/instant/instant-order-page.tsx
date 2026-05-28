@@ -662,7 +662,9 @@ export function InstantOrderPage({
             {tabs.map((tab, index) => {
               const isActive = activeTab === tab.id;
               const isCompleted = visitedTabs.has(tab.id) && isTabValid(tab.id) && !isActive;
-              const isAccessible = index <= tabs.findIndex(t => t.id === activeTab);
+              const isAccessible =
+                index <= tabs.findIndex(t => t.id === activeTab) ||
+                (visitedTabs.has(tab.id) && isTabValid(tab.id));
 
               return (
                 <div key={tab.id} className='flex items-center'>

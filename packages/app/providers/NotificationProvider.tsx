@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback, type ReactNode } from 'react';
+import { useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { useSignalR } from '@shared/hooks/signal/useSignalR';
 import { logger } from '@shared/lib/logger';
 import { NotificationContext, type NotificationContextType } from '@entities/notifications/context';
@@ -45,7 +45,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     error,
     hasMore,
     totalCount,
-    unreadCount,
     actions: {
       loadNotifications,
       loadMore,
@@ -57,14 +56,13 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   } = useNotifications(20);
 
 
-  // Дедуплицированные уведомления (убираем дубли по заказам)
-  const deduplicatedNotifications = useCallback(() => {
-    return deduplicateNotificationsByOrder(notifications);
-  }, [notifications]);
+  // Bug fix #6: useMemo instead of useCallback — compute once, not on every call
+  const deduplicatedNotifications = useMemo(
+    () => deduplicateNotificationsByOrder(notifications),
+    [notifications],
+  );
 
-  // Подсчет правильных счетчиков после дедупликации
-  const deduplicatedCounts = useCallback(() => {
-    const deduplicated = deduplicatedNotifications();
+  const deduplicatedCounts = useMemo(() => {
     const priorityCounts: Record<NotificationPriority, number> = {
       order: 0,
       completed: 0,
@@ -73,7 +71,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     };
     let totalUnread = 0;
 
-    deduplicated.forEach(notification => {
+    deduplicatedNotifications.forEach(notification => {
       if (!notification.isRead) {
         const priority = getNotificationPriority(notification.type);
 
@@ -85,7 +83,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     return {
       priorityCounts,
       totalUnread,
-      totalCount: deduplicated.length,
+      totalCount: deduplicatedNotifications.length,
     };
   }, [deduplicatedNotifications]);
 
@@ -107,9 +105,33 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     }
   }, [deleteNotification]);
 
-  // Подписка на новые уведомления через WebSocket
+  // Stable stubs for not-yet-implemented actions
+  const markAllAsRead = useCallback(async () => {
+    logger.info('TODO: Implement markAllAsRead');
+  }, []);
+
+  const markAllAsReadByPriority = useCallback(async (_priority: NotificationPriority) => {
+    logger.info('TODO: Implement markAllAsReadByPriority');
+  }, []);
+
+  const loadMoreByPriority = useCallback((_priority: NotificationPriority) => {
+    logger.info('TODO: Implement loadMoreByPriority');
+  }, []);
+
+  const loadMoreIfNeeded = useCallback(() => {
+    logger.info('TODO: Implement loadMoreIfNeeded');
+  }, []);
+
+  const markAsReadByType = useCallback(async (_type: string) => {
+    logger.info('TODO: Implement markAsReadByType');
+  }, []);
+
+  // Bug fix #5: destructure stable refs instead of depending on the whole signalR object
+  // (signalR object is recreated on every render, causing this effect to re-run unnecessarily)
+  const { connection, isConnected, on, off } = signalR;
+
   useEffect(() => {
-    if (!signalR.connection || !signalR.isConnected) return;
+    if (!connection || !isConnected) return;
 
     const pendingTimers: ReturnType<typeof setTimeout>[] = [];
 
@@ -123,7 +145,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
         addOptimisticNotification({ ...wsNotif, isRead: false });
 
-        // Для WS-only уведомлений (null UUID) не делаем refresh — их нет на сервере
         if (!isWsOnly) {
           const timer = setTimeout(() => { refresh(); }, 1500);
           pendingTimers.push(timer);
@@ -131,60 +152,61 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       }
     };
 
-    signalR.on('New', handleNewNotification);
+    on('New', handleNewNotification);
 
     return () => {
-      signalR.off('New', handleNewNotification);
+      off('New', handleNewNotification);
       pendingTimers.forEach(t => clearTimeout(t));
     };
-  }, [signalR, refresh, addOptimisticNotification]);
+  }, [connection, isConnected, on, off, refresh, addOptimisticNotification, playSound]);
 
   // Автоматическая загрузка при монтировании
   useEffect(() => {
     loadNotifications(false);
   }, [loadNotifications]);
 
-  // Контекст для передачи данных
-  const counts = deduplicatedCounts();
-  const contextValue: NotificationContextType = {
-    // Данные
-    notifications: deduplicatedNotifications(),
-    hasUnreadNotifications: counts.totalUnread > 0,
-    unreadCount: counts.totalUnread,
-    unreadCountsByPriority: counts.priorityCounts,
+  // Bug fix #10: memoize context value — consumers only re-render when data actually changes
+  const contextValue = useMemo<NotificationContextType>(() => ({
+    notifications: deduplicatedNotifications,
+    hasUnreadNotifications: deduplicatedCounts.totalUnread > 0,
+    unreadCount: deduplicatedCounts.totalUnread,
+    unreadCountsByPriority: deduplicatedCounts.priorityCounts,
     isLoading,
     isLoadingMore,
     error,
     hasMore,
-    totalCount: counts.totalCount, // Дедуплицированный счетчик
-    originalTotalCount: totalCount, // Исходный счетчик
-    
-    // Действия
+    totalCount: deduplicatedCounts.totalCount,
+    originalTotalCount: totalCount,
     actions: {
       loadMore,
       refresh,
       markAsRead: handleMarkAsRead,
       deleteNotification: handleDeleteNotification,
-      
-      // Заглушки для методов которые пока не реализованы
-      markAllAsRead: async () => {
-        logger.info('TODO: Implement markAllAsRead');
-      },
-      markAllAsReadByPriority: async (_priority: NotificationPriority) => {
-        logger.info('TODO: Implement markAllAsReadByPriority');
-      },
-      loadMoreByPriority: (_priority: NotificationPriority) => {
-        logger.info('TODO: Implement loadMoreByPriority');
-      },
-      loadMoreIfNeeded: () => {
-        logger.info('TODO: Implement loadMoreIfNeeded');
-      },
+      markAllAsRead,
+      markAllAsReadByPriority,
+      loadMoreByPriority,
+      loadMoreIfNeeded,
       markAsReadById: handleMarkAsRead,
-      markAsReadByType: async (_type: string) => {
-        logger.info('TODO: Implement markAsReadByType');
-      },
+      markAsReadByType,
     },
-  };
+  }), [
+    deduplicatedNotifications,
+    deduplicatedCounts,
+    isLoading,
+    isLoadingMore,
+    error,
+    hasMore,
+    totalCount,
+    loadMore,
+    refresh,
+    handleMarkAsRead,
+    handleDeleteNotification,
+    markAllAsRead,
+    markAllAsReadByPriority,
+    loadMoreByPriority,
+    loadMoreIfNeeded,
+    markAsReadByType,
+  ]);
 
   return (
     <NotificationContext.Provider value={contextValue}>

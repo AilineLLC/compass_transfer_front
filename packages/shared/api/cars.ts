@@ -6,7 +6,7 @@ import type {
   CarFeature,
 } from '@entities/cars/enums';
 import type { GetCarDTO, GetCarDTOKeysetPaginationResult } from '@entities/cars/interface';
-import { apiGet, apiPost, apiPut, apiDelete } from './client';
+import { apiGet, apiPost, apiPut, apiDelete, ApiRequestError } from './client';
 import type { GetMyCarParams } from './cars/cars-api';
 
 // Операторы поиска
@@ -112,7 +112,7 @@ export const carsApi = {
     const result = await apiGet<GetCarDTOKeysetPaginationResult>('/Car/my', { params });
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -123,7 +123,7 @@ export const carsApi = {
     const result = await apiGet<CarApiResponse>('/Car', { params });
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -136,7 +136,7 @@ export const carsApi = {
     });
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -147,7 +147,7 @@ export const carsApi = {
     const result = await apiPost<GetCarDTO, CreateCarDTO>('/Car', data);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -158,7 +158,7 @@ export const carsApi = {
     const result = await apiPut<GetCarDTO, UpdateCarDTO>(`/Car/${id}`, data);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -169,7 +169,7 @@ export const carsApi = {
     const result = await apiDelete(`/Car/${id}`);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
   },
 
@@ -178,7 +178,7 @@ export const carsApi = {
     const result = await apiPost(`/Car/${carId}/drivers/${driverId}`, true);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
   },
 
@@ -187,7 +187,7 @@ export const carsApi = {
     const result = await apiPut(`/Car/${carId}/drivers/${driverId}`, isActive);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
   },
 
@@ -196,7 +196,7 @@ export const carsApi = {
     const result = await apiDelete(`/Car/${carId}/drivers/${driverId}`);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
   },
 
@@ -205,7 +205,7 @@ export const carsApi = {
     const result = await apiPost(`/Car/my/${carId}/set-active`, true);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
   },
 };

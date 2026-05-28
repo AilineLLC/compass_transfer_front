@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { AxiosError } from 'axios';
+import { ApiRequestError } from '@shared/api/client';
 import { useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -19,10 +19,6 @@ const routeCreateSchema = z.object({
 
 export type RouteCreateFormData = z.infer<typeof routeCreateSchema>;
 
-type ApiError = {
-  detail?: string;
-  errors?: Record<string, string[]>;
-};
 
 export function useRouteCreateForm({
   onBack,
@@ -61,11 +57,9 @@ export function useRouteCreateForm({
       toast.success(`Направление "${result.name}" успешно создано!`);
       onSuccess();
     } catch (error) {
-      if (error instanceof Error && 'response' in error) {
-        const axiosError = error as AxiosError<ApiError>;
-
-        if (axiosError.response?.data?.errors) {
-          const serverErrors = axiosError.response.data.errors;
+      if (error instanceof ApiRequestError) {
+        const { errors: serverErrors, message } = error.apiError;
+        if (serverErrors && Object.keys(serverErrors).length > 0) {
           const formFields: (keyof RouteCreateFormData)[] = [
             'name', 'startLocationId', 'endLocationId', 'isPopular', 'price', 'duration',
           ];
@@ -73,9 +67,8 @@ export function useRouteCreateForm({
 
           Object.keys(serverErrors).forEach(field => {
             if ((formFields as string[]).includes(field)) {
-              const fieldKey = field as keyof RouteCreateFormData;
               if (serverErrors[field]?.length > 0) {
-                form.setError(fieldKey, { type: 'server', message: serverErrors[field][0] });
+                form.setError(field as keyof RouteCreateFormData, { type: 'server', message: serverErrors[field][0] });
               }
             } else if (serverErrors[field]?.length > 0) {
               nonFieldMessages.push(...serverErrors[field]);
@@ -88,12 +81,10 @@ export function useRouteCreateForm({
             toast.error('Исправьте ошибки в форме');
           }
         } else {
-          toast.error(axiosError.response?.data?.detail || 'Ошибка создания направления');
+          toast.error(message);
         }
-      } else if (error instanceof Error) {
-        toast.error(error.message);
       } else {
-        toast.error('Неизвестная ошибка при создании направления');
+        toast.error(error instanceof Error ? error.message : 'Ошибка создания направления');
       }
     } finally {
       setIsSubmitting(false);

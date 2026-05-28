@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut, apiDelete } from '@shared/api/client';
+import { apiGet, apiPost, apiPut, apiDelete, ApiRequestError } from '@shared/api/client';
 import type { GetRideDTO } from '@entities/rides/interface/GetRideDTO';
 import { PaymentMethodType } from '../enums';
 import type {
@@ -129,7 +129,7 @@ export class OrdersApi {
     const response = await apiPost<GetOrderDTO>('/Order/scheduled', data);
 
     if (response.error) {
-      throw new Error(response.error.message || 'Failed to create scheduled order');
+      throw new ApiRequestError(response.error);
     }
 
     if (!response.data) {
@@ -168,7 +168,7 @@ export class OrdersApi {
     );
 
     if (response.error) {
-      throw new Error(response.error.message || 'Failed to create instant order');
+      throw new ApiRequestError(response.error);
     }
 
     if (!response.data) {
@@ -191,7 +191,7 @@ export class OrdersApi {
     );
 
     if (response.error) {
-      throw new Error(response.error.message || 'Failed to create instant order by partner');
+      throw new ApiRequestError(response.error);
     }
 
     if (!response.data) {
@@ -209,7 +209,7 @@ export class OrdersApi {
     const response = await apiPut<GetOrderDTO, UpdateInstantOrderDTO>(`/Order/instant/${id}`, data);
 
     if (response.error) {
-      throw new Error(response.error.message || 'Failed to update instant order');
+      throw new ApiRequestError(response.error);
     }
 
     if (!response.data) {
@@ -233,7 +233,7 @@ export class OrdersApi {
     );
 
     if (response.error) {
-      throw new Error(response.error.message || 'Failed to update scheduled order');
+      throw new ApiRequestError(response.error);
     }
 
     if (!response.data) {
@@ -284,7 +284,7 @@ export class OrdersApi {
     const response = await apiPost<GetRideDTO>(`/Order/scheduled/${orderId}/ride`, data);
 
     if (response.error) {
-      throw new Error(response.error.message || 'Failed to create scheduled ride');
+      throw new ApiRequestError(response.error);
     }
 
     if (!response.data) {

@@ -59,6 +59,15 @@ export interface ApiErrorHandlers {
 export interface ApiClientConfig extends AxiosRequestConfig {
   errorHandlers?: ApiErrorHandlers;
 }
+export class ApiRequestError extends Error {
+  public readonly apiError: ApiError;
+  constructor(apiError: ApiError) {
+    super(apiError.message);
+    this.name = 'ApiRequestError';
+    this.apiError = apiError;
+  }
+}
+
 /**
  * Обрабатывает ошибку API и возвращает объект ApiError
  */
@@ -158,6 +167,7 @@ export const handleApiError = (error: unknown): ApiError => {
 };
 // Состояние для координации обновления токена между параллельными запросами
 let isRefreshing = false;
+let isRedirectingToLogin = false;
 let failedQueue: Array<{
   resolve: (value: unknown) => void;
   reject: (reason: unknown) => void;
@@ -184,10 +194,20 @@ async function tryRefreshToken(): Promise<boolean> {
   }
 }
 
-function redirectToLogin(): void {
-  if (typeof window !== 'undefined') {
-    window.location.replace('/login');
-  }
+// Очищает куку и перенаправляет на логин.
+// Гарантирует единственный редирект и корректное удаление cookie до навигации.
+async function redirectToLogin(): Promise<void> {
+  if (typeof window === 'undefined' || isRedirectingToLogin) return;
+  isRedirectingToLogin = true;
+
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+
+  await Promise.allSettled([
+    fetch(`${API_URL}/Auth/logout`, { method: 'POST', credentials: 'include' }),
+    fetch(`${basePath}/api/auth/logout`, { method: 'POST', credentials: 'include' }),
+  ]);
+
+  window.location.replace(`${basePath}/login`);
 }
 
 /**

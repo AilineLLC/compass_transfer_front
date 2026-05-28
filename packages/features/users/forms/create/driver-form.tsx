@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { AxiosError } from 'axios';
+import { ApiRequestError } from '@shared/api/client';
 import { useState, useMemo, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -42,10 +42,6 @@ import {
   type DriverCreateFormData,
 } from '@entities/users/schemas/driverCreateSchema';
 
-type ApiError = {
-  detail?: string;
-  errors?: Record<string, string[]>;
-};
 
 export function useDriverFormLogic({
   selectedRole,
@@ -166,15 +162,6 @@ export function useDriverFormLogic({
     return cleaned;
   };
 
-  const getErrorMessage = (error: unknown): string => {
-    if (error instanceof Error) {
-        // Вырезаем только первую строку до стектрейса
-        return error.message.split('\n')[0].replace(/^Error:\s*/, '');
-    }
-    if (typeof error === 'string') return error;
-    return 'Неизвестная ошибка при создании водителя';
-  };
-
   const onSubmit = useCallback(
     async (data: DriverCreateFormData) => {
       console.log('=== onSubmit CALLED ===');
@@ -229,14 +216,11 @@ export function useDriverFormLogic({
         onSuccess();
       } catch (error) {
         logger.warn('Ошибка создания водителя:', error);
-        if (error instanceof Error && 'response' in error) {
-          const axiosError = error as AxiosError<ApiError>;
-          
-          if (axiosError.response?.data?.errors) {
-            const serverErrors = axiosError.response.data.errors;
-
+        if (error instanceof ApiRequestError) {
+          const { errors: serverErrors, message } = error.apiError;
+          if (serverErrors && Object.keys(serverErrors).length > 0) {
             Object.keys(serverErrors).forEach(field => {
-              if (serverErrors[field] && serverErrors[field].length > 0) {
+              if (serverErrors[field]?.length > 0) {
                 form.setError(field as keyof DriverCreateFormData, {
                   type: 'server',
                   message: serverErrors[field][0],
@@ -245,12 +229,10 @@ export function useDriverFormLogic({
             });
             toast.error('Исправьте ошибки в форме');
           } else {
-            toast.error(axiosError.response?.data?.detail || 'Ошибка создания водителя');
+            toast.error(message);
           }
         } else {
-          toast.error(getErrorMessage(error));
-          // toast.error('Неизвестная ошибка при создании водителя');
-          // console.log(error);
+          toast.error(error instanceof Error ? error.message : 'Ошибка создания водителя');
         }
       } finally {
         setIsSubmitting(false);

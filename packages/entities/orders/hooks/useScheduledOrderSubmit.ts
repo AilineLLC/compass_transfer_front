@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from '@shared/lib/conditional-toast';
+import { toast } from 'sonner';
+import { ApiRequestError } from '@shared/api/client';
 import { OrdersApi, type CreateScheduledOrderRequest } from '../api/orders';
 import { OrderStatus } from '../enums';
 import type { GetOrderDTO, UpdateScheduledOrderDTO } from '../interface';
@@ -137,9 +138,12 @@ export function useScheduledOrderSubmit(
     },
 
     onError: (error: Error) => {
-      toast.error(
-        `❌ Ошибка ${orderId ? 'обновления' : 'создания'} заказа: ${error.message}`
-      );
+      if (error instanceof ApiRequestError && error.apiError.errors) {
+        const allMessages = Object.values(error.apiError.errors).flat();
+        allMessages.forEach(msg => toast.error(msg));
+      } else {
+        toast.error(`❌ Ошибка ${orderId ? 'обновления' : 'создания'} заказа: ${error.message}`);
+      }
       onError?.(error);
     },
 

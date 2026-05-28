@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { AxiosError } from 'axios';
+import { ApiRequestError } from '@shared/api/client';
 import { useState, useMemo, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -22,10 +22,6 @@ import {
   type TerminalCreateFormData,
 } from '@entities/users/schemas/terminalCreateSchema';
 
-type ApiError = {
-  detail?: string;
-  errors?: Record<string, string[]>;
-};
 
 export function useTerminalFormLogic({
   selectedRole,
@@ -128,32 +124,23 @@ export function useTerminalFormLogic({
         onSuccess();
       } catch (error) {
         logger.warn('Ошибка создания терминала:', error);
-        if (error instanceof Error && 'response' in error) {
-          const axiosError = error as AxiosError<ApiError>;
-
-          const data = axiosError.response?.data;
-
-          if (data && typeof data === 'object' && 'errors' in data && data.errors) {
-            const serverErrors = data.errors;
-
+        if (error instanceof ApiRequestError) {
+          const { errors: serverErrors, message } = error.apiError;
+          if (serverErrors && Object.keys(serverErrors).length > 0) {
             Object.keys(serverErrors).forEach(field => {
-              const fieldKey = field as keyof TerminalCreateFormData;
-
-              if (serverErrors[field] && serverErrors[field].length > 0) {
-                form.setError(fieldKey, {
+              if (serverErrors[field]?.length > 0) {
+                form.setError(field as keyof TerminalCreateFormData, {
                   type: 'server',
                   message: serverErrors[field][0],
                 });
               }
             });
             toast.error('Исправьте ошибки в форме');
-          } else if (data && typeof data === 'object' && 'detail' in data) {
-            toast.error((data as ApiError).detail || 'Ошибка создания терминала');
           } else {
-            toast.error('Ошибка создания терминала');
+            toast.error(message);
           }
         } else {
-          toast.error('Неизвестная ошибка при создании терминала');
+          toast.error(error instanceof Error ? error.message : 'Ошибка создания терминала');
         }
       } finally {
         setIsSubmitting(false);

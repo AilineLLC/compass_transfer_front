@@ -15,7 +15,13 @@
       "Bash(Format-Table FullName)",
       "Bash(pnpm add *)",
       "Bash(yarn add *)",
-      "Bash(Get-ChildItem -Path \"D:\\\\dev\\\\compass_transfer_front\" -Recurse -Name)"
+      "Bash(Get-ChildItem -Path \"D:\\\\dev\\\\compass_transfer_front\" -Recurse -Name)",
+      "Bash(awk '{print $2}')",
+      "Bash(xargs '-I{}' sh -c 'python3 -c \" *)",
+      "Bash(python3 *)",
+      "Bash(npx vitest *)",
+      "Bash(yarn test *)",
+      "Bash(yarn vitest *)"
     ]
   }
 }

@@ -217,29 +217,32 @@ export function useNotifications(pageSize: number = 20): UseNotificationsResult 
     [wsNotifications, serverNotifications],
   );
 
-  // Подсчет непрочитанных
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  // Bug fix #7: memoize derived counts — avoid recomputing on every render
+  const { unreadCount, categoryCounts, unreadCategoryCounts } = useMemo(() => {
+    const cats: Record<NotificationCategory, number> = {
+      [NotificationCategory.ORDER]: 0,
+      [NotificationCategory.IMPORTANT]: 0,
+      [NotificationCategory.WARNING]: 0,
+    };
+    const unreadCats: Record<NotificationCategory, number> = {
+      [NotificationCategory.ORDER]: 0,
+      [NotificationCategory.IMPORTANT]: 0,
+      [NotificationCategory.WARNING]: 0,
+    };
+    let unread = 0;
 
-  const categoryCounts: Record<NotificationCategory, number> = {
-    [NotificationCategory.ORDER]: 0,
-    [NotificationCategory.IMPORTANT]: 0,
-    [NotificationCategory.WARNING]: 0,
-  };
+    notifications.forEach(notification => {
+      const category = getNotificationCategory(notification.type);
 
-  const unreadCategoryCounts: Record<NotificationCategory, number> = {
-    [NotificationCategory.ORDER]: 0,
-    [NotificationCategory.IMPORTANT]: 0,
-    [NotificationCategory.WARNING]: 0,
-  };
+      cats[category]++;
+      if (!notification.isRead) {
+        unreadCats[category]++;
+        unread++;
+      }
+    });
 
-  notifications.forEach(notification => {
-    const category = getNotificationCategory(notification.type);
-
-    categoryCounts[category]++;
-    if (!notification.isRead) {
-      unreadCategoryCounts[category]++;
-    }
-  });
+    return { unreadCount: unread, categoryCounts: cats, unreadCategoryCounts: unreadCats };
+  }, [notifications]);
 
 
   const actions = useMemo(() => ({

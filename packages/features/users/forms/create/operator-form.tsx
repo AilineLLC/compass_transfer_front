@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { AxiosError } from 'axios';
+import { ApiRequestError } from '@shared/api/client';
 import { useState, useMemo, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -20,10 +20,6 @@ import {
   type OperatorCreateFormData,
 } from '@entities/users/schemas/operatorCreateSchema';
 
-type ApiError = {
-  detail?: string;
-  errors?: Record<string, string[]>;
-};
 
 export type { OperatorCreateFormData as CreateOperatorFormData };
 
@@ -121,17 +117,12 @@ export function useOperatorFormLogic({
         onSuccess();
       } catch (error) {
         logger.warn('Ошибка создания оператора:', error);
-        if (error instanceof Error && 'response' in error) {
-          const axiosError = error as AxiosError<ApiError>;
-
-          if (axiosError.response?.data?.errors) {
-            const serverErrors = axiosError.response.data.errors;
-
+        if (error instanceof ApiRequestError) {
+          const { errors: serverErrors, message } = error.apiError;
+          if (serverErrors && Object.keys(serverErrors).length > 0) {
             Object.keys(serverErrors).forEach(field => {
-              const fieldKey = field as keyof OperatorCreateFormData;
-
-              if (serverErrors[field] && serverErrors[field].length > 0) {
-                form.setError(fieldKey, {
+              if (serverErrors[field]?.length > 0) {
+                form.setError(field as keyof OperatorCreateFormData, {
                   type: 'server',
                   message: serverErrors[field][0],
                 });
@@ -139,10 +130,10 @@ export function useOperatorFormLogic({
             });
             toast.error('Исправьте ошибки в форме');
           } else {
-            toast.error(axiosError.response?.data?.detail || 'Ошибка создания оператора');
+            toast.error(message);
           }
         } else {
-          toast.error('Неизвестная ошибка при создании оператора');
+          toast.error(error instanceof Error ? error.message : 'Ошибка создания оператора');
         }
       } finally {
         setIsSubmitting(false);

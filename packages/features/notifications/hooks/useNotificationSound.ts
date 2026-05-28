@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useRef } from 'react';
-import { toast } from '@shared/lib/conditional-toast';
 
 /**
  * Хук для воспроизведения звуковых уведомлений
@@ -15,17 +14,13 @@ export function useNotificationSound({ loop = true }: { loop?: boolean } = {}) {
 
       audio.volume = 0.8;
       audio.loop = loop;
-      
       audioRef.current = audio;
-      
-      // Воспроизводим звук
-      audio.play().catch((error) => {
-        toast.error('Не удалось воспроизвести звук уведомления:', error);
-      });
+      // Browser autoplay policy may block this — ignore silently
+      audio.play().catch(() => {});
     } catch {
-      toast.error('Ошибка при создании аудио:');
+      // Audio API unavailable — ignore
     }
-  }, []);
+  }, [loop]);
 
   const stopSound = useCallback(() => {
     if (audioRef.current) {

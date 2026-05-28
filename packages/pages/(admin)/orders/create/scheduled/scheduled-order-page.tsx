@@ -4,6 +4,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
+import { ApiRequestError } from '@shared/api/client';
 import { useOrderData } from '@shared/hooks/useOrderData';
 import { logger } from '@shared/lib/logger';
 import { customerOrderFormsApi } from '@shared/api/customer-order-forms';
@@ -1018,8 +1019,13 @@ export function ScheduledOrderPage({
         router.push('/orders');
       }
     } catch (error) {
-      // Ошибка сохранения заказа обрабатывается в хуках, но логируем для отладки
       logger.error('Ошибка сохранения заказа:', error);
+      // API validation errors are shown by the hook's onError via toast.
+      // Here we only handle non-API errors (e.g. missing car, missing order ID).
+      if (!(error instanceof ApiRequestError)) {
+        const message = error instanceof Error ? error.message : 'Произошла непредвиденная ошибка';
+        toast.error(message);
+      }
     }
   };
 
@@ -1313,7 +1319,9 @@ export function ScheduledOrderPage({
               {tabs.map((tab, index) => {
                 const isActive = activeTab === tab.id;
                 const isCompleted = visitedTabs.has(tab.id) && isTabValid(tab.id) && !isActive;
-                const isAccessible = index <= tabs.findIndex(t => t.id === activeTab);
+                const isAccessible =
+                  index <= tabs.findIndex(t => t.id === activeTab) ||
+                  (visitedTabs.has(tab.id) && isTabValid(tab.id));
 
                 return (
                   <div key={tab.id} className='flex items-center'>

@@ -7,7 +7,7 @@ function isJWTExpired(token: string): boolean {
     if (parts.length !== 3) return false;
     const paddedPayload = parts[1] + '='.repeat((4 - (parts[1].length % 4)) % 4);
     const decoded = JSON.parse(Buffer.from(paddedPayload, 'base64').toString('utf-8'));
-    if (!decoded.exp) return false;
+    if (typeof decoded.exp !== 'number') return false;
     return decoded.exp * 1000 < Date.now();
   } catch {
     return false;
@@ -33,7 +33,12 @@ export function middleware(request: NextRequest) {
     // Очищаем протухшую куку, чтобы избежать бесконечного редиректа
     if (authCookie && tokenExpired) {
       const cookieName = process.env.AUTH_COOKIE_NAME || '.AspNetCore.Identity.Application';
-      const domain = process.env.NEXT_PUBLIC_DOMAIN || '.compass.local';
+      // Derive domain from env, fall back to parent domain of the actual request hostname
+      // so cookie clearing always works without a hardcoded local fallback
+      const hostname = request.nextUrl.hostname;
+      const domain =
+        process.env.NEXT_PUBLIC_DOMAIN ||
+        (hostname.includes('.') ? `.${hostname.split('.').slice(-2).join('.')}` : hostname);
       response.cookies.set(cookieName, '', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',

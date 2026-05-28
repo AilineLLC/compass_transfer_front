@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo, type ReactNode } from 'react';
 import type { SignalREventHandler, SignalREventData, SignalRCallback } from '@shared/hooks/signal/types';
 import { SignalRContext, type SignalRContextType } from '@shared/hooks/signal/useSignalR';
 import WelcomeIcon from '@shared/icons/WelcomeIcon';
@@ -13,13 +13,15 @@ export interface SignalRProviderProps {
   accessToken?: string;
 }
 
+// Bug fix #4: use typeof instead of falsy check — exp:0 means "expired in 1970"
 function isTokenExpired(token: string): boolean {
   try {
     const parts = token.split('.');
     if (parts.length !== 3) return false;
     const paddedPayload = parts[1] + '='.repeat((4 - (parts[1].length % 4)) % 4);
     const payload = JSON.parse(atob(paddedPayload));
-    return payload.exp ? Math.floor(Date.now() / 1000) > payload.exp : false;
+    if (typeof payload.exp !== 'number') return false;
+    return Math.floor(Date.now() / 1000) > payload.exp;
   } catch {
     return false;
   }
@@ -33,8 +35,16 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children, acce
   const [showWelcome, setShowWelcome] = useState<boolean>(true);
   const eventHandlers = useRef<Map<string, SignalRCallback[]>>(new Map());
   const hasFailed = useRef<boolean>(false);
+  // Bug fix #1: guard against duplicate handler registration
+  const handlersSetup = useRef<boolean>(false);
+  // Bug fix #8: ref-guard prevents parallel connect() calls (React StrictMode double-invoke)
+  const connectingRef = useRef<boolean>(false);
 
+  // Bug fix #1: idempotent — skip if already registered
   const setupNotificationHandlers = useCallback(() => {
+    if (handlersSetup.current) return;
+    handlersSetup.current = true;
+
     const handleNewNotification = (data: SignalREventData) => {
       const notifData = data as { type?: string };
       const type = notifData.type || 'Unknown';
@@ -52,30 +62,69 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children, acce
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
     const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
-    await Promise.allSettled([
-      apiUrl
-        ? fetch(`${apiUrl}/Auth/logout`, { method: 'POST', credentials: 'include' })
-        : Promise.resolve(),
-      fetch(`${basePath}/api/auth/logout`, { method: 'POST', credentials: 'include' }),
+    await Promise.race([
+      Promise.allSettled([
+        apiUrl
+          ? fetch(`${apiUrl}/Auth/logout`, { method: 'POST', credentials: 'include' })
+          : Promise.resolve(),
+        fetch(`${basePath}/api/auth/logout`, { method: 'POST', credentials: 'include' }),
+      ]),
+      new Promise(resolve => setTimeout(resolve, 3000)),
     ]);
 
     window.location.replace(`${basePath}/login`);
   }, []);
 
+  const checkTokenValidity = useCallback(async (): Promise<boolean> => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (!apiUrl) return true;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    try {
+      const response = await fetch(`${apiUrl}/User/self`, {
+        credentials: 'include',
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      return response.status !== 401;
+    } catch {
+      clearTimeout(timeoutId);
+      return true;
+    }
+  }, []);
+
   const connect = useCallback(async (): Promise<void> => {
+    // Bug fix #8: prevent parallel invocations (React StrictMode double-invoke)
+    if (connectingRef.current) return;
+    connectingRef.current = true;
+
     try {
       hasFailed.current = false;
       setIsConnecting(true);
       setError(null);
+
       if (!accessToken || isTokenExpired(accessToken)) {
         hasFailed.current = true;
+        setIsConnecting(false);
+        setShowWelcome(false);
         await performLogoutAndRedirect();
         return;
       }
+
+      const isValid = await checkTokenValidity();
+      if (!isValid) {
+        hasFailed.current = true;
+        setIsConnecting(false);
+        setShowWelcome(false);
+        await performLogoutAndRedirect();
+        return;
+      }
+
       setupNotificationHandlers();
       const wsBaseUrl = process.env.NEXT_PUBLIC_WS_BASE_URL!;
       const wsUrl = `${wsBaseUrl}?access_token=${accessToken}`;
-      // console.log(wsUrl)
       const newConnection = new WebSocket(wsUrl);
 
       newConnection.onopen = () => {
@@ -92,16 +141,14 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children, acce
         hasFailed.current = true;
         setError('Ошибка подключения к WebSocket');
         setIsConnecting(false);
+        setShowWelcome(false);
       };
       newConnection.onmessage = (event) => {
         try {
           logger.info('Получено сообщение WebSocket:', event.data);
-          // Удаляем разделитель SignalR (\x1e) в конце сообщения
           const cleanData = event.data.replace(/\x1e$/, '');
 
-          // Пропускаем пустые сообщения и handshake
           if (!cleanData || cleanData === '{}') {
-
             return;
           }
           if (cleanData.includes('"error"')) {
@@ -115,8 +162,8 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children, acce
             setError(errText);
             setIsConnected(false);
             setConnection(null);
+            setShowWelcome(false);
 
-            // Если сервер отклонил соединение из-за авторизации — выходим и перенаправляем на логин
             const isAuthError =
               errText.toLowerCase().includes('unauthorized') ||
               errText.toLowerCase().includes('401') ||
@@ -136,12 +183,10 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children, acce
 
             logger.info(`Обработка события [${eventType}]:`, eventData);
 
-            // Диспатч в обработчики 'New' (catch-all)
             const newHandlers = eventHandlers.current.get(eventType) || [];
 
             newHandlers.forEach((handler) => handler(eventData));
 
-            // Дополнительный диспатч по типу уведомления (для точечных подписчиков)
             const notifType = (eventData as { type?: string })?.type;
 
             if (notifType) {
@@ -158,8 +203,11 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children, acce
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка подключения');
       setIsConnecting(false);
+      setShowWelcome(false);
+    } finally {
+      connectingRef.current = false;
     }
-  }, [accessToken, setupNotificationHandlers, performLogoutAndRedirect]);
+  }, [accessToken, setupNotificationHandlers, performLogoutAndRedirect, checkTokenValidity]);
 
   const disconnect = useCallback(async (): Promise<void> => {
     if (connection) {
@@ -187,14 +235,27 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children, acce
     }
   }, []);
 
-  // Автоматическое подключение при монтировании (только один раз, без ретраев при ошибке)
   useEffect(() => {
     if (accessToken && !isConnected && !isConnecting && !hasFailed.current) {
-      connect().catch(() => {});
+      connect().catch(() => {
+        setShowWelcome(false);
+      });
     }
   }, [accessToken, isConnected, isConnecting, connect]);
 
-  // Минимальное время показа WelcomeIcon (2 секунды)
+  // Bug fix #2: close WebSocket on unmount to prevent memory leak and setState on unmounted component
+  useEffect(() => {
+    return () => {
+      if (connection) {
+        connection.onclose = null;
+        connection.onerror = null;
+        connection.onmessage = null;
+        connection.close();
+      }
+    };
+  }, [connection]);
+
+  // Fallback: always exit splash after 3 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowWelcome(false);
@@ -203,14 +264,14 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children, acce
     return () => clearTimeout(timer);
   }, []);
 
-  // Логирование состояния подключения
   useEffect(() => {
     if (isConnected) {
     } else if (error) {
     }
   }, [isConnected, error]);
 
-  const value: SignalRContextType = {
+  // Bug fix #3: memoize context value to prevent unnecessary re-renders in consumers
+  const value: SignalRContextType = useMemo(() => ({
     connection,
     isConnected,
     isConnecting,
@@ -219,9 +280,8 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children, acce
     disconnect,
     on,
     off,
-  };
+  }), [connection, isConnected, isConnecting, error, connect, disconnect, on, off]);
 
-  // Сплэш-экран показывается минимум 3 секунды
   if (showWelcome) {
     return (
       <SignalRContext.Provider value={value}>
@@ -239,10 +299,9 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children, acce
     );
   }
 
-  // После сплэша всегда рендерим children — без WS уведомления работают через REST
   return (
     <SignalRContext.Provider value={value}>
       {children}
     </SignalRContext.Provider>
   );
-}; 
+};

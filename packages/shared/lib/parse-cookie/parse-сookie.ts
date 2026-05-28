@@ -134,7 +134,7 @@ export function getUserFromJWTCookie(
   if (!decoded) {
     return null;
   }
-  if (decoded.exp && (decoded.exp as number) * 1000 < Date.now()) {
+  if (typeof decoded.exp === 'number' && decoded.exp * 1000 < Date.now()) {
     return null;
   }
 
