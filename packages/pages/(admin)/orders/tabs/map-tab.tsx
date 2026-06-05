@@ -115,6 +115,7 @@ export function MapTab({
     handlePointSelect,
     handleLocationSelect,
     handlePointClear,
+    handleReorderPoints,
     handleMapBoundsChange,
     handleDriverSelect,
     handleLocationToggle,
@@ -227,6 +228,7 @@ export function MapTab({
           onPointSelect={handlePointSelect}
           onPointClear={handlePointClear}
           onAddIntermediatePoint={addIntermediatePoint}
+          onReorderPoints={handleReorderPoints}
         />
         {requestedCarId && (
           <div className='mx-4 flex flex-col gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800'>

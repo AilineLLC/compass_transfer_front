@@ -113,6 +113,7 @@ export function CustomerOrderFormView({ form: initialForm }: CustomerOrderFormVi
   const handleAccept = () => {
     const params = new URLSearchParams();
     params.set('formId', form.id);
+    if (form.tariff?.id) params.set('tariffId', form.tariff.id);
     if (form.startLocation?.id) params.set('startLocationId', form.startLocation.id);
     if (form.endLocation?.id) params.set('endLocationId', form.endLocation.id);
     if (form.services.length > 0) {

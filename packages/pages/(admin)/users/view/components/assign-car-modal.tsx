@@ -51,6 +51,7 @@ export function AssignCarModal({
       
       const params: CarFilters = {
         size: 50,
+        Includes: 'Drivers',
       };
 
       // Поиск по номерному знаку или марке/модели

@@ -27,7 +27,6 @@ interface ColumnVisibility {
   freeSeats: boolean;
   driver: boolean;
   car: boolean;
-  createdAt: boolean;
   actions: boolean;
 }
 
@@ -50,7 +49,6 @@ const COLUMNS: { key: keyof ColumnVisibility; label: string }[] = [
   { key: 'freeSeats', label: 'Свободных мест' },
   { key: 'driver', label: 'Водитель' },
   { key: 'car', label: 'Автомобиль' },
-  { key: 'createdAt', label: 'Создан' },
   { key: 'actions', label: 'Действия' },
 ];
 

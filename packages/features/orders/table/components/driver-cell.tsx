@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Settings, User } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Search, Settings, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDebounce } from '@shared/hooks/use-debounce';
 import { Input } from '@shared/ui/forms/input';
@@ -9,12 +9,12 @@ import { Popover, PopoverContent, PopoverTrigger } from '@shared/ui/layout/popov
 import type { GetOrderDTO } from '@entities/orders';
 import { OrderType } from '@entities/orders/enums/OrderType.enum';
 import { OrdersApi } from '@entities/orders/api/orders';
-import type { RideWaypoint } from '@entities/orders/interface/CreateScheduledRideDTO';
 import { useUserRole } from '@shared/contexts';
 import { Role } from '@entities/users/enums';
 import { useDriverById } from '@features/users/hooks/useDriverById';
 import { useDriverSearch } from '@features/drivers/hooks/useDriverSearch';
 import type { GetDriverDTO } from '@entities/users/interface';
+import { DriverOrdersWidget } from '@features/orders/components/DriverOrdersWidget';
 
 interface DriverCellProps {
   order: GetOrderDTO;
@@ -30,8 +30,10 @@ export function DriverCell({ order, onRefetch }: DriverCellProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isChanging, setIsChanging] = useState(false);
+  const [viewingDriverId, setViewingDriverId] = useState<string | null>(null);
+  const [viewingDriverName, setViewingDriverName] = useState('');
 
-  const { driver, isLoading: isLoadingDriver } = useDriverById(driverId);
+  const { driver } = useDriverById(driverId);
   const { drivers, isLoading: isSearching, searchDrivers, searchDriversByName } = useDriverSearch();
   const debouncedSearch = useDebounce(searchQuery, 300);
 
@@ -51,24 +53,33 @@ export function DriverCell({ order, onRefetch }: DriverCellProps) {
       searchDrivers({ role: ['Driver'], sortBy: 'fullName', sortOrder: 'Asc' });
     } else {
       setSearchQuery('');
+      setViewingDriverId(null);
+      setViewingDriverName('');
     }
+  };
+
+  const handleViewDriverOrders = (id: string, name: string) => {
+    setViewingDriverId(id);
+    setViewingDriverName(name);
   };
 
   const handleSelectDriver = async (selected: GetDriverDTO) => {
     if (!order.id || isChanging) return;
 
     if (!selected.activeCar?.id) {
-      toast.error(`У водителя ${selected.fullName} нет активного автомобиля. Назначьте ему машину перед привязкой к заказу.`);
+      toast.error(
+        `У водителя ${selected.fullName} нет активного автомобиля. Назначьте ему машину перед привязкой к заказу.`,
+      );
       return;
     }
 
     try {
       setIsChanging(true);
-
       await OrdersApi.changeDriver(order.id, {
         driverId: selected.id,
         carId: selected.activeCar.id,
       });
+      toast.success(`Водитель успешно изменён на ${selected.fullName}`);
       setOpen(false);
       onRefetch?.();
     } catch (err) {
@@ -83,12 +94,14 @@ export function DriverCell({ order, onRefetch }: DriverCellProps) {
   };
 
   if (!isScheduled || !canChangeDriver) {
-    return <span className='flex flex-col'>
-              <span className='text-sm'>{driver?.fullName || '—'}</span>
-              <span className='text-sm'>{driver?.activeCar?.licensePlate}</span>
-           </span>;
+    return (
+      <span className='flex flex-col'>
+        <span className='text-sm'>{driver?.fullName || '—'}</span>
+        <span className='text-sm'>{driver?.activeCar?.licensePlate}</span>
+      </span>
+    );
   }
-  
+
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
@@ -103,55 +116,93 @@ export function DriverCell({ order, onRefetch }: DriverCellProps) {
           <Settings className='h-3.5 w-3.5 shrink-0 text-gray-400 group-hover:text-blue-500' />
         </button>
       </PopoverTrigger>
-      <PopoverContent className='w-80 p-3' align='start'>
-        <p className='mb-2 text-xs font-medium text-gray-500'>Сменить водителя</p>
-        <div className='relative mb-2'>
-          <Search className='absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400' />
-          <Input
-            placeholder='Имя водителя...'
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className='h-8 pl-8 text-sm'
-          />
-        </div>
-        <div className='max-h-52 space-y-1 overflow-y-auto'>
-          {isSearching ? (
-            <div className='py-4 text-center text-sm text-gray-500'>Загрузка...</div>
-          ) : drivers.length > 0 ? (
-            drivers.map(d => (
+
+      <PopoverContent className={`${viewingDriverId ? 'w-96' : 'w-80'} p-3`} align='start'>
+        {viewingDriverId ? (
+          /* Просмотр расписания выбранного водителя */
+          <div>
+            <div className='mb-3 flex items-center gap-2'>
               <button
-                key={d.id}
-                onClick={() => handleSelectDriver(d)}
-                disabled={isChanging}
-                className={`w-full rounded-md px-2.5 py-2 text-left text-sm transition-colors disabled:opacity-50 ${
-                  d.id === driverId
-                    ? 'border border-blue-200 bg-blue-50'
-                    : 'hover:bg-gray-50'
-                }`}
+                onClick={() => {
+                  setViewingDriverId(null);
+                  setViewingDriverName('');
+                }}
+                className='rounded-full p-1 transition-colors hover:bg-gray-100'
+                title='Назад к списку водителей'
               >
-                <div className='flex items-center gap-2'>
-                  <div
-                    className={`h-2 w-2 shrink-0 rounded-full ${d.online ? 'bg-green-500' : 'bg-gray-300'}`}
-                  />
-                  <div className='min-w-0 flex-1'>
-                    <p className='truncate font-medium'>{d.fullName}</p>
-                    {d.phoneNumber && (
-                      <p className='truncate text-xs text-gray-500'>{d.phoneNumber}</p>
-                    )}
-                    {!d.activeCar?.id && (
-                      <p className='text-xs text-amber-600'>Нет активного авто</p>
-                    )}
-                  </div>
-                </div>
+                <ArrowLeft className='h-4 w-4 text-gray-600' />
               </button>
-            ))
-          ) : (
-            <div className='py-4 text-center'>
-              <User className='mx-auto mb-1 h-6 w-6 text-gray-300' />
-              <p className='text-sm text-gray-500'>Водители не найдены</p>
+              <span className='truncate text-sm font-medium text-gray-700'>
+                {viewingDriverName}
+              </span>
             </div>
-          )}
-        </div>
+            <DriverOrdersWidget
+              driverId={viewingDriverId}
+              currentOrderScheduledTime={order.scheduledTime ?? null}
+            />
+          </div>
+        ) : (
+          /* Список водителей для смены */
+          <div>
+            <p className='mb-2 text-xs font-medium text-gray-500'>Сменить водителя</p>
+            <div className='relative mb-2'>
+              <Search className='absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400' />
+              <Input
+                placeholder='Имя водителя...'
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className='h-8 pl-8 text-sm'
+              />
+            </div>
+            <div className='max-h-52 space-y-1 overflow-y-auto'>
+              {isSearching ? (
+                <div className='py-4 text-center text-sm text-gray-500'>Загрузка...</div>
+              ) : drivers.length > 0 ? (
+                drivers.map(d => (
+                  <div
+                    key={d.id}
+                    className={`group/item flex items-center gap-2 rounded-md px-2.5 py-2 text-sm transition-colors ${
+                      d.id === driverId
+                        ? 'border border-blue-200 bg-blue-50'
+                        : 'hover:bg-gray-50'
+                    } ${isChanging ? 'pointer-events-none opacity-50' : ''}`}
+                  >
+                    <button
+                      onClick={() => handleSelectDriver(d)}
+                      disabled={isChanging}
+                      className='flex min-w-0 flex-1 items-center gap-2 text-left'
+                    >
+                      <div
+                        className={`h-2 w-2 shrink-0 rounded-full ${d.online ? 'bg-green-500' : 'bg-gray-300'}`}
+                      />
+                      <div className='min-w-0 flex-1'>
+                        <p className='truncate font-medium'>{d.fullName}</p>
+                        {d.phoneNumber && (
+                          <p className='truncate text-xs text-gray-500'>{d.phoneNumber}</p>
+                        )}
+                        {!d.activeCar?.id && (
+                          <p className='text-xs text-amber-600'>Нет активного авто</p>
+                        )}
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => handleViewDriverOrders(d.id, d.fullName)}
+                      className='shrink-0 rounded-full p-1 opacity-0 transition-all hover:bg-blue-100 group-hover/item:opacity-100'
+                      title='Заказы водителя'
+                    >
+                      <CalendarDays className='h-3.5 w-3.5 text-blue-600' />
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <div className='py-4 text-center'>
+                  <User className='mx-auto mb-1 h-6 w-6 text-gray-300' />
+                  <p className='text-sm text-gray-500'>Водители не найдены</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </PopoverContent>
     </Popover>
   );

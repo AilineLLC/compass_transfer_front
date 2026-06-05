@@ -21,7 +21,9 @@
       "Bash(python3 *)",
       "Bash(npx vitest *)",
       "Bash(yarn test *)",
-      "Bash(yarn vitest *)"
+      "Bash(yarn vitest *)",
+      "mcp__ide__getDiagnostics",
+      "Bash(dir D:devcompass_transfer_front *)"
     ]
   }
 }

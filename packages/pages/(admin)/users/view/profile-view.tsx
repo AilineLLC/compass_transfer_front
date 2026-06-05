@@ -19,6 +19,7 @@ import {
 } from '@entities/users';
 import { Role } from '@entities/users/enums';
 import type { GetOperatorDTO, GetDriverDTO, GetCustomerDTO, GetAdminDTO, GetPartnerDTO, GetTerminalDTO } from '@entities/users/interface';
+import type { GetCarDTO } from '@entities/cars/interface';
 import {
   ProfileActions,
   ProfileError,
@@ -59,6 +60,21 @@ export function ProfileView({ userId, userRole }: ProfileViewProps) {
   // Аналитика водителя
   const [driverAnalytics, setDriverAnalytics] = useState<DriverAnalytics | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
+
+  // Машины водителя
+  const [driverCars, setDriverCars] = useState<GetCarDTO[]>([]);
+
+  const loadDriverCars = async (driverId: string) => {
+    try {
+      const response = await carsApi.getCars({ size: 100, Includes: 'Drivers' });
+      const cars = response.data.filter(car =>
+        car.drivers?.some(d => d.driverId === driverId)
+      );
+      setDriverCars(cars);
+    } catch {
+      setDriverCars([]);
+    }
+  };
 
   // Загрузка данных пользователя
   useEffect(() => {
@@ -101,6 +117,8 @@ export function ProfileView({ userId, userRole }: ProfileViewProps) {
             .then(setDriverAnalytics)
             .catch(() => setDriverAnalytics(null))
             .finally(() => setAnalyticsLoading(false));
+
+          loadDriverCars(userId);
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : `Ошибка загрузки ${getRoleLabel(userRole)}`;
@@ -144,10 +162,9 @@ export function ProfileView({ userId, userRole }: ProfileViewProps) {
       await carsApi.assignDriver(carId, userId);
       toast.success('Автомобиль успешно назначен водителю');
 
-      // Перезагружаем данные пользователя
       const updatedUser = await usersApi.getDriver(userId);
-
       setUser(updatedUser);
+      loadDriverCars(userId);
     } catch (error) {
       // Логируем ошибку для отладки
       toast.error(error instanceof Error ? error.message : 'Ошибка назначения автомобиля');
@@ -179,8 +196,9 @@ export function ProfileView({ userId, userRole }: ProfileViewProps) {
             profile={user}
             openMapSheet={openMapSheet}
             onAssignCar={() => setIsAssignCarModalOpen(true)}
-            analytics={driverAnalytics} 
+            analytics={driverAnalytics}
             loading={analyticsLoading}
+            cars={driverCars}
           />
         );
       case 'Admin':

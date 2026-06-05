@@ -32,7 +32,6 @@ interface ColumnVisibility {
   freeSeats: boolean;
   driver: boolean;
   car: boolean;
-  createdAt: boolean;
   actions: boolean;
 }
 
@@ -143,16 +142,6 @@ export function TransfersTableContent({
               {columnVisibility.freeSeats && <TableHead>Свободных мест</TableHead>}
               {columnVisibility.driver && <TableHead>Водитель</TableHead>}
               {columnVisibility.car && <TableHead>Автомобиль</TableHead>}
-              {columnVisibility.createdAt && (
-                <SortableHeader
-                  field='createdAt'
-                  sortBy={sortBy}
-                  sortOrder={sortOrder}
-                  onSort={handleSort}
-                >
-                  Создан
-                </SortableHeader>
-              )}
               {columnVisibility.actions && <TableHead className='w-[50px]'>Действия</TableHead>}
             </TableRow>
           </TableHeader>
@@ -216,9 +205,6 @@ export function TransfersTableContent({
                       ? `${transfer.car.make} ${transfer.car.model} · ${transfer.car.licensePlate}`
                       : '—'}
                   </TableCell>
-                )}
-                {columnVisibility.createdAt && (
-                  <TableCell>{formatDate(transfer.createdAt)}</TableCell>
                 )}
                 {columnVisibility.actions && (
                   <TableCell>

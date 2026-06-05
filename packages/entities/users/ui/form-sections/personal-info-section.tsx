@@ -58,6 +58,16 @@ export function PersonalInfoSection() {
       <h3 className='text-lg font-medium'>Личные данные</h3>
       <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
         <div className='space-y-2'>
+          <Label htmlFor='birthPlace'>Место рождения</Label>
+          <Input
+            id='birthPlace'
+            {...register('profile.birthPlace')}
+            placeholder='Введите место рождения'
+            className='focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0 hover:shadow-md focus:shadow-md focus-visible:shadow-md transition-shadow'
+          />
+        </div>
+
+        <div className='space-y-2'>
           <Label htmlFor='dateOfBirth'>Дата рождения *</Label>
           <DatePicker
             id='dateOfBirth'
@@ -78,8 +88,8 @@ export function PersonalInfoSection() {
         <div className='space-y-2'>
           <Label htmlFor='citizenship'>Гражданство *</Label>
           <Select
-            {...register('profile.citizenship')}
-            value={formData.profile.citizenship}
+            value={formData.profile.citizenship || ''}
+            onValueChange={(v) => setValue('profile.citizenship', v)}
           >
             <SelectTrigger
               className={`focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0 hover:shadow-md focus:shadow-md focus-visible:shadow-md transition-shadow ${

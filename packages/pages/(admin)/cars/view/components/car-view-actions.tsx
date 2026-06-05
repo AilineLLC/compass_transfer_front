@@ -70,7 +70,7 @@ export function CarViewActions({
           )}
 
           {/* Кнопка "Добавить водителя" */}
-          {canEdit && onAddDriver && car.drivers.length < 2 && (
+          {canEdit && onAddDriver && (car.drivers?.length ?? 0) < 2 && (
             <Button
               variant='outline'
               onClick={onAddDriver}

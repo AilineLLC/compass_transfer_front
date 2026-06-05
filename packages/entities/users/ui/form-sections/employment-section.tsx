@@ -28,6 +28,7 @@ export function EmploymentSection() {
     register,
     formState: { errors },
     watch,
+    setValue,
   } = useFormContext<{ employment: ExtendedFormData['employment'] }>();
 
   const formData = watch();
@@ -62,8 +63,8 @@ export function EmploymentSection() {
         <div className='space-y-2'>
           <Label htmlFor='employmentType'>Тип занятости *</Label>
           <Select
-            {...register('employment.employmentType')}
-            value={formData.employment?.employmentType}
+            value={formData.employment?.employmentType || ''}
+            onValueChange={(v) => setValue('employment.employmentType', v as EmploymentType)}
           >
             <SelectTrigger
               className={`focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0 hover:shadow-md focus:shadow-md focus-visible:shadow-md transition-shadow [&>span]:flex-1 [&>span]:text-left ${

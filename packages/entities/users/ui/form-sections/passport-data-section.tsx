@@ -20,6 +20,7 @@ export function PassportDataSection() {
     register,
     formState: { errors },
     watch,
+    setValue,
   } = useFormContext<{ profile: PassportDataFields['profile'] }>();
   const formData = watch();
 
@@ -49,8 +50,8 @@ export function PassportDataSection() {
         <div className='space-y-2'>
           <Label htmlFor='identityType'>Тип документа *</Label>
           <Select
-            {...register('profile.passport.identityType')}
-            value={formData.profile.passport.identityType}
+            value={formData.profile.passport.identityType || ''}
+            onValueChange={(v) => setValue('profile.passport.identityType', v)}
           >
             <SelectTrigger
               className={`focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0 hover:shadow-md focus:shadow-md focus-visible:shadow-md transition-shadow [&>span]:flex-1 [&>span]:text-left ${
@@ -74,6 +75,47 @@ export function PassportDataSection() {
                 : 'Ошибка валидации'}
             </p>
           )}
+        </div>
+
+        <div className='space-y-2'>
+          <Label htmlFor='passportSeries'>Серия паспорта</Label>
+          <Input
+            id='passportSeries'
+            {...register('profile.passport.series')}
+            placeholder='AN'
+            maxLength={2}
+            className='focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0 hover:shadow-md focus:shadow-md focus-visible:shadow-md transition-shadow'
+          />
+        </div>
+
+        <div className='space-y-2'>
+          <Label htmlFor='passportIssuedBy'>Кем выдан</Label>
+          <Input
+            id='passportIssuedBy'
+            {...register('profile.passport.issuedBy')}
+            placeholder='Орган, выдавший документ'
+            className='focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0 hover:shadow-md focus:shadow-md focus-visible:shadow-md transition-shadow'
+          />
+        </div>
+
+        <div className='space-y-2'>
+          <Label htmlFor='passportIssueDate'>Дата выдачи</Label>
+          <Input
+            id='passportIssueDate'
+            type='date'
+            {...register('profile.passport.issueDate')}
+            className='focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0 hover:shadow-md focus:shadow-md focus-visible:shadow-md transition-shadow'
+          />
+        </div>
+
+        <div className='space-y-2'>
+          <Label htmlFor='passportExpiryDate'>Срок действия</Label>
+          <Input
+            id='passportExpiryDate'
+            type='date'
+            {...register('profile.passport.expiryDate')}
+            className='focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0 hover:shadow-md focus:shadow-md focus-visible:shadow-md transition-shadow'
+          />
         </div>
       </div>
     </div>

@@ -10,6 +10,9 @@ import {
   PassportDataSection,
   EmploymentSection,
   RidePreferencesSection,
+  ProfileExtrasSection,
+  WorkExperienceSection,
+  EducationSection,
   DRIVER_FORM_CHAPTERS,
 } from '@entities/users';
 import type { DriverCreateFormData } from '@entities/users/schemas/driverCreateSchema';
@@ -52,6 +55,7 @@ export function DriverFormView({
                     <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
                     <BasicDataSection
                       showOptionalPhoneWarning={getChapterStatus('basic') === 'warning'}
+                      showVerificationStatus
                     />
                   </div>
                 </div>
@@ -133,6 +137,46 @@ export function DriverFormView({
                     <RidePreferencesSection />
                   </div>
                 </div>
+
+                {/* Глава 8: Дополнительная информация */}
+                <div id='chapter-additional' className='relative flex flex-col gap-4'>
+                  <ChapterHeader
+                    number={8}
+                    title='Дополнительная информация'
+                    status={getChapterStatus('additional')}
+                  />
+                  <div className='relative ml-12'>
+                    <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
+                    <ProfileExtrasSection />
+                  </div>
+                </div>
+
+                {/* Глава 9: Опыт работы */}
+                <div id='chapter-work-experience' className='relative flex flex-col gap-4'>
+                  <ChapterHeader
+                    number={9}
+                    title='Опыт работы'
+                    status={getChapterStatus('work-experience')}
+                  />
+                  <div className='relative ml-12'>
+                    <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
+                    <WorkExperienceSection />
+                  </div>
+                </div>
+
+                {/* Глава 10: Образование */}
+                <div id='chapter-education' className='relative flex flex-col gap-4'>
+                  <ChapterHeader
+                    number={10}
+                    title='Образование'
+                    status={getChapterStatus('education')}
+                  />
+                  <div className='relative ml-12'>
+                    <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
+                    <EducationSection />
+                  </div>
+                </div>
+
                 <div className='flex justify-end space-x-4 pt-6'>
                   <Button
                     type='button'

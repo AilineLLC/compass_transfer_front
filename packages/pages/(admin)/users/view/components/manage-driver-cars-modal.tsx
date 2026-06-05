@@ -68,7 +68,8 @@ export function ManageDriverCarsModal({
 
       // Получаем все автомобили и фильтруем те, к которым назначен данный водитель
       const response = await carsApi.getCars({
-        pageSize: 100,
+        size: 100,
+        Includes: 'Drivers',
       });
 
       const driverCars = response.data.filter(car =>

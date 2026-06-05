@@ -185,6 +185,7 @@ export function LocationSelectionModal({
         type: LocationType.Other,
         name: name || result.display_name,
         address: result.display_name,
+        description: null,
         city: addressData.city || 'Бишкек',
         country: addressData.country || 'Кыргызстан',
         region: addressData.region || addressData.city || 'Чуйская область',
@@ -194,6 +195,8 @@ export function LocationSelectionModal({
         isLandingOnly: isLandingOnly ?? null,
         district: null,
         group: null,
+        images: [],
+        poi: [],
       });
 
       onLocationSelect(newLocation as unknown as GetLocationDTO);

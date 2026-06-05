@@ -15,7 +15,6 @@ interface ColumnVisibility {
   freeSeats: boolean;
   driver: boolean;
   car: boolean;
-  createdAt: boolean;
   actions: boolean;
 }
 
@@ -42,7 +41,7 @@ export function useTransfersTable() {
   const [totalCount, setTotalCount] = useState(0);
 
   const [sortBy, setSortBy] = useState<string>('departureTime');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>(() => {
     if (typeof window !== 'undefined') {
@@ -65,7 +64,6 @@ export function useTransfersTable() {
       freeSeats: true,
       driver: true,
       car: true,
-      createdAt: true,
       actions: true,
     };
   });

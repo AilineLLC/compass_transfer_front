@@ -21,6 +21,7 @@ export const driverPassportSchema = z.object({
     .string({
       message: 'Серия паспорта должна быть строкой',
     })
+    .max(2, { message: 'Серия паспорта не должна превышать 2 символа' })
     .nullable()
     .optional(),
 

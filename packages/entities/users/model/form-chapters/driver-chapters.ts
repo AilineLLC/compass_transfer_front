@@ -40,6 +40,18 @@ export const DRIVER_CHAPTERS = {
     description: 'Статистика, предпочтения, обучение',
   } as FormChapter,
 
+  WORK_EXPERIENCE: {
+    id: 'work-experience',
+    title: 'Опыт работы',
+    description: 'Предыдущие места работы',
+  } as FormChapter,
+
+  EDUCATION: {
+    id: 'education',
+    title: 'Образование',
+    description: 'Учебные заведения и степени',
+  } as FormChapter,
+
   TESTS: {
     id: 'tests',
     title: 'Тесты',
@@ -57,6 +69,9 @@ export const DRIVER_FORM_CHAPTERS = {
     DRIVER_CHAPTERS.PASSPORT,
     DRIVER_CHAPTERS.EMPLOYMENT,
     DRIVER_CHAPTERS.RIDE_PREFERENCES,
+    DRIVER_CHAPTERS.ADDITIONAL,
+    DRIVER_CHAPTERS.WORK_EXPERIENCE,
+    DRIVER_CHAPTERS.EDUCATION,
   ],
   EDIT: [
     BASE_CHAPTERS.BASIC,
@@ -65,6 +80,9 @@ export const DRIVER_FORM_CHAPTERS = {
     DRIVER_CHAPTERS.PASSPORT,
     DRIVER_CHAPTERS.EMPLOYMENT,
     DRIVER_CHAPTERS.RIDE_PREFERENCES,
+    DRIVER_CHAPTERS.ADDITIONAL,
+    DRIVER_CHAPTERS.WORK_EXPERIENCE,
+    DRIVER_CHAPTERS.EDUCATION,
     DRIVER_CHAPTERS.TESTS,
   ],
 } as const;

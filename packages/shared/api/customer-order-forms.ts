@@ -57,6 +57,20 @@ export interface CustomerOrderFormCar {
   drivers: unknown[];
 }
 
+export interface CustomerOrderFormTariff {
+  id: string;
+  name: string;
+  archived: boolean;
+  serviceClass: string;
+  carType: string;
+  basePrice: number;
+  perKmPrice: number;
+  minutePrice: number;
+  minimumPrice: number;
+  freeWaitingTimeMinutes: number;
+  isLanding: boolean;
+}
+
 export interface CustomerOrderFormDTO {
   id: string;
   status: CustomerOrderFormStatus;
@@ -68,6 +82,7 @@ export interface CustomerOrderFormDTO {
   scheduledTime: string | null;
   car: CustomerOrderFormCar | null;
   comment: string | null;
+  tariff: CustomerOrderFormTariff | null;
   createdAt: string;
   updatedAt: string;
 }

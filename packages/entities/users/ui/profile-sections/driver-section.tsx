@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/layout/card
 import { CarColor, VehicleType, VehicleStatus, CarFeature } from '@entities/cars/enums';
 import { formatDate } from '@entities/my-profile';
 import type { GetDriverDTO } from '@entities/users/interface';
+import type { GetCarDTO } from '@entities/cars/interface';
 import type { SectionWithMapProps } from '@entities/users/ui/profile-sections/types';
 import { getServiceClassLabel, getLicenseCategoryLabel, getCitizenshipLabel } from '@entities/users/utils';
 import { getLanguageLabel } from '@entities/users/utils/language-utils';
@@ -94,7 +95,8 @@ function isDriverData(profile: SectionWithMapProps['profile']): profile is GetDr
 interface DriverSectionProps extends SectionWithMapProps {
   onAssignCar?: () => void;
   analytics: DriverAnalytics | null;
-  loading: boolean
+  loading: boolean;
+  cars?: GetCarDTO[];
 }
 
 export function DriverSection({
@@ -102,7 +104,8 @@ export function DriverSection({
   analytics,
   loading,
   openMapSheet: _openMapSheet,
-  onAssignCar
+  onAssignCar,
+  cars,
 }: DriverSectionProps) {
   if (!isDriverData(profile)) return null;
 
@@ -214,115 +217,115 @@ export function DriverSection({
         </CardContent>
       </Card>
 
-      {/* Активный автомобиль */}
-      <Card>
-        <CardHeader>
-          <div className='flex items-center justify-between'>
-            <CardTitle className='flex items-center gap-2'>
-              <Car className='h-5 w-5' />
-              Активный автомобиль
-            </CardTitle>
-            {onAssignCar && !profile.activeCar && (
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={onAssignCar}
-                className='flex items-center gap-2'
-              >
-                <Car className='h-4 w-4' />
-                Назначить автомобиль
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {profile.activeCar ? (
-            <div className='space-y-4'>
-              {/* Основная информация об автомобиле */}
-              <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-                <div className='border-l-4 border-blue-200 pl-4 flex flex-col gap-2'>
-                  <label className='text-sm font-medium text-muted-foreground'>Марка и модель</label>
-                  <p className='text-sm font-medium'>
-                    {profile.activeCar.make} {profile.activeCar.model} ({profile.activeCar.year})
+      {/* Активные автомобили */}
+      {(() => {
+        const assignedCars = (cars && cars.length > 0)
+          ? cars
+          : (profile.activeCar ? [profile.activeCar] : []);
+
+        return (
+          <Card>
+            <CardHeader>
+              <div className='flex items-center justify-between'>
+                <CardTitle className='flex items-center gap-2'>
+                  <Car className='h-5 w-5' />
+                  Активные автомобили
+                </CardTitle>
+                {onAssignCar && assignedCars.length < 2 && (
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    onClick={onAssignCar}
+                    className='flex items-center gap-2'
+                  >
+                    <Car className='h-4 w-4' />
+                    Назначить автомобиль
+                  </Button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {assignedCars.length > 0 ? (
+                <div className='space-y-6'>
+                  {assignedCars.map((car, index) => (
+                    <div key={car.id} className={index > 0 ? 'pt-6 border-t' : ''}>
+                      {profile.activeCarId && car.id === profile.activeCarId && (
+                        <Badge variant='default' className='mb-3'>Активный</Badge>
+                      )}
+                      <div className='space-y-4'>
+                        <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                          <div className='border-l-4 border-blue-200 pl-4 flex flex-col gap-2'>
+                            <label className='text-sm font-medium text-muted-foreground'>Марка и модель</label>
+                            <p className='text-sm font-medium'>
+                              {car.make} {car.model} ({car.year})
+                            </p>
+                          </div>
+                          <div className='border-l-4 border-green-200 pl-4 flex flex-col gap-2'>
+                            <label className='text-sm font-medium text-muted-foreground'>Номерной знак</label>
+                            <p className='text-sm font-mono font-medium'>{car.licensePlate}</p>
+                          </div>
+                          <div className='border-l-4 border-purple-200 pl-4 flex flex-col gap-2'>
+                            <label className='text-sm font-medium text-muted-foreground'>Цвет</label>
+                            <p className='text-sm'>{carColorLabels[car.color] ?? car.color}</p>
+                          </div>
+                        </div>
+                        <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                          <div className='border-l-4 border-orange-200 pl-4 flex flex-col gap-2'>
+                            <label className='text-sm font-medium text-muted-foreground'>Тип автомобиля</label>
+                            <p className='text-sm'>{vehicleTypeLabels[car.type]}</p>
+                          </div>
+                          <div className='border-l-4 border-teal-200 pl-4 flex flex-col gap-2'>
+                            <label className='text-sm font-medium text-muted-foreground'>Класс обслуживания</label>
+                            <p className='text-sm'>{getServiceClassLabel(car.serviceClass)}</p>
+                          </div>
+                          <div className='border-l-4 border-indigo-200 pl-4 flex flex-col gap-2'>
+                            <label className='text-sm font-medium text-muted-foreground'>Пассажировместимость</label>
+                            <p className='text-sm'>{car.passengerCapacity} мест</p>
+                          </div>
+                        </div>
+                        <div className='border-l-4 border-pink-200 pl-4 flex flex-col gap-2'>
+                          <label className='text-sm font-medium text-muted-foreground'>Статус</label>
+                          <Badge
+                            variant={
+                              car.status === VehicleStatus.Available ? 'default' :
+                              car.status === VehicleStatus.Maintenance ? 'secondary' :
+                              car.status === VehicleStatus.Repair ? 'destructive' : 'outline'
+                            }
+                            className='w-fit'
+                          >
+                            {vehicleStatusLabels[car.status]}
+                          </Badge>
+                        </div>
+                        {car.features && car.features.length > 0 && (
+                          <div className='border-l-4 border-yellow-200 pl-4 flex flex-col gap-2'>
+                            <label className='text-sm font-medium text-muted-foreground'>Дополнительные опции</label>
+                            <div className='flex flex-wrap gap-1'>
+                              {car.features.map((feature) => (
+                                <Badge key={feature} variant='outline' className='text-xs'>
+                                  {carFeatureLabels[feature as CarFeature] || feature}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className='text-center py-8'>
+                  <div className='w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4'>
+                    <AlertCircle className='h-8 w-8 text-gray-400' />
+                  </div>
+                  <p className='text-gray-500 text-sm'>
+                    У водителя нет назначенных автомобилей
                   </p>
                 </div>
-
-                <div className='border-l-4 border-green-200 pl-4 flex flex-col gap-2'>
-                  <label className='text-sm font-medium text-muted-foreground'>Номерной знак</label>
-                  <p className='text-sm font-mono font-medium'>{profile.activeCar.licensePlate}</p>
-                </div>
-
-                <div className='border-l-4 border-purple-200 pl-4 flex flex-col gap-2'>
-                  <label className='text-sm font-medium text-muted-foreground'>Цвет</label>
-                  <p className='text-sm'>{carColorLabels[profile.activeCar.color]}</p>
-                </div>
-              </div>
-
-              <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-                <div className='border-l-4 border-orange-200 pl-4 flex flex-col gap-2'>
-                  <label className='text-sm font-medium text-muted-foreground'>Тип автомобиля</label>
-                  <p className='text-sm'>{vehicleTypeLabels[profile.activeCar.type]}</p>
-                </div>
-
-                <div className='border-l-4 border-teal-200 pl-4 flex flex-col gap-2'>
-                  <label className='text-sm font-medium text-muted-foreground'>Класс обслуживания</label>
-                  <p className='text-sm'>{getServiceClassLabel(profile.activeCar.serviceClass)}</p>
-                </div>
-
-                <div className='border-l-4 border-indigo-200 pl-4 flex flex-col gap-2'>
-                  <label className='text-sm font-medium text-muted-foreground'>Пассажировместимость</label>
-                  <p className='text-sm'>{profile.activeCar.passengerCapacity} мест</p>
-                </div>
-              </div>
-
-              <div className='border-l-4 border-pink-200 pl-4 flex flex-col gap-2'>
-                <label className='text-sm font-medium text-muted-foreground'>Статус</label>
-                <Badge
-                  variant={profile.activeCar.status === VehicleStatus.Available ? 'default' :
-                          profile.activeCar.status === VehicleStatus.Maintenance ? 'secondary' :
-                          profile.activeCar.status === VehicleStatus.Repair ? 'destructive' : 'outline'}
-                  className='w-fit'
-                >
-                  {vehicleStatusLabels[profile.activeCar.status]}
-                </Badge>
-              </div>
-
-              {/* Дополнительные опции */}
-              {profile.activeCar.features && profile.activeCar.features.length > 0 && (
-                <div className='border-l-4 border-yellow-200 pl-4 flex flex-col gap-2'>
-                  <label className='text-sm font-medium text-muted-foreground'>Дополнительные опции</label>
-                  <div className='flex flex-wrap gap-1'>
-                    {profile.activeCar.features.map((feature) => (
-                      <Badge key={feature} variant='outline' className='text-xs'>
-                        {carFeatureLabels[feature as CarFeature] || feature}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
               )}
-            </div>
-          ) : (
-            <div className='text-center py-8'>
-              <div className='w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4'>
-                <AlertCircle className='h-8 w-8 text-gray-400' />
-              </div>
-              <p className='text-gray-500 text-sm mb-4'>
-                У водителя нет активного автомобиля
-              </p>
-              {onAssignCar && (
-                <Button
-                  variant='outline'
-                  onClick={onAssignCar}
-                  className='flex items-center gap-2'
-                >
-                  <Car className='h-4 w-4' />
-                  Назначить автомобиль
-                </Button>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* Водительские права */}
       <Card>

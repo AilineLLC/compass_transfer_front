@@ -991,28 +991,26 @@ export function ScheduledOrderPage({
         const carId = selectedDriver!.activeCar?.id || selectedDriver!.activeCarId;
 
         if (!carId) {
-          throw new Error('У выбранного водителя нет активного автомобиля');
+          toast.error('У выбранного водителя нет активного автомобиля. Назначьте автомобиль и попробуйте снова.');
+          return;
+        }
+
+        const orderIdForDriver = isEditMode ? id : resultOrder?.id;
+
+        if (!orderIdForDriver) {
+          toast.error('Не удалось получить ID созданного заказа. Обновите страницу и попробуйте снова.');
+          return;
         }
 
         const rideData = {
           driverId: selectedDriver!.id,
-          carId: carId,
+          carId,
           waypoints: [],
         };
 
-        // Определяем ID заказа для назначения водителя
-        const orderIdForDriver = isEditMode ? id : resultOrder?.id;
-
-        if (orderIdForDriver) {
-          try {
-            // Назначаем водителя на заказ
-            await assignDriver(orderIdForDriver, rideData);
-          } catch (assignError) {
-            throw assignError;
-          }
-        } else {
-          throw new Error('Не удалось получить ID заказа для назначения водителя');
-        }
+        // useScheduledRideSubmit.onError всегда показывает toast при ошибке,
+        // поэтому ошибку из mutateAsync достаточно поймать и прервать выполнение
+        await assignDriver(orderIdForDriver, rideData);
       } else {
         // Водитель не изменился — ride не пересоздаём, просто переходим к списку заказов.
         // Toast об успешном сохранении уже показан в useScheduledOrderSubmit.
@@ -1020,8 +1018,8 @@ export function ScheduledOrderPage({
       }
     } catch (error) {
       logger.error('Ошибка сохранения заказа:', error);
-      // API validation errors are shown by the hook's onError via toast.
-      // Here we only handle non-API errors (e.g. missing car, missing order ID).
+      // Ошибки из мутаций (submitOrder, assignDriver) уже обработаны в их onError-колбэках.
+      // Сюда доходят только неожиданные ошибки, которые не являются ApiRequestError.
       if (!(error instanceof ApiRequestError)) {
         const message = error instanceof Error ? error.message : 'Произошла непредвиденная ошибка';
         toast.error(message);

@@ -138,11 +138,23 @@ export function useScheduledOrderSubmit(
     },
 
     onError: (error: Error) => {
-      if (error instanceof ApiRequestError && error.apiError.errors) {
-        const allMessages = Object.values(error.apiError.errors).flat();
-        allMessages.forEach(msg => toast.error(msg));
+      if (error instanceof ApiRequestError) {
+        const messages = error.apiError.errors
+          ? Object.values(error.apiError.errors).flat().filter(Boolean)
+          : [];
+        if (messages.length > 0) {
+          messages.forEach(msg => toast.error(String(msg)));
+        } else {
+          // Fallback: used when server returns error with empty or absent errors object
+          toast.error(
+            error.message ||
+              `Ошибка ${orderId ? 'обновления' : 'создания'} заказа`,
+          );
+        }
       } else {
-        toast.error(`❌ Ошибка ${orderId ? 'обновления' : 'создания'} заказа: ${error.message}`);
+        toast.error(
+          error.message || `Ошибка ${orderId ? 'обновления' : 'создания'} заказа`,
+        );
       }
       onError?.(error);
     },

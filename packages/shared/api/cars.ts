@@ -64,6 +64,9 @@ interface CarFilters {
   // Сортировка
   sortBy?: string;
   sortOrder?: SortOrder;
+
+  // Включение связанных данных
+  Includes?: string | string[];
 }
 
 interface CarApiResponse {
@@ -132,7 +135,7 @@ export const carsApi = {
   // Получение автомобиля по ID
   getCarById: async (id: string): Promise<GetCarDTO> => {
     const result = await apiGet<GetCarDTO>(`/Car/${id}`, {
-      params: { Includes: 'Images' },
+      params: { Includes: 'Images,Drivers' },
     });
 
     if (result.error) {
