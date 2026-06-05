@@ -1344,7 +1344,7 @@ export function ScheduledOrderPage({
                       )}
                     </button>
 
-                    {/* Линия между кружками */}
+                    
                     {index < tabs.length - 1 && (
                       <div
                         className={`w-12 h-0.5 mx-2 transition-colors ${
