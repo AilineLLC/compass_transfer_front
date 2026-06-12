@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Plus, X } from 'lucide-react';
 import { useFormContext } from 'react-hook-form';
 import { Button } from '@shared/ui/forms/button';
+import { DatePicker } from '@shared/ui/forms/date-picker';
 import { Input } from '@shared/ui/forms/input';
 import { Label } from '@shared/ui/forms/label';
 
@@ -26,6 +27,22 @@ export function ProfileExtrasSection() {
   const [newZone, setNewZone] = useState('');
 
   const workZones = watch('profile.preferredWorkZones') || [];
+  const profile = watch('profile');
+
+  const toDateString = (date: Date | undefined, field: string) => {
+    if (date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      setValue(field as never, `${y}-${m}-${d}`);
+    } else {
+      setValue(field as never, null);
+    }
+  };
+
+  const lastRideDate = profile?.lastRideDate ? new Date(profile.lastRideDate) : undefined;
+  const medicalExamDate = profile?.medicalExamDate ? new Date(profile.medicalExamDate) : undefined;
+  const backgroundCheckDate = profile?.backgroundCheckDate ? new Date(profile.backgroundCheckDate) : undefined;
 
   const addZone = () => {
     const trimmed = newZone.trim();
@@ -89,31 +106,31 @@ export function ProfileExtrasSection() {
 
         <div className='space-y-2'>
           <Label htmlFor='lastRideDate'>Дата последней поездки</Label>
-          <Input
+          <DatePicker
             id='lastRideDate'
-            type='date'
-            {...register('profile.lastRideDate')}
-            className='focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0 hover:shadow-md focus:shadow-md focus-visible:shadow-md transition-shadow'
+            value={lastRideDate}
+            onChange={date => toDateString(date, 'profile.lastRideDate')}
+            placeholder='Выберите дату'
           />
         </div>
 
         <div className='space-y-2'>
           <Label htmlFor='medicalExamDate'>Дата медосмотра</Label>
-          <Input
+          <DatePicker
             id='medicalExamDate'
-            type='date'
-            {...register('profile.medicalExamDate')}
-            className='focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0 hover:shadow-md focus:shadow-md focus-visible:shadow-md transition-shadow'
+            value={medicalExamDate}
+            onChange={date => toDateString(date, 'profile.medicalExamDate')}
+            placeholder='Выберите дату'
           />
         </div>
 
         <div className='space-y-2'>
           <Label htmlFor='backgroundCheckDate'>Дата проверки анкеты</Label>
-          <Input
+          <DatePicker
             id='backgroundCheckDate'
-            type='date'
-            {...register('profile.backgroundCheckDate')}
-            className='focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0 hover:shadow-md focus:shadow-md focus-visible:shadow-md transition-shadow'
+            value={backgroundCheckDate}
+            onChange={date => toDateString(date, 'profile.backgroundCheckDate')}
+            placeholder='Выберите дату'
           />
         </div>
 

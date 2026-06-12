@@ -69,6 +69,13 @@ interface LocationFilters {
   sortOrder?: SortOrder;
 }
 
+interface LocationAdvicePayload {
+  fullName: string;
+  specialization: string | null;
+  image: string | null;
+  content: string;
+}
+
 // DTO для создания локации
 interface CreateLocationDTO {
   type: LocationType;
@@ -85,9 +92,12 @@ interface CreateLocationDTO {
   popular1?: boolean;
   popular2?: boolean;
   isLandingOnly?: boolean | null;
+  isLandingPagePinned?: boolean | null;
   group?: string | null;
   images?: string[];
   poi?: { name: string; image: string; type: string }[];
+  tags?: string[];
+  advice?: LocationAdvicePayload | null;
 }
 
 // DTO для обновления локации
@@ -110,6 +120,8 @@ interface UpdateLocationDTO {
   group?: string | null;
   images?: string[];
   poi?: { name: string; image: string; type: string }[];
+  tags?: string[];
+  advice?: LocationAdvicePayload | null;
 }
 
 // DTO для отправки текущих координат водителя
@@ -133,7 +145,7 @@ export const locationsApi = {
   // Получение локации по ID
   getLocationById: async (id: string): Promise<LocationDTO> => {
     const result = await apiGet<LocationDTO>(`/Location/${id}`, {
-      params: { Includes: 'Images' },
+      params: { Includes: ['Profile'] },
     });
 
     if (result.error) {

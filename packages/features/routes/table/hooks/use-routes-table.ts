@@ -105,8 +105,7 @@ export function useRoutesTable() {
       let bVal: string | number = '';
 
       if (sortBy === 'name') { aVal = a.name; bVal = b.name; }
-      else if (sortBy === 'price') { aVal = a.price; bVal = b.price; }
-      else if (sortBy === 'duration') { aVal = a.duration ?? 0; bVal = b.duration ?? 0; }   
+      else if (sortBy === 'duration') { aVal = a.duration ?? 0; bVal = b.duration ?? 0; }
 
       if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
       if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;

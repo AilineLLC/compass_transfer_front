@@ -6,7 +6,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { usersApi } from '@shared/api/users';
-import { logger } from '@shared/lib';
+import { logger, applyServerErrors } from '@shared/lib';
 import {
   EmploymentType,
   IdentityDocumentType,
@@ -113,10 +113,24 @@ export function useDriverEditFormLogic({
     async (data: DriverUpdateFormData) => {
       setIsSubmitting(true);
       try {
+        const nullifyEmptyDate = (val: string | null | undefined) =>
+          val === '' || val === undefined ? null : val;
+
         const apiData: UpdateDriverDTO = {
           ...data,
           phoneNumber: data.phoneNumber || null,
           avatarUrl: data.avatarUrl || null,
+          profile: {
+            ...data.profile,
+            lastRideDate: nullifyEmptyDate(data.profile.lastRideDate),
+            medicalExamDate: nullifyEmptyDate(data.profile.medicalExamDate),
+            backgroundCheckDate: nullifyEmptyDate(data.profile.backgroundCheckDate),
+            passport: {
+              ...data.profile.passport,
+              issueDate: nullifyEmptyDate(data.profile.passport.issueDate),
+              expiryDate: nullifyEmptyDate(data.profile.passport.expiryDate),
+            },
+          },
         };
         const result = await usersApi.updateDriver(driverId, apiData);
 
@@ -132,17 +146,7 @@ export function useDriverEditFormLogic({
           const axiosError = error as AxiosError<ApiError>;
 
           if (axiosError.response?.data?.errors) {
-            const serverErrors = axiosError.response.data.errors;
-
-            Object.keys(serverErrors).forEach(field => {
-              if (serverErrors[field] && serverErrors[field].length > 0) {
-                form.setError(field as keyof DriverUpdateFormData, {
-                  type: 'server',
-                  message: serverErrors[field][0],
-                });
-              }
-            });
-            toast.error('Исправьте ошибки в форме');
+            toast.error(applyServerErrors(axiosError.response.data.errors, form.setError));
           } else {
             toast.error(axiosError.response?.data?.detail || 'Ошибка обновления водителя');
           }

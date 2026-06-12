@@ -1,6 +1,7 @@
 'use client';
 
 import { Edit } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@shared/ui/forms/button';
 import type { GetDriverDTO } from '@entities/users/interface';
 
@@ -9,6 +10,8 @@ interface DriverMainInfoProps {
 }
 
 export function DriverMainInfo({ driver }: DriverMainInfoProps) {
+  const router = useRouter();
+
   return (
     <div className='space-y-4'>
       <div className='flex items-center space-x-4 p-4 rounded-lg border bg-blue-50 border-blue-200 hover:bg-blue-100 dark:bg-blue-950 dark:border-blue-800 dark:hover:bg-blue-900'>
@@ -36,10 +39,7 @@ export function DriverMainInfo({ driver }: DriverMainInfoProps) {
           size='sm'
           variant='outline'
           className='hover:bg-blue-50 hover:border-blue-300 text-blue-600 border-blue-300'
-          onClick={() => {
-            // Переход на страницу редактирования водителя
-            window.open(`/drivers/${driver.id}/edit`, '_blank');
-          }}
+          onClick={() => router.push(`/users/edit/driver/${driver.id}`)}
         >
           <Edit className='h-4 w-4 mr-2' />
           Редактировать

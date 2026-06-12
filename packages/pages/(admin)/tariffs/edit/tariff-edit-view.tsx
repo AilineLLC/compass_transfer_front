@@ -1,7 +1,7 @@
 'use client';
 
 import { notFound, useRouter } from 'next/navigation';
-import { useState, useEffect, useLayoutEffect } from 'react';
+import { useState, useEffect, useLayoutEffect, useMemo } from 'react';
 import { FormProvider, type UseFormReturn } from 'react-hook-form';
 import { tariffsApi } from '@shared/api/tariffs';
 import { Card, CardContent } from '@shared/ui/layout';
@@ -13,6 +13,7 @@ import { ServiceClass } from '@entities/tariffs/enums';
 import type { GetTariffDTO } from '@entities/tariffs/interface';
 import { TARIFF_FORM_CHAPTERS } from '@entities/tariffs/model/form-chapters/tariff-chapters';
 import type { TariffUpdateFormData } from '@entities/tariffs/schemas/tariffUpdateSchema';
+import type { TariffIconItem } from '@entities/tariffs/ui/tariff-basic-section';
 import { useTariffEditFormLogic } from '@features/tariffs/forms/edit/tariff-edit-form';
 
 interface TariffEditViewProps {
@@ -27,6 +28,8 @@ interface TariffEditFormViewProps {
   onUpdate: () => void;
   handleChapterClick: (chapterId: string) => void;
   onBack: () => void;
+  onIconChange: (item: TariffIconItem | null) => void;
+  initialIconItem: TariffIconItem | null;
 }
 
 export function TariffEditView({ tariffId }: TariffEditViewProps) {
@@ -35,7 +38,6 @@ export function TariffEditView({ tariffId }: TariffEditViewProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Загружаем данные тарифа
   useEffect(() => {
     const loadTariff = async () => {
       try {
@@ -57,7 +59,6 @@ export function TariffEditView({ tariffId }: TariffEditViewProps) {
     }
   }, [tariffId]);
 
-  // Всегда вызываем хук, но с условными данными
   const logic = useTariffEditFormLogic({
     tariffId: tariffId,
     initialData: {
@@ -66,16 +67,17 @@ export function TariffEditView({ tariffId }: TariffEditViewProps) {
       carType: VehicleType.Sedan,
       basePrice: 0,
       minutePrice: 0,
-      minimumPrice: 0, // Всегда 0
+      minimumPrice: 0,
       perKmPrice: 0,
       freeWaitingTimeMinutes: 0,
       isLanding: false,
+      color: null,
+      icon: null,
     },
     onBack: () => router.push('/tariffs'),
     onSuccess: () => router.push('/tariffs'),
   });
 
-  // Заполняем форму через useLayoutEffect с reset()
   useLayoutEffect(() => {
     if (tariff && logic.form) {
       logic.form.reset({
@@ -84,13 +86,19 @@ export function TariffEditView({ tariffId }: TariffEditViewProps) {
         carType: tariff.carType,
         basePrice: tariff.basePrice || 0,
         minutePrice: tariff.minutePrice || 0,
-        minimumPrice: 0, // Всегда 0, игнорируем значение из API
+        minimumPrice: 0,
         perKmPrice: tariff.perKmPrice || 0,
         freeWaitingTimeMinutes: tariff.freeWaitingTimeMinutes || 0,
         isLanding: tariff.isLanding ?? false,
+        color: tariff.color ?? null,
       });
     }
   }, [tariff, logic.form]);
+
+  const initialIconItem = useMemo((): TariffIconItem | null => {
+    if (!tariff?.icon) return null;
+    return { kind: 'existing', id: tariff.icon.id, path: tariff.icon.path };
+  }, [tariff]);
 
   if (isLoading) {
     return (
@@ -107,7 +115,12 @@ export function TariffEditView({ tariffId }: TariffEditViewProps) {
     notFound();
   }
 
-  return <TariffEditFormView {...logic} />;
+  return (
+    <TariffEditFormView
+      {...logic}
+      initialIconItem={initialIconItem}
+    />
+  );
 }
 
 function TariffEditFormView({
@@ -118,6 +131,8 @@ function TariffEditFormView({
   onUpdate,
   handleChapterClick,
   onBack,
+  onIconChange,
+  initialIconItem,
 }: TariffEditFormViewProps) {
   return (
     <FormProvider {...form}>
@@ -134,7 +149,6 @@ function TariffEditFormView({
                     status={getChapterStatus('basic')}
                   />
                   <div className='relative ml-12'>
-                    {/* Вертикальная линия */}
                     <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
                     <TariffBasicSection
                       showOptionalWarning={getChapterStatus('basic') === 'warning'}
@@ -143,6 +157,8 @@ function TariffEditFormView({
                         serviceClass: 'Класс обслуживания *',
                         carType: 'Тип автомобиля *',
                       }}
+                      onIconChange={onIconChange}
+                      initialIconItem={initialIconItem}
                     />
                   </div>
                 </div>
@@ -155,7 +171,6 @@ function TariffEditFormView({
                     status={getChapterStatus('pricing')}
                   />
                   <div className='relative ml-12'>
-                    {/* Вертикальная линия */}
                     <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
                     <TariffPricingSection
                       labels={{
@@ -173,7 +188,6 @@ function TariffEditFormView({
         </div>
 
         <div className='w-80 flex-shrink-0 flex flex-col h-full'>
-          {/* Сайдбар */}
           <FormSidebar
             chapters={TARIFF_FORM_CHAPTERS.EDIT}
             getChapterStatus={getChapterStatus}

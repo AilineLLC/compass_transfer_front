@@ -14,4 +14,5 @@ export interface TariffBaseDTO {
   perKmPrice: number;
   freeWaitingTimeMinutes: number;
   isLanding: boolean | null;
+  color: string | null;
 }

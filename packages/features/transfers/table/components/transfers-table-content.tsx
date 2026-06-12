@@ -27,6 +27,7 @@ interface ColumnVisibility {
   startLocation: boolean;
   endLocation: boolean;
   price: boolean;
+  distance: boolean;
   reservations: boolean;
   passengers: boolean;
   freeSeats: boolean;
@@ -137,6 +138,16 @@ export function TransfersTableContent({
                   Цена
                 </SortableHeader>
               )}
+              {columnVisibility.distance && (
+                <SortableHeader
+                  field='distance'
+                  sortBy={sortBy}
+                  sortOrder={sortOrder}
+                  onSort={handleSort}
+                >
+                  Расстояние
+                </SortableHeader>
+              )}
               {columnVisibility.reservations && <TableHead>Заявки</TableHead>}
               {columnVisibility.passengers && <TableHead>Пассажиры</TableHead>}
               {columnVisibility.freeSeats && <TableHead>Свободных мест</TableHead>}
@@ -171,6 +182,9 @@ export function TransfersTableContent({
                 )}
                 {columnVisibility.price && (
                   <TableCell>{transfer.price.toLocaleString('ru-RU')} сом</TableCell>
+                )}
+                {columnVisibility.distance && (
+                  <TableCell>{transfer.distance != null ? `${transfer.distance} км` : '—'}</TableCell>
                 )}
                 {columnVisibility.reservations && (
                   <TableCell>

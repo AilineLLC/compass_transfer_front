@@ -6,7 +6,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { usersApi } from '@shared/api/users';
-import { logger } from '@shared/lib';
+import { logger, applyServerErrors } from '@shared/lib';
 import { VerificationStatus, BusinessType } from '@entities/users/enums';
 import type { CreatePartnerDTO } from '@entities/users/interface/CreatePartnerDTO';
 import {
@@ -144,15 +144,7 @@ export function usePartnerFormLogic({
         if (error instanceof ApiRequestError) {
           const { errors: serverErrors, message } = error.apiError;
           if (serverErrors && Object.keys(serverErrors).length > 0) {
-            Object.keys(serverErrors).forEach(field => {
-              if (serverErrors[field]?.length > 0) {
-                form.setError(field as keyof PartnerCreateFormData, {
-                  type: 'server',
-                  message: serverErrors[field][0],
-                });
-              }
-            });
-            toast.error('Исправьте ошибки в форме');
+            toast.error(applyServerErrors(serverErrors, form.setError));
           } else {
             toast.error(message);
           }

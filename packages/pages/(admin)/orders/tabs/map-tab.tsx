@@ -8,6 +8,7 @@ import { Skeleton } from '@shared/ui/data-display/skeleton';
 import { useCarById } from '@shared/hooks/useCarById';
 import type { GetRideDTO } from '@entities/orders/interface';
 import type { GetDriverDTO } from '@entities/users/interface';
+import type { GetTariffDTO } from '@entities/tariffs/interface';
 import { useDeleteRide } from '@entities/orders/hooks';
 import { DriverPanel } from '@features/orders/components/DriverPanel';
 import { DriverOrdersWidget } from '@features/orders/components/DriverOrdersWidget';
@@ -40,6 +41,9 @@ interface MapTabProps {
   // Запланированное время заказа (для виджета конфликтов водителя)
   scheduledTime?: string | null;
 
+  // Тариф заказа — для фильтрации водителей по классу
+  selectedTariff?: GetTariffDTO | null;
+
   // Для моментальных заказов - показывать радиус водителей
   showDriverRadius?: boolean;
   isInstantOrder?: boolean; // Флаг для моментальных заказов
@@ -69,6 +73,7 @@ export function MapTab({
   setSelectedDriver: setExternalSelectedDriver,
   showDriverRadius = false,
   isInstantOrder = false,
+  selectedTariff,
   dynamicMapCenter: externalDynamicMapCenter,
   setDynamicMapCenter: setExternalDynamicMapCenter,
   openDriverPopupId: externalOpenDriverPopupId,
@@ -364,6 +369,7 @@ export function MapTab({
             isInstantOrder={isInstantOrder}
             userRole={userRole}
             onViewDriverOrders={(driverId, driverName) => setOrdersWidget({ driverId, driverName })}
+            requiredServiceClass={selectedTariff?.serviceClass ?? null}
           />
         )}
       </div>

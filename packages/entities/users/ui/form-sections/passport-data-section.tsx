@@ -1,6 +1,7 @@
 'use client';
 
 import { useFormContext } from 'react-hook-form';
+import { DatePicker } from '@shared/ui/forms/date-picker';
 import { Input } from '@shared/ui/forms/input';
 import { Label } from '@shared/ui/forms/label';
 import {
@@ -23,6 +24,24 @@ export function PassportDataSection() {
     setValue,
   } = useFormContext<{ profile: PassportDataFields['profile'] }>();
   const formData = watch();
+
+  const toDateString = (date: Date | undefined, field: string) => {
+    if (date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      setValue(field as never, `${y}-${m}-${d}`);
+    } else {
+      setValue(field as never, null);
+    }
+  };
+
+  const issueDate = formData.profile?.passport?.issueDate
+    ? new Date(formData.profile.passport.issueDate)
+    : undefined;
+  const expiryDate = formData.profile?.passport?.expiryDate
+    ? new Date(formData.profile.passport.expiryDate)
+    : undefined;
 
   return (
     <div className='space-y-4'>
@@ -100,21 +119,21 @@ export function PassportDataSection() {
 
         <div className='space-y-2'>
           <Label htmlFor='passportIssueDate'>Дата выдачи</Label>
-          <Input
+          <DatePicker
             id='passportIssueDate'
-            type='date'
-            {...register('profile.passport.issueDate')}
-            className='focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0 hover:shadow-md focus:shadow-md focus-visible:shadow-md transition-shadow'
+            value={issueDate}
+            onChange={date => toDateString(date, 'profile.passport.issueDate')}
+            placeholder='Выберите дату выдачи'
           />
         </div>
 
         <div className='space-y-2'>
           <Label htmlFor='passportExpiryDate'>Срок действия</Label>
-          <Input
+          <DatePicker
             id='passportExpiryDate'
-            type='date'
-            {...register('profile.passport.expiryDate')}
-            className='focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0 hover:shadow-md focus:shadow-md focus-visible:shadow-md transition-shadow'
+            value={expiryDate}
+            onChange={date => toDateString(date, 'profile.passport.expiryDate')}
+            placeholder='Выберите срок действия'
           />
         </div>
       </div>

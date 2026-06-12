@@ -22,6 +22,10 @@ import {
   locationUpdateSchema,
   type LocationUpdateFormData,
 } from '@entities/locations/schemas/locationUpdateSchema';
+import type { LocationImageDTO, PoiItemDTO } from '@entities/locations/interface/LocationDTO';
+import type { ImageItem } from '@entities/locations/ui/location-images-section';
+import type { PoiItemState } from '@entities/locations/ui/location-poi-section';
+import type { AdviceImageItem } from '@entities/locations/ui/location-profile-section';
 
 type ApiError = {
   detail?: string;
@@ -48,23 +52,32 @@ export function useLocationEditFormLogic({
     isLandingOnly?: boolean | null;
     isLandingPagePinned?: boolean;
     group?: string | null;
-    images?: import('@entities/locations').LocationImageDTO[];
-    poi?: import('@entities/locations').PoiItemDTO[];
+    tags?: string[];
+    advice?: { fullName: string; specialization: string | null; content: string } | null;
+    adviceImage?: { id: string; path: string } | null;
+    images?: LocationImageDTO[];
+    poi?: PoiItemDTO[];
   };
   onBack: () => void;
   onSuccess: () => void;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const imageItemsRef = useRef<import('@entities/locations').ImageItem[]>(
+
+  const imageItemsRef = useRef<ImageItem[]>(
     (initialData.images ?? []).map(img => ({ kind: 'existing' as const, id: img.id, path: img.path })),
   );
-  const poiItemsRef = useRef<import('@entities/locations').PoiItemState[]>(
+  const poiItemsRef = useRef<PoiItemState[]>(
     (initialData.poi ?? []).map(p => ({
       name: p.name,
       imageState: p.image
         ? { kind: 'existing' as const, id: p.image.id, path: p.image.path }
         : { kind: 'empty' as const },
     })),
+  );
+  const adviceImageRef = useRef<AdviceImageItem | null>(
+    initialData.adviceImage
+      ? { kind: 'existing', id: initialData.adviceImage.id, path: initialData.adviceImage.path }
+      : null,
   );
 
   const form = useForm({
@@ -83,6 +96,8 @@ export function useLocationEditFormLogic({
       isLandingOnly: initialData.isLandingOnly ?? false,
       isLandingPagePinned: initialData.isLandingPagePinned ?? false,
       group: initialData.group || '',
+      tags: initialData.tags ?? [],
+      advice: initialData.advice ?? null,
     },
   });
 
@@ -96,11 +111,15 @@ export function useLocationEditFormLogic({
 
   const formData = watch();
 
+  const onAdviceImageChange = useCallback((item: AdviceImageItem | null) => {
+    adviceImageRef.current = item;
+  }, []);
+
   const onSubmit = useCallback(
     async (data: LocationUpdateFormData) => {
       setIsSubmitting(true);
       try {
-        // Загружаем картинки в порядке очереди
+        // Upload location images
         const orderedImageIds = await Promise.all(
           imageItemsRef.current
             .filter(item => item.kind !== 'pending' || !item.error)
@@ -111,14 +130,32 @@ export function useLocationEditFormLogic({
             ),
         );
 
-        // Парсим адрес для извлечения компонентов
-        const addressComponents = parseAddress(data.address);
+        // Upload POI images
+        const poiData = await Promise.all(
+          poiItemsRef.current.map(async item => {
+            let imageId = '';
+            if (item.imageState.kind === 'existing') {
+              imageId = item.imageState.id;
+            } else if (item.imageState.kind === 'pending' && !item.imageState.error) {
+              imageId = await filesApi.uploadFile('LocationImage', item.imageState.file);
+            }
+            return { name: item.name, image: imageId, type: 'Restaraunt' };
+          }),
+        );
 
-        // Используем пользовательское название, если оно задано, иначе формируем из адреса
-        const locationName = data.name.trim() || 
-          [addressComponents.houseNumber, addressComponents.street]
-            .filter(Boolean)
-            .join(', ') || 
+        // Upload advice image
+        let adviceImageId: string | null = null;
+        const adviceImage = adviceImageRef.current;
+        if (adviceImage?.kind === 'pending' && !adviceImage.error) {
+          adviceImageId = await filesApi.uploadFile('LocationImage', adviceImage.file);
+        } else if (adviceImage?.kind === 'existing') {
+          adviceImageId = adviceImage.id;
+        }
+
+        const addressComponents = parseAddress(data.address);
+        const locationName =
+          data.name.trim() ||
+          [addressComponents.houseNumber, addressComponents.street].filter(Boolean).join(', ') ||
           'Локация без названия';
 
         const apiData = {
@@ -138,22 +175,19 @@ export function useLocationEditFormLogic({
           isLandingPagePinned: data.isLandingPagePinned ?? false,
           group: data.group || null,
           images: orderedImageIds,
+          poi: poiData,
+          tags: data.tags ?? [],
+          advice: data.advice
+            ? {
+                fullName: data.advice.fullName,
+                specialization: data.advice.specialization ?? null,
+                content: data.advice.content,
+                image: adviceImageId,
+              }
+            : null,
         };
-        
-        // Обрабатываем POI: загружаем картинки и собираем массив
-        const poiData = await Promise.all(
-          poiItemsRef.current.map(async item => {
-            let imageId = '';
-            if (item.imageState.kind === 'existing') {
-              imageId = item.imageState.id;
-            } else if (item.imageState.kind === 'pending' && !item.imageState.error) {
-              imageId = await filesApi.uploadFile('LocationImage', item.imageState.file);
-            }
-            return { name: item.name, image: imageId, type: 'Restaraunt' };
-          }),
-        );
 
-        const result = await locationsApi.updateLocation(locationId, { ...apiData, poi: poiData });
+        const result = await locationsApi.updateLocation(locationId, apiData);
 
         if (result && result.name) {
           toast.success(`Локация "${result.name}" успешно обновлена!`);
@@ -165,18 +199,12 @@ export function useLocationEditFormLogic({
         logger.warn('Ошибка обновления локации:', error);
         if (error instanceof Error && 'response' in error) {
           const axiosError = error as AxiosError<ApiError>;
-
           if (axiosError.response?.data?.errors) {
             const serverErrors = axiosError.response.data.errors;
-
             Object.keys(serverErrors).forEach(field => {
               const fieldKey = field as keyof LocationUpdateFormData;
-
-              if (serverErrors[field] && serverErrors[field].length > 0) {
-                form.setError(fieldKey, {
-                  type: 'server',
-                  message: serverErrors[field][0],
-                });
+              if (serverErrors[field]?.length > 0) {
+                form.setError(fieldKey, { type: 'server', message: serverErrors[field][0] });
               }
             });
             toast.error('Исправьте ошибки в форме');
@@ -195,48 +223,27 @@ export function useLocationEditFormLogic({
 
   const getChapterStatus = useMemo(() => {
     return (chapterId: string): 'complete' | 'warning' | 'error' | 'pending' => {
-      if (chapterId === 'basic') {
-        return getBasicLocationDataStatusForUpdate(formData, errors, isSubmitted);
-      }
-      if (chapterId === 'map') {
-        // Используем функцию для создания, так как логика одинаковая
-        return getMapLocationDataStatus(formData, errors, isSubmitted);
-      }
-      if (chapterId === 'coordinates') {
-        return getCoordinatesLocationDataStatusForUpdate(formData, errors, isSubmitted);
-      }
-
+      if (chapterId === 'basic') return getBasicLocationDataStatusForUpdate(formData, errors, isSubmitted);
+      if (chapterId === 'map') return getMapLocationDataStatus(formData, errors, isSubmitted);
+      if (chapterId === 'settings') return getCoordinatesLocationDataStatusForUpdate(formData, errors, isSubmitted);
       return 'pending';
     };
   }, [formData, errors, isSubmitted]);
 
   const getChapterErrors = useMemo(() => {
     return (chapterId: string): string[] => {
-      if (chapterId === 'basic') {
-        return getBasicLocationDataErrorsForUpdate(formData, errors, isSubmitted);
-      }
-      if (chapterId === 'map') {
-        // Используем функцию для создания, так как логика одинаковая
-        return getMapLocationDataErrors(formData, errors, isSubmitted);
-      }
-      if (chapterId === 'coordinates') {
-        return getCoordinatesLocationDataErrorsForUpdate(formData, errors, isSubmitted);
-      }
-
+      if (chapterId === 'basic') return getBasicLocationDataErrorsForUpdate(formData, errors, isSubmitted);
+      if (chapterId === 'map') return getMapLocationDataErrors(formData, errors, isSubmitted);
+      if (chapterId === 'settings') return getCoordinatesLocationDataErrorsForUpdate(formData, errors, isSubmitted);
       return [];
     };
   }, [formData, errors, isSubmitted]);
 
   const onUpdate = useCallback(async () => {
     const isValid = await trigger();
-
     if (!isValid) {
       const firstErrorField = Object.keys(form.formState.errors)[0];
-
-      if (firstErrorField) {
-        setFocus(firstErrorField as keyof LocationUpdateFormData);
-      }
-
+      if (firstErrorField) setFocus(firstErrorField as keyof LocationUpdateFormData);
       return;
     }
     await handleSubmit(onSubmit)();
@@ -244,11 +251,8 @@ export function useLocationEditFormLogic({
 
   const handleChapterClick = useCallback((chapterId: string) => {
     const element = document.getElementById(`chapter-${chapterId}`);
-
     if (element) {
-      const yOffset = -20;
-      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
-
+      const y = element.getBoundingClientRect().top + window.pageYOffset - 20;
       window.scrollTo({ top: y, behavior: 'smooth' });
     }
   }, []);
@@ -258,6 +262,7 @@ export function useLocationEditFormLogic({
     isSubmitting,
     imageItemsRef,
     poiItemsRef,
+    onAdviceImageChange,
     getChapterStatus,
     getChapterErrors,
     onUpdate,

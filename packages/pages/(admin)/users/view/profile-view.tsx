@@ -172,6 +172,19 @@ export function ProfileView({ userId, userRole }: ProfileViewProps) {
     }
   };
 
+  const handleRemoveCar = async (carId: string) => {
+    try {
+      await carsApi.removeDriver(carId, userId);
+      toast.success('Автомобиль успешно откреплён от водителя');
+      const updatedUser = await usersApi.getDriver(userId);
+      setUser(updatedUser);
+      loadDriverCars(userId);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Ошибка открепления автомобиля');
+      throw error;
+    }
+  };
+
   const handleRefreshDriverData = async () => {
     if (!user || user.role !== 'Driver') return;
 
@@ -196,6 +209,7 @@ export function ProfileView({ userId, userRole }: ProfileViewProps) {
             profile={user}
             openMapSheet={openMapSheet}
             onAssignCar={() => setIsAssignCarModalOpen(true)}
+            onRemoveCar={handleRemoveCar}
             analytics={driverAnalytics}
             loading={analyticsLoading}
             cars={driverCars}

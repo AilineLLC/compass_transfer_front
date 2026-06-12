@@ -15,6 +15,10 @@ import { useDriverById } from '@features/users/hooks/useDriverById';
 import { useDriverSearch } from '@features/drivers/hooks/useDriverSearch';
 import type { GetDriverDTO } from '@entities/users/interface';
 import { DriverOrdersWidget } from '@features/orders/components/DriverOrdersWidget';
+import { DriverCarSelectPanel } from '@features/orders/components/DriverCarSelectPanel';
+import { useTariffById } from '@shared/hooks/useTariffById';
+import { ServiceClassValues } from '@entities/tariffs/enums/ServiceClass.enum';
+import type { GetCarDTO } from '@entities/cars/interface';
 
 interface DriverCellProps {
   order: GetOrderDTO;
@@ -32,8 +36,10 @@ export function DriverCell({ order, onRefetch }: DriverCellProps) {
   const [isChanging, setIsChanging] = useState(false);
   const [viewingDriverId, setViewingDriverId] = useState<string | null>(null);
   const [viewingDriverName, setViewingDriverName] = useState('');
+  const [carSelectingDriver, setCarSelectingDriver] = useState<GetDriverDTO | null>(null);
 
   const { driver } = useDriverById(driverId);
+  const { tariff } = useTariffById(order.tariffId);
   const { drivers, isLoading: isSearching, searchDrivers, searchDriversByName } = useDriverSearch();
   const debouncedSearch = useDebounce(searchQuery, 300);
 
@@ -55,6 +61,7 @@ export function DriverCell({ order, onRefetch }: DriverCellProps) {
       setSearchQuery('');
       setViewingDriverId(null);
       setViewingDriverName('');
+      setCarSelectingDriver(null);
     }
   };
 
@@ -63,12 +70,26 @@ export function DriverCell({ order, onRefetch }: DriverCellProps) {
     setViewingDriverName(name);
   };
 
-  const handleSelectDriver = async (selected: GetDriverDTO) => {
+  const handleSelectDriver = (selected: GetDriverDTO) => {
     if (!order.id || isChanging) return;
 
     if (!selected.activeCar?.id) {
+      setCarSelectingDriver(selected);
+      return;
+    }
+
+    void assignDriver(selected, selected.activeCar.id);
+  };
+
+  const assignDriver = async (selected: GetDriverDTO, carId: string, selectedCar?: GetCarDTO) => {
+    if (!order.id) return;
+
+    const carServiceClass = selectedCar?.serviceClass ?? selected.activeCar?.serviceClass;
+    if (tariff?.serviceClass && carServiceClass !== tariff.serviceClass) {
+      const driverClass = ServiceClassValues[carServiceClass as keyof typeof ServiceClassValues] || carServiceClass || '—';
+      const orderClass = ServiceClassValues[tariff.serviceClass as keyof typeof ServiceClassValues] || tariff.serviceClass;
       toast.error(
-        `У водителя ${selected.fullName} нет активного автомобиля. Назначьте ему машину перед привязкой к заказу.`,
+        `Класс автомобиля водителя "${driverClass}" не соответствует классу заказа "${orderClass}".`,
       );
       return;
     }
@@ -77,7 +98,7 @@ export function DriverCell({ order, onRefetch }: DriverCellProps) {
       setIsChanging(true);
       await OrdersApi.changeDriver(order.id, {
         driverId: selected.id,
-        carId: selected.activeCar.id,
+        carId,
       });
       toast.success(`Водитель успешно изменён на ${selected.fullName}`);
       setOpen(false);
@@ -91,6 +112,12 @@ export function DriverCell({ order, onRefetch }: DriverCellProps) {
     } finally {
       setIsChanging(false);
     }
+  };
+
+  const handleCarSelected = (car: GetCarDTO) => {
+    if (!carSelectingDriver) return;
+    setCarSelectingDriver(null);
+    void assignDriver(carSelectingDriver, car.id, car);
   };
 
   if (!isScheduled || !canChangeDriver) {
@@ -118,7 +145,16 @@ export function DriverCell({ order, onRefetch }: DriverCellProps) {
       </PopoverTrigger>
 
       <PopoverContent className={`${viewingDriverId ? 'w-96' : 'w-80'} p-3`} align='start'>
-        {viewingDriverId ? (
+        {carSelectingDriver ? (
+          /* Выбор машины водителя (нет activeCar) */
+          <DriverCarSelectPanel
+            driverId={carSelectingDriver.id}
+            driverName={carSelectingDriver.fullName}
+            requiredServiceClass={tariff?.serviceClass ?? null}
+            onSelect={handleCarSelected}
+            onBack={() => setCarSelectingDriver(null)}
+          />
+        ) : viewingDriverId ? (
           /* Просмотр расписания выбранного водителя */
           <div>
             <div className='mb-3 flex items-center gap-2'>

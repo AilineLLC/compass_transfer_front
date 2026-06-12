@@ -5,6 +5,7 @@ import type {
   RouteListResponseDTO,
   CreateRouteDTO,
   UpdateRouteDTO,
+  RoutePriceDTO,
 } from '@entities/routes/interface/PartnerRouteDTO';
 import { apiGet, apiPost, apiPut, apiDelete, ApiRequestError } from './client';
 
@@ -15,7 +16,7 @@ export const routesApi = {
   ): Promise<PartnerRouteDTO> => {
     const result = await apiPut<PartnerRouteDTO>(`/Route/Partner/self`, {
       routeId,
-      price: data.price,
+      prices: data.prices,
     });
 
     if (result.error) {
@@ -38,7 +39,7 @@ export const routesApi = {
   createPartnerRoute: async (data: {
     startLocationId: string;
     endLocationId: string;
-    price: number;
+    prices: RoutePriceDTO[];
   }): Promise<PartnerRouteDTO> => {
     const result = await apiPost<PartnerRouteDTO>('/Route/Partner/self', data);
 

@@ -6,7 +6,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { usersApi } from '@shared/api/users';
-import { logger } from '@shared/lib';
+import { logger, applyServerErrors } from '@shared/lib';
 import {
   CitizenshipCountry,
   VerificationStatus,
@@ -159,6 +159,19 @@ export function useDriverFormLogic({
       );
     }
 
+    // Нормализуем nullable date-поля: пустая строка → null
+    const nullifyEmptyDate = (val: string | null | undefined) =>
+      val === '' || val === undefined ? null : val;
+
+    cleaned.profile.lastRideDate = nullifyEmptyDate(cleaned.profile.lastRideDate);
+    cleaned.profile.medicalExamDate = nullifyEmptyDate(cleaned.profile.medicalExamDate);
+    cleaned.profile.backgroundCheckDate = nullifyEmptyDate(cleaned.profile.backgroundCheckDate);
+    cleaned.profile.passport = {
+      ...cleaned.profile.passport,
+      issueDate: nullifyEmptyDate(cleaned.profile.passport.issueDate),
+      expiryDate: nullifyEmptyDate(cleaned.profile.passport.expiryDate),
+    };
+
     return cleaned;
   };
 
@@ -219,15 +232,7 @@ export function useDriverFormLogic({
         if (error instanceof ApiRequestError) {
           const { errors: serverErrors, message } = error.apiError;
           if (serverErrors && Object.keys(serverErrors).length > 0) {
-            Object.keys(serverErrors).forEach(field => {
-              if (serverErrors[field]?.length > 0) {
-                form.setError(field as keyof DriverCreateFormData, {
-                  type: 'server',
-                  message: serverErrors[field][0],
-                });
-              }
-            });
-            toast.error('Исправьте ошибки в форме');
+            toast.error(applyServerErrors(serverErrors, form.setError));
           } else {
             toast.error(message);
           }

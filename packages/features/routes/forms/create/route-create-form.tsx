@@ -8,17 +8,21 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { routesApi } from '@shared/api/routes';
 
+const routePriceSchema = z.object({
+  tariffId: z.string().min(1, 'Выберите тариф'),
+  price: z.number().min(0, 'Цена не может быть отрицательной'),
+});
+
 const routeCreateSchema = z.object({
   name: z.string().min(1, 'Обязательное поле').max(255),
   startLocationId: z.string().min(1, 'Выберите начальную точку'),
   endLocationId: z.string().min(1, 'Выберите конечную точку'),
   isPopular: z.boolean(),
-  price: z.number().min(0, 'Цена не может быть отрицательной'),
+  prices: z.array(routePriceSchema).default([]),
   duration: z.number().min(0, 'Длительность не может быть отрицательной').int('Введите целое число'),
 });
 
 export type RouteCreateFormData = z.infer<typeof routeCreateSchema>;
-
 
 export function useRouteCreateForm({
   onBack,
@@ -37,7 +41,7 @@ export function useRouteCreateForm({
       startLocationId: '',
       endLocationId: '',
       isPopular: false,
-      price: 0,
+      prices: [],
       duration: 0,
     },
   });
@@ -50,7 +54,7 @@ export function useRouteCreateForm({
         startLocationId: data.startLocationId,
         endLocationId: data.endLocationId,
         isPopular: data.isPopular,
-        price: data.price,
+        prices: data.prices,
         duration: data.duration,
       });
 
@@ -60,21 +64,12 @@ export function useRouteCreateForm({
       if (error instanceof ApiRequestError) {
         const { errors: serverErrors, message } = error.apiError;
         if (serverErrors && Object.keys(serverErrors).length > 0) {
-          const formFields: (keyof RouteCreateFormData)[] = [
-            'name', 'startLocationId', 'endLocationId', 'isPopular', 'price', 'duration',
-          ];
           const nonFieldMessages: string[] = [];
-
           Object.keys(serverErrors).forEach(field => {
-            if ((formFields as string[]).includes(field)) {
-              if (serverErrors[field]?.length > 0) {
-                form.setError(field as keyof RouteCreateFormData, { type: 'server', message: serverErrors[field][0] });
-              }
-            } else if (serverErrors[field]?.length > 0) {
+            if (serverErrors[field]?.length > 0) {
               nonFieldMessages.push(...serverErrors[field]);
             }
           });
-
           if (nonFieldMessages.length > 0) {
             toast.error(nonFieldMessages[0]);
           } else {
@@ -89,11 +84,10 @@ export function useRouteCreateForm({
     } finally {
       setIsSubmitting(false);
     }
-  }, [form, onSuccess]);
+  }, [onSuccess]);
 
   const onCreate = useCallback(async () => {
     const isValid = await form.trigger();
-
     if (!isValid) return;
     await form.handleSubmit(onSubmit)();
   }, [form, onSubmit]);

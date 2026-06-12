@@ -5,5 +5,5 @@ import type { TariffBaseDTO } from './TariffBaseDTO';
  * @interface
  */
 export interface UpdateTariffDTO extends Partial<Omit<TariffBaseDTO, 'id'>> {
-  // Все поля опциональны для обновления
+  iconId?: string | null;
 }

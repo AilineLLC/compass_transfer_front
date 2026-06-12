@@ -50,17 +50,36 @@ export function SiteHeader() {
     return () => clearInterval(interval);
   }, [refresh]);
 
+  const SKIP_BREADCRUMB_PATHS = new Set([
+    '/users/edit',
+    '/users/edit/driver',
+    '/users/edit/admin',
+    '/users/edit/customer',
+    '/users/edit/operator',
+    '/users/edit/partner',
+    '/users/edit/terminal',
+    '/cars/edit',
+    '/locations/edit',
+    '/notifications/edit',
+    '/orders/edit/partner',
+    '/routes/edit',
+    '/services/edit',
+    '/tariffs/edit',
+  ]);
+
   const pathSegments = pathname.split('/').filter(Boolean);
 
-  const breadcrumbItems = pathSegments.map((segment, index) => {
-    const href = '/' + pathSegments.slice(0, index + 1).join('/');
-    const isLast = index === pathSegments.length - 1;
-    const segmentName = segment
-      .split('-')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-    return { href, name: segmentName, isLast };
-  });
+  const breadcrumbItems = pathSegments
+    .map((segment, index) => {
+      const href = '/' + pathSegments.slice(0, index + 1).join('/');
+      const isLast = index === pathSegments.length - 1;
+      const segmentName = segment
+        .split('-')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+      return { href, name: segmentName, isLast };
+    })
+    .filter(item => item.isLast || !SKIP_BREADCRUMB_PATHS.has(item.href));
 
   if (pathSegments.length === 0) {
     breadcrumbItems.push({ href: '/', name: 'Dashboard', isLast: true });

@@ -10,6 +10,7 @@ interface ColumnVisibility {
   startLocation: boolean;
   endLocation: boolean;
   price: boolean;
+  distance: boolean;
   reservations: boolean;
   passengers: boolean;
   freeSeats: boolean;
@@ -59,6 +60,7 @@ export function useTransfersTable() {
       startLocation: true,
       endLocation: true,
       price: true,
+      distance: true,
       reservations: true,
       passengers: true,
       freeSeats: true,

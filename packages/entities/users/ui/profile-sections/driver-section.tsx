@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   Car,
   CreditCard,
@@ -10,11 +11,12 @@ import {
   FileText,
   AlertCircle,
   DollarSign,
-  TrendingUp,
+  Trash2,
 } from 'lucide-react';
 import { Badge } from '@shared/ui/data-display/badge';
 import { Button } from '@shared/ui/forms/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/layout/card';
+import { DeleteConfirmationModal } from '@shared/ui/modals/delete-confirmation-modal';
 import { CarColor, VehicleType, VehicleStatus, CarFeature } from '@entities/cars/enums';
 import { formatDate } from '@entities/my-profile';
 import type { GetDriverDTO } from '@entities/users/interface';
@@ -94,6 +96,7 @@ function isDriverData(profile: SectionWithMapProps['profile']): profile is GetDr
 
 interface DriverSectionProps extends SectionWithMapProps {
   onAssignCar?: () => void;
+  onRemoveCar?: (carId: string) => Promise<void>;
   analytics: DriverAnalytics | null;
   loading: boolean;
   cars?: GetCarDTO[];
@@ -105,8 +108,12 @@ export function DriverSection({
   loading,
   openMapSheet: _openMapSheet,
   onAssignCar,
+  onRemoveCar,
   cars,
 }: DriverSectionProps) {
+  const [carToDelete, setCarToDelete] = useState<GetCarDTO | null>(null);
+  const [isRemoving, setIsRemoving] = useState(false);
+
   if (!isDriverData(profile)) return null;
 
   const driverProfile = profile.profile;
@@ -249,9 +256,21 @@ export function DriverSection({
                 <div className='space-y-6'>
                   {assignedCars.map((car, index) => (
                     <div key={car.id} className={index > 0 ? 'pt-6 border-t' : ''}>
-                      {profile.activeCarId && car.id === profile.activeCarId && (
-                        <Badge variant='default' className='mb-3'>Активный</Badge>
-                      )}
+                      <div className='flex items-center justify-between mb-3'>
+                        {profile.activeCarId && car.id === profile.activeCarId && (
+                          <Badge variant='default'>Активный</Badge>
+                        )}
+                        {onRemoveCar && (
+                          <Button
+                            variant='ghost'
+                            size='sm'
+                            onClick={() => setCarToDelete(car)}
+                            className='ml-auto h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50'
+                          >
+                            <Trash2 className='h-4 w-4' />
+                          </Button>
+                        )}
+                      </div>
                       <div className='space-y-4'>
                         <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
                           <div className='border-l-4 border-blue-200 pl-4 flex flex-col gap-2'>
@@ -583,6 +602,27 @@ export function DriverSection({
           </div>
         </CardContent>
       </Card>
+
+      <DeleteConfirmationModal
+        isOpen={!!carToDelete}
+        onClose={() => setCarToDelete(null)}
+        onConfirm={async () => {
+          if (!carToDelete || !onRemoveCar) return;
+          setIsRemoving(true);
+          try {
+            await onRemoveCar(carToDelete.id);
+          } finally {
+            setIsRemoving(false);
+            setCarToDelete(null);
+          }
+        }}
+        title='Открепить автомобиль'
+        description={
+          carToDelete
+            ? `Вы уверены, что хотите открепить автомобиль "${carToDelete.make} ${carToDelete.model} (${carToDelete.licensePlate})" от водителя?`
+            : ''
+        }
+      />
     </div>
   );
 }

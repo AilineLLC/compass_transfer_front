@@ -115,7 +115,11 @@ export function RoutesTableContent({
                 <TableCell>{route.endLocation?.name ?? route.endLocationId}</TableCell>
               )}
               {columnVisibility.price && (
-                <TableCell>{route.price.toLocaleString('ru-RU')} сом</TableCell>
+                <TableCell>
+                  {route.prices?.length
+                    ? route.prices.map(p => p.price.toLocaleString('ru-RU')).join(' / ') + ' сом'
+                    : '—'}
+                </TableCell>
               )}
               {columnVisibility.duration && (
                 <TableCell>{route.duration != null ? formatDuration(route.duration) : '—'}</TableCell>

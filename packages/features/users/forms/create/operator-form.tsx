@@ -6,7 +6,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { usersApi } from '@shared/api/users';
-import { logger } from '@shared/lib';
+import { logger, applyServerErrors } from '@shared/lib';
 import type { CreateOperatorDTO } from '@entities/users/interface/CreateOperatorDTO';
 import {
   getBasicDataStatus,
@@ -118,19 +118,12 @@ export function useOperatorFormLogic({
       } catch (error) {
         logger.warn('Ошибка создания оператора:', error);
         if (error instanceof ApiRequestError) {
-          const { errors: serverErrors, message } = error.apiError;
+          const { errors: serverErrors } = error.apiError;
+
           if (serverErrors && Object.keys(serverErrors).length > 0) {
-            Object.keys(serverErrors).forEach(field => {
-              if (serverErrors[field]?.length > 0) {
-                form.setError(field as keyof OperatorCreateFormData, {
-                  type: 'server',
-                  message: serverErrors[field][0],
-                });
-              }
-            });
-            toast.error('Исправьте ошибки в форме');
+            toast.error(applyServerErrors(serverErrors, form.setError));
           } else {
-            toast.error(message);
+            toast.error(error.apiError.message);
           }
         } else {
           toast.error(error instanceof Error ? error.message : 'Ошибка создания оператора');

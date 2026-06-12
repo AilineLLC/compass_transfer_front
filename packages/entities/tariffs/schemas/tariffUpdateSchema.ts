@@ -94,6 +94,11 @@ export const tariffUpdateSchema = z.object({
     .boolean()
     .nullable()
     .default(false),
+
+  color: z
+    .string()
+    .nullable()
+    .default(null),
 });
 
 /**

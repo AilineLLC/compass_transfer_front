@@ -1,7 +1,6 @@
 'use client';
 
 import { useFormContext } from 'react-hook-form';
-import { cn } from '@shared/lib/utils';
 import { Input } from '@shared/ui/forms/input';
 import { Label } from '@shared/ui/forms/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/forms/select';
@@ -52,25 +51,6 @@ export function LocationBasicSection({
         <p className="text-xs text-muted-foreground">
           Название автоматически заполняется при выборе адреса на карте, но вы можете его изменить
         </p>
-      </div>
-
-      {/* Описание */}
-      <div className="space-y-2">
-        <Label htmlFor="description" className="text-sm font-medium">
-          Описание
-        </Label>
-        <textarea
-          id="description"
-          {...register('description')}
-          placeholder="Введите описание локации (необязательно)"
-          className={cn(
-            "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:shadow-sm disabled:cursor-not-allowed disabled:opacity-50 no-ring resize-none"
-          )}
-          rows={3}
-        />
-        {errors.description && (
-          <p className="text-sm text-red-600">{errors.description.message}</p>
-        )}
       </div>
 
       {/* Тип локации */}

@@ -216,6 +216,9 @@ export function TransferCreateForm({ mode = 'create', initialData }: TransferCre
   const [duration, setDuration] = useState(
     initialData?.duration != null ? String(initialData.duration) : '',
   );
+  const [distance, setDistance] = useState(
+    initialData?.distance != null ? String(initialData.distance) : '',
+  );
   const [price, setPrice] = useState(initialData ? String(initialData.price) : '');
 const [allowPartialReservations, setAllowPartialReservations] = useState(
     initialData ? initialData.allowPartialReservations : true,
@@ -309,6 +312,7 @@ if (!startLocation) { toast.error('Выберите точку отправле�
       const payload = {
         departureTime: new Date(departureTime).toISOString(),
         duration: duration ? Number(duration) : null,
+        distance: distance ? Number(distance) : null,
         price: Number(price),
     allowPartialReservations,
         isHot,
@@ -414,6 +418,23 @@ if (!startLocation) { toast.error('Выберите точку отправле�
                 placeholder='Например: 90'
                 value={duration}
                 onChange={e => setDuration(e.target.value)}
+                className='h-10'
+              />
+            </div>
+
+            <div className='space-y-1.5'>
+              <Label htmlFor='distance' className='flex items-center gap-1.5 text-xs font-medium'>
+                <ArrowRight className='h-3.5 w-3.5' />
+                Расстояние (км)
+              </Label>
+              <Input
+                id='distance'
+                type='number'
+                min='0'
+                step='0.1'
+                placeholder='Например: 120'
+                value={distance}
+                onChange={e => setDistance(e.target.value)}
                 className='h-10'
               />
             </div>

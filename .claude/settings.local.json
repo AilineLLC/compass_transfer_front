@@ -23,7 +23,8 @@
       "Bash(yarn test *)",
       "Bash(yarn vitest *)",
       "mcp__ide__getDiagnostics",
-      "Bash(dir D:devcompass_transfer_front *)"
+      "Bash(dir D:devcompass_transfer_front *)",
+      "Bash(xargs -0 grep -l \"tag\" -i)"
     ]
   }
 }

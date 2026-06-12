@@ -9,6 +9,7 @@ import { LocationSelect } from '@shared/ui/forms/location-select';
 import { Card, CardContent } from '@shared/ui/layout/card';
 import { ChapterHeader } from '@shared/ui/layout/chapter-header';
 import { FormSidebar } from '@shared/ui/layout/form-sidebar';
+import { RoutePricesSection } from '@features/routes/ui/route-prices-section';
 import type { RouteCreateFormData } from '@features/routes/forms/create/route-create-form';
 
 const ROUTE_FORM_CHAPTERS = [
@@ -28,34 +29,26 @@ export function RouteFormView({ form, isSubmitting, onCreate, onBack }: RouteFor
 
   const getChapterStatus = (id: string): 'complete' | 'warning' | 'error' | 'pending' => {
     if (id === 'basic') {
-      if (errors.name || errors.price || errors.duration) return 'error';
-
+      if (errors.name || errors.prices || errors.duration) return 'error';
       return 'pending';
     }
-
     if (id === 'locations') {
       if (errors.startLocationId || errors.endLocationId) return 'error';
-
       return 'pending';
     }
-
     return 'pending';
   };
 
   const getChapterErrors = (id: string): string[] => {
     const errs: string[] = [];
-
     if (id === 'basic') {
       if (errors.name?.message) errs.push(errors.name.message);
-      if (errors.price?.message) errs.push(errors.price.message);
       if (errors.duration?.message) errs.push(errors.duration.message);
     }
-
     if (id === 'locations') {
       if (errors.startLocationId?.message) errs.push(errors.startLocationId.message);
       if (errors.endLocationId?.message) errs.push(errors.endLocationId.message);
     }
-
     return errs;
   };
 
@@ -83,35 +76,21 @@ export function RouteFormView({ form, isSubmitting, onCreate, onBack }: RouteFor
                         {errors.name && <p className='text-sm text-red-500'>{errors.name.message}</p>}
                       </div>
 
-                      <div className='grid grid-cols-2 gap-4'>
-                        <div className='flex flex-col gap-1.5'>
-                          <Label htmlFor='price'>Цена (сом) *</Label>
-                          <Input
-                            id='price'
-                            type='number'
-                            min={0}
-                            step={0.01}
-                            {...register('price', { valueAsNumber: true })}
-                            placeholder='0'
-                            className={`focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0 hover:shadow-md focus:shadow-md transition-shadow ${errors.price ? 'border-red-500' : ''}`}
-                          />
-                          {errors.price && <p className='text-sm text-red-500'>{errors.price.message}</p>}
-                        </div>
-
-                        <div className='flex flex-col gap-1.5'>
-                          <Label htmlFor='duration'>Длительность (мин) *</Label>
-                          <Input
-                            id='duration'
-                            type='number'
-                            min={0}
-                            step={1}
-                            {...register('duration', { valueAsNumber: true })}
-                            placeholder='0'
-                            className={`focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0 hover:shadow-md focus:shadow-md transition-shadow ${errors.duration ? 'border-red-500' : ''}`}
-                          />
-                          {errors.duration && <p className='text-sm text-red-500'>{errors.duration.message}</p>}
-                        </div>
+                      <div className='flex flex-col gap-1.5'>
+                        <Label htmlFor='duration'>Длительность (мин) *</Label>
+                        <Input
+                          id='duration'
+                          type='number'
+                          min={0}
+                          step={1}
+                          {...register('duration', { valueAsNumber: true })}
+                          placeholder='0'
+                          className={`focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0 hover:shadow-md focus:shadow-md transition-shadow ${errors.duration ? 'border-red-500' : ''}`}
+                        />
+                        {errors.duration && <p className='text-sm text-red-500'>{errors.duration.message}</p>}
                       </div>
+
+                      <RoutePricesSection />
 
                       <div className='flex items-center gap-3'>
                         <Controller

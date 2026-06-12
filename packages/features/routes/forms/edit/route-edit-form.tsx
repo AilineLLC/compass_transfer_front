@@ -9,12 +9,17 @@ import { z } from 'zod';
 import { routesApi } from '@shared/api/routes';
 import type { RouteDTO } from '@entities/routes/interface/PartnerRouteDTO';
 
+const routePriceSchema = z.object({
+  tariffId: z.string().min(1, 'Выберите тариф'),
+  price: z.number().min(0, 'Цена не может быть отрицательной'),
+});
+
 const routeEditSchema = z.object({
   name: z.string().min(1, 'Обязательное поле').max(255),
   startLocationId: z.string().min(1, 'Выберите начальную точку'),
   endLocationId: z.string().min(1, 'Выберите конечную точку'),
   isPopular: z.boolean(),
-  price: z.number().min(0, 'Цена не может быть отрицательной'),
+  prices: z.array(routePriceSchema).default([]),
   duration: z.number().min(0, 'Длительность не может быть отрицательной').int('Введите целое число'),
 });
 
@@ -46,7 +51,7 @@ export function useRouteEditForm({
       startLocationId: '',
       endLocationId: '',
       isPopular: false,
-      price: 0,
+      prices: [],
       duration: 0,
     },
   });
@@ -56,15 +61,14 @@ export function useRouteEditForm({
       setIsLoadingRoute(true);
       try {
         const data = await routesApi.getRouteById(routeId);
-
         setRoute(data);
         form.reset({
           name: data.name,
           startLocationId: data.startLocationId,
           endLocationId: data.endLocationId,
           isPopular: data.isPopular,
-          price: data.price,
-          duration: data.duration,
+          prices: data.prices ?? [],
+          duration: data.duration ?? 0,
         });
       } catch {
         toast.error('Ошибка загрузки направления');
@@ -84,7 +88,7 @@ export function useRouteEditForm({
         startLocationId: data.startLocationId,
         endLocationId: data.endLocationId,
         isPopular: data.isPopular,
-        price: data.price,
+        prices: data.prices,
         duration: data.duration,
       });
 
@@ -93,18 +97,12 @@ export function useRouteEditForm({
     } catch (error) {
       if (error instanceof Error && 'response' in error) {
         const axiosError = error as AxiosError<ApiError>;
-
         if (axiosError.response?.data?.errors) {
           const serverErrors = axiosError.response.data.errors;
-
           Object.keys(serverErrors).forEach(field => {
             const fieldKey = field as keyof RouteEditFormData;
-
             if (serverErrors[field]?.length > 0) {
-              form.setError(fieldKey, {
-                type: 'server',
-                message: serverErrors[field][0],
-              });
+              form.setError(fieldKey, { type: 'server', message: serverErrors[field][0] });
             }
           });
           toast.error('Исправьте ошибки в форме');
@@ -121,7 +119,6 @@ export function useRouteEditForm({
 
   const onUpdate = useCallback(async () => {
     const isValid = await form.trigger();
-
     if (!isValid) return;
     await form.handleSubmit(onSubmit)();
   }, [form, onSubmit]);

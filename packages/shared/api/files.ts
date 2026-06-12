@@ -1,6 +1,6 @@
 import { apiPost } from './client';
 
-export type FileType = 'LocationImage' | 'CarImage';
+export type FileType = 'LocationImage' | 'CarImage' | 'TariffIcon';
 
 export interface UploadedFileDTO {
   id: string;

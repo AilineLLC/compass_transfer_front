@@ -22,6 +22,7 @@ interface ColumnVisibility {
   startLocation: boolean;
   endLocation: boolean;
   price: boolean;
+  distance: boolean;
   reservations: boolean;
   passengers: boolean;
   freeSeats: boolean;
@@ -44,6 +45,7 @@ const COLUMNS: { key: keyof ColumnVisibility; label: string }[] = [
   { key: 'startLocation', label: 'Откуда' },
   { key: 'endLocation', label: 'Куда' },
   { key: 'price', label: 'Цена' },
+  { key: 'distance', label: 'Расстояние' },
   { key: 'reservations', label: 'Заявки' },
   { key: 'passengers', label: 'Пассажиры' },
   { key: 'freeSeats', label: 'Свободных мест' },

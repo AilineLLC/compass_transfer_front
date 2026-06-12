@@ -9,8 +9,11 @@ import { Input } from '@shared/ui/forms/input';
 import { Card, CardContent } from '@shared/ui/layout/card';
 import { CarTypeValues, type CarType } from '@entities/tariffs/enums/CarType.enum';
 import { ServiceClassValues, type ServiceClass } from '@entities/tariffs/enums/ServiceClass.enum';
+import { toast } from 'sonner';
 import type { GetDriverDTO } from '@entities/users/interface';
+import type { GetCarDTO } from '@entities/cars/interface';
 import { useDriverSearch } from '@features/drivers/hooks/useDriverSearch';
+import { DriverCarSelectPanel } from '@features/orders/components/DriverCarSelectPanel';
 
 interface DriverPanelProps {
   selectedDriver?: GetDriverDTO | null;
@@ -25,6 +28,7 @@ interface DriverPanelProps {
   isInstantOrder?: boolean; // Флаг для моментальных заказов - отключает выбор водителей
   userRole?: 'admin' | 'operator' | 'driver'; // Роль пользователя
   onViewDriverOrders?: (driverId: string, driverName: string) => void; // Колбэк открытия виджета расписания
+  requiredServiceClass?: string | null; // Класс обслуживания заказа — фильтрует водителей
 }
 
 export function DriverPanel({
@@ -36,11 +40,13 @@ export function DriverPanel({
   isInstantOrder = false,
   userRole: _userRole = 'operator',
   onViewDriverOrders,
+  requiredServiceClass,
 }: DriverPanelProps) {
   // Хуки должны быть вызваны всегда, независимо от условий
   const [searchQuery, setSearchQuery] = useState('');
   const [allDrivers, setAllDrivers] = useState<GetDriverDTO[]>([]);
-  const [isCollapsed, setIsCollapsed] = useState(true); // По умолчанию скрыта
+  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [carSelectingDriver, setCarSelectingDriver] = useState<GetDriverDTO | null>(null);
 
   const { drivers, isLoading, searchDrivers, searchDriversByName } = useDriverSearch();
 
@@ -84,36 +90,64 @@ export function DriverPanel({
   );
 
   const handleDriverClick = (driver: GetDriverDTO) => {
-    // В моментальных заказах не разрешаем выбор водителей
-    if (isInstantOrder) {
+    if (isInstantOrder) return;
+
+    const fullDriver = getDriverById ? getDriverById(driver.id) : null;
+    const activeCar = (fullDriver?.activeCar ?? driver.activeCar) as Record<string, unknown> | undefined;
+
+    // Нет активной машины — показываем выбор машины водителя
+    if (!activeCar?.id && !driver.activeCarId) {
+      setCarSelectingDriver(driver);
       return;
     }
 
-    // Ищем координаты водителя в разных источниках данных
+    // Проверяем соответствие класса машины водителя классу заказа
+    if (requiredServiceClass) {
+      const driverClass = activeCar?.serviceClass as string | undefined;
+
+      if (driverClass && driverClass !== requiredServiceClass) {
+        const driverClassLabel = ServiceClassValues[driverClass as unknown as ServiceClass] || driverClass;
+        const orderClassLabel = ServiceClassValues[requiredServiceClass as unknown as ServiceClass] || requiredServiceClass;
+        toast.error(`Класс автомобиля водителя "${driverClassLabel}" не соответствует классу заказа "${orderClassLabel}".`);
+        return;
+      }
+    }
+
+    selectDriver(driver, fullDriver);
+  };
+
+  const selectDriver = (driver: GetDriverDTO, fullDriver: GetDriverDTO | null) => {
     let location = null;
 
-    // 1. Сначала ищем в активных водителях с карты
     const activeDriver = activeDrivers.find(d => d.id === driver.id);
-
     if (activeDriver?.currentLocation) {
       location = activeDriver.currentLocation;
     }
 
-    // 2. Если не нашли, ищем в загруженных данных
     if (!location) {
       const driverWithLocation =
-        allDrivers.find(d => d.id === driver.id) || drivers.find(d => d.id === driver.id);
+        (fullDriver as GetDriverDTO & { currentLocation?: { latitude: number; longitude: number } }) ||
+        (allDrivers.find(d => d.id === driver.id) as GetDriverDTO & { currentLocation?: { latitude: number; longitude: number } }) ||
+        (drivers.find(d => d.id === driver.id) as GetDriverDTO & { currentLocation?: { latitude: number; longitude: number } });
 
-      location = (
-        driverWithLocation as GetDriverDTO & {
-          currentLocation?: { latitude: number; longitude: number };
-        }
-      )?.currentLocation;
+      location = driverWithLocation?.currentLocation;
     }
 
-    onDriverSelect(driver, location, true); // true = выбор из панели поиска
+    onDriverSelect(driver, location, true);
     setSearchQuery('');
-    setIsCollapsed(true); // Скрываем панель после выбора водителя
+    setIsCollapsed(true);
+  };
+
+  const handleCarSelected = (car: GetCarDTO) => {
+    if (!carSelectingDriver) return;
+    const fullDriver = getDriverById ? getDriverById(carSelectingDriver.id) : null;
+    const driverWithCar: GetDriverDTO = {
+      ...(fullDriver ?? carSelectingDriver),
+      activeCar: car,
+      activeCarId: car.id,
+    };
+    setCarSelectingDriver(null);
+    selectDriver(driverWithCar, driverWithCar);
   };
 
   const handleSearchChange = (value: string) => {
@@ -214,8 +248,19 @@ export function DriverPanel({
               );
             })()}
 
+          {/* Выбор машины водителя (когда нет activeCar) */}
+          {carSelectingDriver && (
+            <DriverCarSelectPanel
+              driverId={carSelectingDriver.id}
+              driverName={carSelectingDriver.fullName}
+              requiredServiceClass={requiredServiceClass}
+              onSelect={handleCarSelected}
+              onBack={() => setCarSelectingDriver(null)}
+            />
+          )}
+
           {/* Поиск водителей или информация о моментальном заказе */}
-          <div className='space-y-3'>
+          {!carSelectingDriver && <div className='space-y-3'>
             {isInstantOrder ? (
               <div className='text-center py-4 px-3 bg-blue-50 border border-blue-200 rounded-lg'>
                 <div className='text-sm text-blue-800 font-medium mb-1'>Моментальный заказ</div>
@@ -291,15 +336,23 @@ export function DriverPanel({
                       : [];
                     const licensePlate = (activeCar?.licensePlate as string) || '';
 
+                    const isIncompatibleClass =
+                      !isInstantOrder &&
+                      !!requiredServiceClass &&
+                      !!activeCar?.serviceClass &&
+                      (activeCar.serviceClass as string) !== requiredServiceClass;
+
                     return (
                       <div
                         key={driver.id}
                         className={`p-2.5 border rounded-lg transition-all duration-200 ${
                           isInstantOrder
-                            ? 'border-gray-200 bg-gray-50 cursor-default' // Для моментальных заказов - неактивный вид
-                            : selectedDriver?.id === driver.id
-                              ? 'border-blue-500 bg-blue-50 shadow-sm cursor-pointer'
-                              : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300 cursor-pointer'
+                            ? 'border-gray-200 bg-gray-50 cursor-default'
+                            : isIncompatibleClass
+                              ? 'border-red-200 bg-red-50 opacity-60 cursor-not-allowed'
+                              : selectedDriver?.id === driver.id
+                                ? 'border-blue-500 bg-blue-50 shadow-sm cursor-pointer'
+                                : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300 cursor-pointer'
                         }`}
                         onClick={() => !isInstantOrder && handleDriverClick(driver)}
                       >
@@ -391,7 +444,7 @@ export function DriverPanel({
                 )}
               </div>
             </div>
-          </div>
+          </div>}
         </CardContent>
       </Card>
     </div>

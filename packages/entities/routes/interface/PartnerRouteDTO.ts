@@ -1,22 +1,27 @@
+export interface RoutePriceDTO {
+  tariffId: string;
+  price: number;
+}
+
 export interface PartnerRouteDTO {
   startLocationId: string;
   endLocationId: string;
   name: string;
   isPopular: boolean;
   id: string;
-  price: number;
+  prices: RoutePriceDTO[];
   duration: number;
 }
 
 export interface UpdatePartnerRouteDTO {
   routeId: string;
-  price: number;
+  prices: RoutePriceDTO[];
 }
 
 export interface CreatePartnerRouteData {
   startLocationId: string;
   endLocationId: string;
-  price: number;
+  prices: RoutePriceDTO[];
 }
 
 export interface RouteLocationDTO {
@@ -30,7 +35,7 @@ export interface RouteDTO {
   endLocationId: string;
   name: string;
   isPopular: boolean;
-  price: number;
+  prices: RoutePriceDTO[];
   duration?: number;
   startLocation?: RouteLocationDTO;
   endLocation?: RouteLocationDTO;
@@ -49,7 +54,7 @@ export interface CreateRouteDTO {
   endLocationId: string;
   name: string;
   isPopular: boolean;
-  price: number;
+  prices: RoutePriceDTO[];
   duration: number;
 }
 
@@ -58,6 +63,6 @@ export interface UpdateRouteDTO {
   endLocationId?: string;
   name?: string;
   isPopular?: boolean;
-  price?: number;
+  prices?: RoutePriceDTO[];
   duration?: number;
 }

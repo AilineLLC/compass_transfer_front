@@ -67,6 +67,9 @@ interface CarFilters {
 
   // Включение связанных данных
   Includes?: string | string[];
+
+  // Фильтр по водителю (возвращает машины, привязанные к водителю)
+  Driver?: string;
 }
 
 interface CarApiResponse {
