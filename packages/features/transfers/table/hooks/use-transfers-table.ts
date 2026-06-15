@@ -41,8 +41,11 @@ export function useTransfersTable() {
   });
   const [totalCount, setTotalCount] = useState(0);
 
-  const [sortBy, setSortBy] = useState<string>('departureTime');
+  const [sortBy, setSortBy] = useState<string>('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  const [hasPending, setHasPending] = useState<boolean | undefined>(undefined);
+  const [isHot, setIsHot] = useState<boolean | undefined>(undefined);
 
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>(() => {
     if (typeof window !== 'undefined') {
@@ -94,6 +97,9 @@ export function useTransfersTable() {
         params.first = true;
       }
 
+      if (hasPending !== undefined) params.TransferReservationFormHasPending = hasPending;
+      if (isHot !== undefined) params.isHot = isHot;
+
       const [response, reservationsResponse] = await Promise.all([
         transfersApi.getTransfers(params),
         transferReservationsApi.getReservations({ status: 'Pending', size: 1000 }),
@@ -118,7 +124,7 @@ export function useTransfersTable() {
       setLoading(false);
       loadingRef.current = false;
     }
-  }, [loadTrigger, pageSize, sortBy, sortOrder]);
+  }, [loadTrigger, pageSize, sortBy, sortOrder, hasPending, isHot]);
 
   useEffect(() => {
     loadTransfers();
@@ -176,6 +182,23 @@ export function useTransfersTable() {
     }
   };
 
+  const resetPagination = () => {
+    paginationModeRef.current = 'first';
+    afterCursorRef.current = null;
+    beforeCursorRef.current = null;
+    setCurrentPageNumber(1);
+  };
+
+  const handleHasPendingChange = (value: boolean | undefined) => {
+    resetPagination();
+    setHasPending(value);
+  };
+
+  const handleIsHotChange = (value: boolean | undefined) => {
+    resetPagination();
+    setIsHot(value);
+  };
+
   const hasNext = currentPageNumber * pageSize < totalCount;
   const hasPrevious = currentPageNumber > 1;
 
@@ -195,12 +218,17 @@ export function useTransfersTable() {
     sortOrder,
     columnVisibility,
 
+    hasPending,
+    isHot,
+
     handleNextPage,
     handlePrevPage,
     handleFirstPage,
     handlePageSizeChange,
     handleSort,
     handleColumnVisibilityChange,
+    handleHasPendingChange,
+    handleIsHotChange,
 
     loadTransfers,
     refetch: loadTransfers,

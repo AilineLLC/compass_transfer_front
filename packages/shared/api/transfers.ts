@@ -111,8 +111,12 @@ export interface TransferFilters {
   sortOrder?: 'Asc' | 'Desc';
   departureTimeFrom?: string;
   departureTimeTo?: string;
+  createdAtFrom?: string;
+  createdAtTo?: string;
   startLocationId?: string;
   endLocationId?: string;
+  isHot?: boolean;
+  TransferReservationFormHasPending?: boolean;
   includes?: string;
 }
 

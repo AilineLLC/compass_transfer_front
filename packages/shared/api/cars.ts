@@ -138,7 +138,7 @@ export const carsApi = {
   // Получение автомобиля по ID
   getCarById: async (id: string): Promise<GetCarDTO> => {
     const result = await apiGet<GetCarDTO>(`/Car/${id}`, {
-      params: { Includes: 'Images,Drivers' },
+      params: { Includes: 'Images' },
     });
 
     if (result.error) {

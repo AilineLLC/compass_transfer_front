@@ -18,12 +18,16 @@ export function TransfersTable() {
     sortBy,
     sortOrder,
     columnVisibility,
+    hasPending,
+    isHot,
     handleNextPage,
     handlePrevPage,
     handleFirstPage,
     handlePageSizeChange,
     handleSort,
     handleColumnVisibilityChange,
+    handleHasPendingChange,
+    handleIsHotChange,
     loadTransfers,
     refetch,
     router,
@@ -48,6 +52,13 @@ export function TransfersTable() {
         handleColumnVisibilityChange={handleColumnVisibilityChange}
         onRefresh={refetch}
         isLoading={loading}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        handleSort={handleSort}
+        hasPending={hasPending}
+        isHot={isHot}
+        onHasPendingChange={handleHasPendingChange}
+        onIsHotChange={handleIsHotChange}
       />
 
       <TransfersTableContent

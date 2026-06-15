@@ -245,15 +245,21 @@ export function MapTab({
               <Skeleton className='h-4 w-32' />
             ) : requestedCar ? (
               <div className='flex gap-x-3'>
-                 <img
-                    src={getUploadUrl(requestedCar?.images?.[0]?.path || '') || ''}
+                {requestedCar.images?.[0]?.path ? (
+                  <img
+                    src={getUploadUrl(requestedCar.images[0].path)}
                     alt={requestedCar.make + ' ' + requestedCar.model}
-                    className='w-[95px] h-16 rounded-md'
-                 />
-                 <span>
-                    <p className='font-semibold mb-1'>{requestedCar.make + ' ' + requestedCar.model}</p>
-                    <p>{requestedCar.serviceClass} • {requestedCar.type} • {requestedCar.year}</p>
-                 </span>
+                    className='w-[95px] h-16 rounded-md object-cover shrink-0'
+                  />
+                ) : (
+                  <div className='w-[95px] h-16 rounded-md bg-blue-100 flex items-center justify-center shrink-0'>
+                    <Car className='h-6 w-6 text-blue-300' />
+                  </div>
+                )}
+                <span>
+                  <p className='font-semibold mb-1'>{requestedCar.make + ' ' + requestedCar.model}</p>
+                  <p>{requestedCar.serviceClass} • {requestedCar.type} • {requestedCar.year}</p>
+                </span>
               </div>
             ) : (
               <span className='text-blue-600'>{requestedCarId}</span>
