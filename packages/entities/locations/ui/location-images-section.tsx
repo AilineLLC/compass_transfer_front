@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { X, Upload, ImageIcon, ChevronUp, ChevronDown } from 'lucide-react';
+import { X, Upload, ImageIcon, ChevronUp, ChevronDown, Star } from 'lucide-react';
 import { Button } from '@shared/ui/forms/button';
 import { Label } from '@shared/ui/forms/label';
 import { validateImageFile } from '@shared/api/files';
@@ -113,10 +113,14 @@ export function LocationImagesSection({
                 item.kind === 'pending' && item.error ? 'border-red-300 bg-red-50' : 'bg-white'
               }`}
             >
-              {/* Номер позиции */}
-              <span className="w-6 text-center text-xs font-semibold text-gray-400 flex-shrink-0">
-                {index + 1}
-              </span>
+              {/* Номер позиции / метка главной */}
+              <div className="w-6 flex-shrink-0 flex items-center justify-center">
+                {index === 0 ? (
+                  <Star className="h-4 w-4 text-amber-400 fill-amber-400" title="Главная картинка" />
+                ) : (
+                  <span className="text-xs font-semibold text-gray-400">{index + 1}</span>
+                )}
+              </div>
 
               {/* Превью */}
               <div className="w-14 h-14 flex-shrink-0 rounded-md overflow-hidden border bg-gray-100 flex items-center justify-center">
@@ -143,6 +147,12 @@ export function LocationImagesSection({
                   </>
                 ) : (
                   <p className="text-xs text-gray-400 truncate font-mono">{item.id}</p>
+                )}
+                {index === 0 && (
+                  <span className="inline-flex items-center gap-1 mt-0.5 text-xs font-medium text-amber-600">
+                    <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                    Главная картинка
+                  </span>
                 )}
               </div>
 

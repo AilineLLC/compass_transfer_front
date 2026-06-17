@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Plus, X, ImageIcon, Upload } from 'lucide-react';
+import { Plus, X, ImageIcon, Upload, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@shared/ui/forms/button';
 import { Label } from '@shared/ui/forms/label';
 import { Input } from '@shared/ui/forms/input';
@@ -82,18 +82,57 @@ export function LocationPoiSection({
     ));
   };
 
+  const moveUp = (index: number) => {
+    if (index === 0) return;
+    const next = [...items];
+    [next[index - 1], next[index]] = [next[index], next[index - 1]];
+    notify(next);
+  };
+
+  const moveDown = (index: number) => {
+    if (index === items.length - 1) return;
+    const next = [...items];
+    [next[index], next[index + 1]] = [next[index + 1], next[index]];
+    notify(next);
+  };
+
   return (
-    <div className="space-y-3">
-      <Label className="text-sm font-medium">Интересные места</Label>
+    <div className='flex flex-col gap-y-3'>
+      {/* <Label className="text-sm font-medium">Интересные места</Label> */}
 
       {items.length > 0 && (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 mt-3">
           {items.map((item, index) => {
             const src = getImageSrc(item.imageState);
             const hasError = item.imageState.kind === 'pending' && item.imageState.error;
 
             return (
               <div key={index} className="flex items-center gap-2 p-2 rounded-md border bg-white">
+                {/* Кнопки порядка */}
+                <div className="flex flex-col gap-0.5 flex-shrink-0">
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="h-5 w-5"
+                    disabled={index === 0}
+                    onClick={() => moveUp(index)}
+                    title="Переместить вверх"
+                  >
+                    <ChevronUp className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="h-5 w-5"
+                    disabled={index === items.length - 1}
+                    onClick={() => moveDown(index)}
+                    title="Переместить вниз"
+                  >
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </div>
                 {/* Картинка */}
                 <div
                   className={`relative w-10 h-10 flex-shrink-0 rounded border overflow-hidden flex items-center justify-center cursor-pointer hover:opacity-75 transition-opacity ${
@@ -158,7 +197,7 @@ export function LocationPoiSection({
         variant="outline"
         size="sm"
         onClick={addItem}
-        className="h-7 text-xs gap-1.5"
+        className="w-fit mt-3 h-7 text-xs gap-1.5"
       >
         <Plus className="h-3.5 w-3.5" />
         Добавить место

@@ -134,7 +134,7 @@ export function TransfersTableFilters({
                 {SORT_OPTIONS.map(o => (
                   <SelectItem key={o.value} value={o.value}>
                     {o.label}
-                  </SelectItem>
+                  </SelectItem> 
                 ))}
               </SelectContent>
             </Select>
