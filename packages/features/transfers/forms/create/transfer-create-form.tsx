@@ -44,6 +44,8 @@ interface PassengerField {
   reservedSeats: number;
   name: string;
   phone: string;
+  fromInitialData: boolean;
+  isDeleted: boolean;
 }
 
 const emptyPassenger = (): PassengerField => ({
@@ -52,6 +54,8 @@ const emptyPassenger = (): PassengerField => ({
   reservedSeats: 1,
   name: '',
   phone: '',
+  fromInitialData: false,
+  isDeleted: false,
 });
 
 // Конвертируем GetTransferDTO.startLocation/endLocation → GetLocationDTO-совместимый объект
@@ -264,13 +268,28 @@ const [allowPartialReservations, setAllowPartialReservations] = useState(
       reservedSeats: p.reservedSeats,
       name: p.name,
       phone: p.phone,
+      fromInitialData: true,
+      isDeleted: p.isDeleted ?? false,
     })) ?? [],
   );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // В режиме редактирования нельзя менять режим бронирования если есть пассажиры
+  const bookingModeDisabled = isEdit && (initialData?.passengers?.length ?? 0) > 0;
+
+  const handleAllowPartialChange = (val: boolean) => {
+    setAllowPartialReservations(val);
+    if (!val) setPassengers([]);
+  };
+
   const addPassenger = () => setPassengers(prev => [...prev, emptyPassenger()]);
-  const removePassenger = (id: number) => setPassengers(prev => prev.filter(p => p.id !== id));
+  const removePassenger = (id: number) =>
+    setPassengers(prev => prev.flatMap(p => {
+      if (p.id !== id) return [p];
+      if (p.fromInitialData) return [{ ...p, isDeleted: true }];
+      return [];
+    }));
   const updatePassenger = (
     id: number,
     field: keyof Omit<PassengerField, 'id'>,
@@ -308,8 +327,9 @@ if (!startLocation) { toast.error('Выберите точку отправле�
     if (!endLocation) { toast.error('Выберите точку назначения'); return; }
     if (!selectedDriver) { toast.error('Выберите водителя'); return; }
     if (!selectedCar) { toast.error('Выберите автомобиль'); return; }
-    if (passengers.length > 0) {
-      const invalid = passengers.find(p => !p.name.trim() || !p.phone.trim());
+    const activePassengers = passengers.filter(p => !p.isDeleted);
+    if (activePassengers.length > 0) {
+      const invalid = activePassengers.find(p => !p.name.trim() || !p.phone.trim());
       if (invalid) { toast.error('Заполните имя и телефон для всех пассажиров'); return; }
     }
 
@@ -320,6 +340,7 @@ if (!startLocation) { toast.error('Выберите точку отправле�
         reservedSeats: p.reservedSeats,
         name: p.name.trim(),
         phone: p.phone.trim(),
+        isDeleted: p.isDeleted || undefined,
       }));
 
       const payload = {
@@ -457,24 +478,25 @@ if (!startLocation) { toast.error('Выберите точку отправле�
         {/* Бронирование */}
         <Section icon={Ticket} title='Режим бронирования' description='Как пассажиры могут занимать места'>
           <div
-            className={`flex items-start gap-4 rounded-xl border p-4 cursor-pointer transition-colors ${
-              allowPartialReservations
-                ? 'border-primary/30 bg-primary/5'
-                : 'border-gray-200 bg-gray-50/60'
+            className={`flex items-start gap-4 rounded-xl border p-4 transition-colors ${
+              bookingModeDisabled
+                ? 'opacity-60 cursor-not-allowed border-gray-200 bg-gray-50/60'
+                : `cursor-pointer ${allowPartialReservations ? 'border-primary/30 bg-primary/5' : 'border-gray-200 bg-gray-50/60'}`
             }`}
-            onClick={() => setAllowPartialReservations(prev => !prev)}
+            onClick={() => !bookingModeDisabled && handleAllowPartialChange(!allowPartialReservations)}
           >
             <Checkbox
               id='allowPartialReservations'
               checked={allowPartialReservations}
-              onCheckedChange={val => setAllowPartialReservations(!!val)}
+              onCheckedChange={val => !bookingModeDisabled && handleAllowPartialChange(!!val)}
               onClick={(e) => e.stopPropagation()}
+              disabled={bookingModeDisabled}
               className='mt-0.5 shrink-0'
             />
             <div className='space-y-1'>
               <Label
                 htmlFor='allowPartialReservations'
-                className='text-sm font-semibold cursor-pointer'
+                className={`text-sm font-semibold ${bookingModeDisabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
               >
                 Частичное бронирование мест <span className='text-red-500'>*</span>
               </Label>
@@ -495,6 +517,11 @@ if (!startLocation) { toast.error('Выберите точку отправле�
                   </>
                 )}
               </p>
+              {bookingModeDisabled && (
+                <p className='text-xs text-amber-600 font-medium mt-1'>
+                  Нельзя изменить режим бронирования — у трансфера уже есть пассажиры.
+                </p>
+              )}
             </div>
           </div>
         </Section>
@@ -612,18 +639,32 @@ if (!startLocation) { toast.error('Выберите точку отправле�
           icon={Users}
           title='Пассажиры'
           description={
-            passengers.length === 0
-              ? 'Нет добавленных пассажиров'
-              : `${passengers.length} пассажир(а)`
+            !allowPartialReservations
+              ? 'Только через заявки с лендинга'
+              : passengers.filter(p => !p.isDeleted).length === 0
+                ? 'Нет добавленных пассажиров'
+                : `${passengers.filter(p => !p.isDeleted).length} пассажир(а)`
           }
           action={
-            <Button variant='outline' size='sm' onClick={addPassenger} className='gap-1.5 h-8 text-xs'>
-              <Plus className='h-3.5 w-3.5' />
-              Добавить
-            </Button>
+            allowPartialReservations ? (
+              <Button variant='outline' size='sm' onClick={addPassenger} className='gap-1.5 h-8 text-xs'>
+                <Plus className='h-3.5 w-3.5' />
+                Добавить
+              </Button>
+            ) : undefined
           }
         >
-          {passengers.length === 0 ? (
+          {!allowPartialReservations ? (
+            <div className='flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-amber-200 bg-amber-50/50 py-8 text-center'>
+              <div className='flex h-10 w-10 items-center justify-center rounded-full bg-amber-100'>
+                <Ticket className='h-5 w-5 text-amber-500' />
+              </div>
+              <p className='text-sm font-medium text-amber-700'>Только полное бронирование</p>
+              <p className='text-xs text-muted-foreground max-w-xs leading-relaxed'>
+                Пассажиры принимаются только через заявки с лендинга. Ручное добавление недоступно.
+              </p>
+            </div>
+          ) : passengers.filter(p => !p.isDeleted).length === 0 ? (
             <button
               type='button'
               onClick={addPassenger}
@@ -636,7 +677,7 @@ if (!startLocation) { toast.error('Выберите точку отправле�
             </button>
           ) : (
             <div className='space-y-3'>
-              {passengers.map((passenger, index) => (
+              {passengers.filter(p => !p.isDeleted).map((passenger, index) => (
                 <div key={passenger.id} className='rounded-xl border bg-gray-50/60 p-4 space-y-3'>
                   {/* Заголовок карточки */}
                   <div className='flex items-center justify-between'>

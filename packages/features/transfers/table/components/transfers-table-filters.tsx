@@ -1,6 +1,6 @@
 'use client';
 
-import { Columns, ChevronDown, RotateCw, ArrowUp, ArrowDown, Flame, ClipboardList } from 'lucide-react';
+import { Columns, ChevronDown, RotateCw, ArrowUp, ArrowDown, Flame, ClipboardList, CalendarCheck, CalendarX } from 'lucide-react';
 import { Button } from '@shared/ui/forms/button';
 import { Checkbox } from '@shared/ui/forms/checkbox';
 import { Switch } from '@shared/ui/forms/switch';
@@ -42,6 +42,8 @@ interface TransfersTableFiltersProps {
   sortBy: string;
   sortOrder: 'asc' | 'desc';
   handleSort: (field: string) => void;
+  showActiveOnly: boolean;
+  onShowActiveOnlyChange: (value: boolean) => void;
   hasPending?: boolean;
   isHot?: boolean;
   onHasPendingChange: (value: boolean | undefined) => void;
@@ -77,6 +79,8 @@ export function TransfersTableFilters({
   sortBy,
   sortOrder,
   handleSort,
+  showActiveOnly,
+  onShowActiveOnlyChange,
   hasPending,
   isHot,
   onHasPendingChange,
@@ -85,7 +89,36 @@ export function TransfersTableFilters({
   const toggleSortOrder = () => handleSort(sortBy);
 
   return (
-    <div className='rounded-xl border bg-card p-4 shadow-sm'>
+    <div className='rounded-xl border bg-card shadow-sm overflow-hidden'>
+      {/* Табы: Активные / Прошедшие */}
+      <div className='flex border-b'>
+        <button
+          type='button'
+          onClick={() => onShowActiveOnlyChange(true)}
+          className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
+            showActiveOnly
+              ? 'border-primary text-primary bg-primary/5'
+              : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40'
+          }`}
+        >
+          <CalendarCheck className='h-4 w-4' />
+          Активные
+        </button>
+        <button
+          type='button'
+          onClick={() => onShowActiveOnlyChange(false)}
+          className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
+            !showActiveOnly
+              ? 'border-primary text-primary bg-primary/5'
+              : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40'
+          }`}
+        >
+          <CalendarX className='h-4 w-4' />
+          Прошедшие
+        </button>
+      </div>
+
+      <div className='p-4'>
       <div className='flex flex-wrap items-center justify-between gap-3'>
 
         {/* Левая часть: сортировка + переключатели */}
@@ -204,6 +237,7 @@ export function TransfersTableFilters({
           </DropdownMenu>
         </div>
 
+      </div>
       </div>
     </div>
   );

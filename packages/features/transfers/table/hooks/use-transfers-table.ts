@@ -42,8 +42,12 @@ export function useTransfersTable() {
   });
   const [totalCount, setTotalCount] = useState(0);
 
-  const [sortBy, setSortBy] = useState<string>('createdAt');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [sortBy, setSortBy] = useState<string>('departureTime');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  const [showActiveOnly, setShowActiveOnly] = useState<boolean>(() => {
+    return searchParams.get('active') !== 'false';
+  });
 
   const [hasPending, setHasPending] = useState<boolean | undefined>(() => {
     const v = searchParams.get('hasPending');
@@ -108,6 +112,16 @@ export function useTransfersTable() {
         params.first = true;
       }
 
+      if (showActiveOnly) {
+        params.DepartureTime = new Date().toISOString();
+        params.DepartureTimeOp = 'GreaterThanOrEqual';
+        params.FreeSeats = 0;
+        params.FreeSeatsOp = 'GreaterThan';
+      } else {
+        params.DepartureTime = new Date().toISOString();
+        params.DepartureTimeOp = 'LessThan';
+      }
+
       if (hasPending !== undefined) params.TransferReservationFormHasPending = hasPending;
       if (isHot !== undefined) params.isHot = isHot;
 
@@ -135,7 +149,7 @@ export function useTransfersTable() {
       setLoading(false);
       loadingRef.current = false;
     }
-  }, [loadTrigger, pageSize, sortBy, sortOrder, hasPending, isHot]);
+  }, [loadTrigger, pageSize, sortBy, sortOrder, showActiveOnly, hasPending, isHot]);
 
   useEffect(() => {
     loadTransfers();
@@ -200,6 +214,17 @@ export function useTransfersTable() {
     setCurrentPageNumber(1);
   };
 
+  const handleShowActiveOnlyChange = (value: boolean) => {
+    resetPagination();
+    setShowActiveOnly(value);
+    setSortBy('departureTime');
+    setSortOrder(value ? 'asc' : 'desc');
+
+    const params = new URLSearchParams(searchParams.toString());
+    if (!value) params.set('active', 'false'); else params.delete('active');
+    router.push(params.toString() ? `/transfers?${params.toString()}` : '/transfers');
+  };
+
   const handleHasPendingChange = (value: boolean | undefined) => {
     resetPagination();
     setHasPending(value);
@@ -220,6 +245,8 @@ export function useTransfersTable() {
 
   // Синхронизация фильтров с URL при внешнем изменении (кнопка назад/вперёд)
   useEffect(() => {
+    setShowActiveOnly(searchParams.get('active') !== 'false');
+
     const hp = searchParams.get('hasPending');
     setHasPending(hp === 'true' ? true : hp === 'false' ? false : undefined);
 
@@ -246,6 +273,7 @@ export function useTransfersTable() {
     sortOrder,
     columnVisibility,
 
+    showActiveOnly,
     hasPending,
     isHot,
 
@@ -255,6 +283,7 @@ export function useTransfersTable() {
     handlePageSizeChange,
     handleSort,
     handleColumnVisibilityChange,
+    handleShowActiveOnlyChange,
     handleHasPendingChange,
     handleIsHotChange,
 

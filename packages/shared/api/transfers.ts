@@ -5,6 +5,7 @@ export interface TransferPassenger {
   reservedSeats: number;
   name: string;
   phone: string;
+  isDeleted?: boolean;
 }
 
 export interface TransferLocation {
@@ -118,6 +119,10 @@ export interface TransferFilters {
   isHot?: boolean;
   TransferReservationFormHasPending?: boolean;
   includes?: string;
+  DepartureTime?: string;
+  DepartureTimeOp?: 'GreaterThan' | 'GreaterThanOrEqual' | 'Equal' | 'LessThanOrEqual' | 'LessThan';
+  FreeSeats?: number;
+  FreeSeatsOp?: 'GreaterThan' | 'GreaterThanOrEqual' | 'Equal' | 'LessThanOrEqual' | 'LessThan';
 }
 
 export interface CreateTransferPassengerDTO {
@@ -125,6 +130,7 @@ export interface CreateTransferPassengerDTO {
   reservedSeats: number;
   name: string;
   phone: string;
+  isDeleted?: boolean;
 }
 
 export interface CreateTransferDTO {

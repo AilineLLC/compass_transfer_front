@@ -18,6 +18,7 @@ export function TransfersTable() {
     sortBy,
     sortOrder,
     columnVisibility,
+    showActiveOnly,
     hasPending,
     isHot,
     handleNextPage,
@@ -26,6 +27,7 @@ export function TransfersTable() {
     handlePageSizeChange,
     handleSort,
     handleColumnVisibilityChange,
+    handleShowActiveOnlyChange,
     handleHasPendingChange,
     handleIsHotChange,
     loadTransfers,
@@ -55,6 +57,8 @@ export function TransfersTable() {
         sortBy={sortBy}
         sortOrder={sortOrder}
         handleSort={handleSort}
+        showActiveOnly={showActiveOnly}
+        onShowActiveOnlyChange={handleShowActiveOnlyChange}
         hasPending={hasPending}
         isHot={isHot}
         onHasPendingChange={handleHasPendingChange}

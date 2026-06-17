@@ -118,27 +118,42 @@ export function TransferViewPage({ transfer: initialTransfer }: TransferViewPage
   const [reservationsLoading, setReservationsLoading] = useState(true);
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
 
+  const refreshData = async () => {
+    try {
+      const [updatedTransfer, reservationsRes] = await Promise.all([
+        transfersApi.getTransferById(initialTransfer.id),
+        transferReservationsApi.getReservations({ Transfer: initialTransfer.id, size: 100 }),
+      ]);
+      setTransfer(updatedTransfer);
+      setReservations(reservationsRes.data);
+    } catch {
+      // silent
+    }
+  };
+
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await transferReservationsApi.getReservations({ Transfer: transfer.id, size: 100 });
-        setReservations(res.data);
+        const [updatedTransfer, reservationsRes] = await Promise.all([
+          transfersApi.getTransferById(initialTransfer.id),
+          transferReservationsApi.getReservations({ Transfer: initialTransfer.id, size: 100 }),
+        ]);
+        setTransfer(updatedTransfer);
+        setReservations(reservationsRes.data);
       } catch {
-        // silent — reservations section will show empty state
+        // silent — sections will show empty state
       } finally {
         setReservationsLoading(false);
       }
     };
     load();
-  }, [transfer.id]);
+  }, [initialTransfer.id]);
 
   const handleApprove = async (id: string) => {
     setProcessingIds(prev => new Set(prev).add(id));
     try {
       await transferReservationsApi.approveReservation(id);
-      setReservations(prev => prev.map(r => r.id === id ? { ...r, status: 'Approved' } : r));
-      const updated = await transfersApi.getTransferById(transfer.id);
-      setTransfer(updated);
+      await refreshData();
       toast.success('Заявка одобрена');
     } catch {
       toast.error('Не удалось одобрить заявку');
@@ -154,7 +169,7 @@ export function TransferViewPage({ transfer: initialTransfer }: TransferViewPage
         ...reservation,
         status: 'Rejected'
       });
-      setReservations(prev => prev.map(r => r.id === reservation.id ? { ...r, status: 'Rejected' } : r));
+      await refreshData();
       toast.success('Заявка отклонена');
     } catch {
       toast.error('Не удалось отклонить заявку');
@@ -171,10 +186,13 @@ export function TransferViewPage({ transfer: initialTransfer }: TransferViewPage
 
   const handleDeletePassenger = async () => {
     if (!passengerToDelete) return;
-    const updatedPassengers = transfer.passengers.filter(p => p !== passengerToDelete);
+    const updatedPassengers = transfer.passengers.map(p =>
+      p === passengerToDelete ? { ...p, isDeleted: true } : p,
+    );
     await transfersApi.updateTransfer(transfer.id, {
       departureTime: transfer.departureTime,
       duration: transfer.duration,
+      distance: transfer.distance,
       price: transfer.price,
       ...(transfer.driverPrice != null ? { driverPrice: transfer.driverPrice } : {}),
       allowPartialReservations: transfer.allowPartialReservations,
@@ -184,16 +202,23 @@ export function TransferViewPage({ transfer: initialTransfer }: TransferViewPage
         reservedSeats: p.reservedSeats,
         name: p.name,
         phone: p.phone,
+        isDeleted: p.isDeleted || undefined,
       })),
       startLocation: transfer.startLocation.id,
       endLocation: transfer.endLocation.id,
       car: transfer.car?.id ?? '',
       driver: transfer.driver?.id ?? '',
     });
-    setTransfer(prev => ({ ...prev, passengers: updatedPassengers }));
+    await refreshData();
     toast.success('Пассажир удалён');
     setPassengerToDelete(null);
   };
+
+  const deletedCustomerIds = new Set(
+    transfer.passengers
+      .filter(p => p.isDeleted && p.customerId)
+      .map(p => p.customerId as string),
+  );
 
   return (
     <div className='flex flex-col h-full overflow-hidden bg-gray-50'>
@@ -276,7 +301,7 @@ export function TransferViewPage({ transfer: initialTransfer }: TransferViewPage
           <StatCard
             icon={Users}
             label='Пассажиров'
-            value={transfer.passengers.length}
+            value={transfer.passengers.filter(p => !p.isDeleted).length}
           />
         </div>
 
@@ -487,21 +512,32 @@ export function TransferViewPage({ transfer: initialTransfer }: TransferViewPage
               {transfer.passengers.map((p, i) => (
                 <div
                   key={i}
-                  className='flex items-center gap-3 rounded-xl bg-gray-50 border px-4 py-3 transition-colors group hover:bg-white hover:shadow-sm'
+                  className={`flex items-center gap-3 rounded-xl border px-4 py-3 transition-colors group ${
+                    p.isDeleted
+                      ? 'bg-red-50/60 border-red-100 opacity-60'
+                      : 'bg-gray-50 hover:bg-white hover:shadow-sm'
+                  }`}
                 >
-                  <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary'>
+                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
+                    p.isDeleted ? 'bg-red-100 text-red-400' : 'bg-primary/10 text-primary'
+                  }`}>
                     {i + 1}
                   </div>
                   <div className='flex-1 min-w-0'>
                     <div className='flex items-center gap-2'>
-                      <p className='font-medium text-sm truncate'>{p.name || '—'}</p>
-                      {p.customerId && (
+                      <p className={`font-medium text-sm truncate ${p.isDeleted ? 'line-through text-muted-foreground' : ''}`}>
+                        {p.name || '—'}
+                      </p>
+                      {p.isDeleted && (
+                        <Badge variant='outline' className='text-xs shrink-0 text-red-500 border-red-200'>Удалён</Badge>
+                      )}
+                      {!p.isDeleted && p.customerId && (
                         <Badge variant='outline' className='text-xs shrink-0'>Клиент</Badge>
                       )}
                     </div>
                     <div className='flex items-center gap-3 mt-0.5 flex-wrap'>
                       {p.phone && (
-                        <span className='flex items-center gap-1 text-xs text-muted-foreground'>
+                        <span className={`flex items-center gap-1 text-xs text-muted-foreground ${p.isDeleted ? 'line-through' : ''}`}>
                           <Phone className='h-3 w-3' />
                           {p.phone}
                         </span>
@@ -512,14 +548,16 @@ export function TransferViewPage({ transfer: initialTransfer }: TransferViewPage
                       </span>
                     </div>
                   </div>
-                  <Button
-                    variant='ghost'
-                    size='sm'
-                    className='h-7 w-7 p-0 opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 hover:bg-red-50 shrink-0 transition-opacity'
-                    onClick={() => setPassengerToDelete(p)}
-                  >
-                    <Trash2 className='h-3.5 w-3.5' />
-                  </Button>
+                  {!p.isDeleted && (
+                    <Button
+                      variant='ghost'
+                      size='sm'
+                      className='h-7 w-7 p-0 opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 hover:bg-red-50 shrink-0 transition-opacity'
+                      onClick={() => setPassengerToDelete(p)}
+                    >
+                      <Trash2 className='h-3.5 w-3.5' />
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
@@ -559,7 +597,12 @@ export function TransferViewPage({ transfer: initialTransfer }: TransferViewPage
                   >
                     <div className='flex items-start justify-between gap-2'>
                       <div className='min-w-0'>
-                        <p className='font-medium text-sm truncate'>{r.name || '—'}</p>
+                        <div className='flex items-center gap-2'>
+                          <p className='font-medium text-sm truncate'>{r.name || '—'}</p>
+                          {deletedCustomerIds.has(r.customer?.id) && (
+                            <Badge variant='outline' className='text-xs shrink-0 text-red-500 border-red-200 bg-red-50'>Удален</Badge>
+                          )}
+                        </div>
                         {r.phone && (
                           <span className='flex items-center gap-1 text-xs text-muted-foreground mt-0.5'>
                             <Phone className='h-3 w-3' />
@@ -581,7 +624,9 @@ export function TransferViewPage({ transfer: initialTransfer }: TransferViewPage
                             : 'text-amber-700 border-amber-300 bg-amber-50 shrink-0'
                         }
                       >
-                        {r.status === 'Verified' ? 'Одобрено' : r.status === 'Rejected' ? 'Отклонено' : 'Ожидает'}
+                        {
+                          r.status === 'Verified' ? 'Одобрено' : r.status === 'Rejected' ? 'Отклонено' : 'Ожидает'
+                        }
                       </Badge>
                     </div>
                     {isPending && (
