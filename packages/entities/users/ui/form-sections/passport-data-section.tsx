@@ -124,6 +124,7 @@ export function PassportDataSection() {
             value={issueDate}
             onChange={date => toDateString(date, 'profile.passport.issueDate')}
             placeholder='Выберите дату выдачи'
+            maxDate={new Date()}
           />
         </div>
 
@@ -134,6 +135,7 @@ export function PassportDataSection() {
             value={expiryDate}
             onChange={date => toDateString(date, 'profile.passport.expiryDate')}
             placeholder='Выберите срок действия'
+            minDate={new Date()}
           />
         </div>
       </div>

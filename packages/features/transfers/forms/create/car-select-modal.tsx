@@ -14,6 +14,7 @@ interface CarSelectModalProps {
   onClose: () => void;
   onSelect: (car: GetCarDTO) => void;
   selectedCarId?: string | null;
+  driverId?: string | null;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -28,25 +29,32 @@ export function CarSelectModal({
   onClose,
   onSelect,
   selectedCarId,
+  driverId,
 }: CarSelectModalProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [cars, setCars] = useState<GetCarDTO[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const loadCars = useCallback(async (query?: string) => {
+    if (!driverId) {
+      setCars([]);
+      return;
+    }
     setIsLoading(true);
     try {
-      const params = query
-        ? { licensePlate: query, licensePlateOp: 'Contains' as const, first: true, size: 50 }
-        : { first: true, size: 50, sortBy: 'make', sortOrder: 'Asc' as const };
-      const response = await carsApi.getCars(params);
+      const response = await carsApi.getCars({
+        Driver: driverId,
+        first: true,
+        size: 100,
+        ...(query ? { licensePlate: query, licensePlateOp: 'Contains' as const } : {}),
+      });
       setCars(response.data);
     } catch {
       setCars([]);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [driverId]);
 
   useEffect(() => {
     if (isOpen) loadCars();
@@ -100,8 +108,12 @@ export function CarSelectModal({
           ) : cars.length === 0 ? (
             <div className='flex flex-col items-center justify-center py-12 text-muted-foreground gap-2'>
               <Car className='h-12 w-12 opacity-20' />
-              <p className='font-medium'>Автомобили не найдены</p>
-              <p className='text-sm'>Попробуйте изменить запрос</p>
+              <p className='font-medium'>
+                {!driverId ? 'Сначала выберите водителя' : 'У водителя нет привязанных автомобилей'}
+              </p>
+              {!driverId && (
+                <p className='text-sm'>Автомобили загружаются только после выбора водителя</p>
+              )}
             </div>
           ) : (
             cars.map(car => {

@@ -100,6 +100,10 @@ export function OrdersStats({ className, activeStatus }: OrderStatsProps) {
     router.push(newUrl);
   };
 
+  const handleShowAll = () => {
+    router.push('/orders');
+  };
+
   if (loading) {
     return (
       <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 ${className || ''}`}>
@@ -128,11 +132,32 @@ export function OrdersStats({ className, activeStatus }: OrderStatsProps) {
     return null;
   }
 
+  const total = (Object.keys(stats) as Array<keyof OrderStatsResponse>).reduce(
+    (sum, key) => sum + stats[key],
+    0,
+  );
+  const isAllActive = !activeStatus;
+
   return (
-    <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 ${className || ''}`}>
+    <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 ${className || ''}`}>
+      {/* Кнопка «Все» */}
+      <div
+        onClick={handleShowAll}
+        className={`
+          flex flex-row items-center justify-start gap-2 border rounded-lg p-1 cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-105
+          bg-gray-50 border-gray-200 text-gray-700
+          ${isAllActive ? 'ring-4 ring-gray-400 ring-offset-2 shadow-xl' : ''}
+        `}
+      >
+        <div className='flex items-center justify-center min-w-8 h-8 px-1 border border-gray-400 rounded-full'>
+          <span className='text-sm font-bold'>{total.toLocaleString('ru-RU')}</span>
+        </div>
+        <div className='text-xs font-medium text-center'>Все</div>
+      </div>
+
       {(Object.keys(stats) as Array<keyof OrderStatsResponse>).map(
         status =>
-          status !== 'pending' && ( // Убираем "Ожидание" из статистики
+          status !== 'pending' && (
             <div
               key={status}
               onClick={() => handleStatClick(status)}
@@ -143,8 +168,8 @@ export function OrdersStats({ className, activeStatus }: OrderStatsProps) {
               ${status === 'expired' && stats[status] > 0 ? 'animate-pulse [animation-duration:3s]' : ''}
             `}
             >
-              <div className='flex items-center justify-center w-8 h-8 border border-gray-400 border-current rounded-full'>
-                <span className='text-lg font-bold'>{stats[status].toLocaleString('ru-RU')}</span>
+              <div className='flex items-center justify-center min-w-8 h-8 px-1 border border-gray-400 border-current rounded-full'>
+                <span className='text-sm font-bold'>{stats[status].toLocaleString('ru-RU')}</span>
               </div>
               <div className='text-xs font-medium text-center'>{orderStatsLabels[status]}</div>
             </div>

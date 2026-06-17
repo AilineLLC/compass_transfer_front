@@ -89,6 +89,7 @@ export function EmployeeProfileSection({ showOptionalWarning = false }: Employee
           <Input
             id='hireDate'
             type='date'
+            max={new Date().toISOString().split('T')[0]}
             {...register('profile.hireDate')}
             className={`focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0 hover:shadow-md focus:shadow-md focus-visible:shadow-md transition-shadow ${
               profileErrors.hireDate

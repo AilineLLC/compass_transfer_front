@@ -50,6 +50,33 @@ export function SiteHeader() {
     return () => clearInterval(interval);
   }, [refresh]);
 
+  const SEGMENT_TRANSLATIONS: Record<string, string> = {
+    users: 'Пользователи',
+    admin: 'Администраторы',
+    driver: 'Водители',
+    customer: 'Клиенты',
+    operator: 'Операторы',
+    partner: 'Партнёры',
+    terminal: 'Терминалы',
+    create: 'Создание',
+    edit: 'Редактирование',
+    view: 'Просмотр',
+    cars: 'Автомобили',
+    locations: 'Локации',
+    notifications: 'Уведомления',
+    me: 'Мои',
+    orders: 'Заказы',
+    instant: 'Срочные',
+    scheduled: 'Запланированные',
+    payments: 'Платежи',
+    profile: 'Профиль',
+    services: 'Услуги',
+    support: 'Поддержка',
+    tariffs: 'Тарифы',
+    documentation: 'Документация',
+    routes: 'Маршруты',
+  };
+
   const SKIP_BREADCRUMB_PATHS = new Set([
     '/users/edit',
     '/users/edit/driver',
@@ -73,16 +100,18 @@ export function SiteHeader() {
     .map((segment, index) => {
       const href = '/' + pathSegments.slice(0, index + 1).join('/');
       const isLast = index === pathSegments.length - 1;
-      const segmentName = segment
-        .split('-')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
+      const segmentName =
+        SEGMENT_TRANSLATIONS[segment.toLowerCase()] ??
+        segment
+          .split('-')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
       return { href, name: segmentName, isLast };
     })
     .filter(item => item.isLast || !SKIP_BREADCRUMB_PATHS.has(item.href));
 
   if (pathSegments.length === 0) {
-    breadcrumbItems.push({ href: '/', name: 'Dashboard', isLast: true });
+    breadcrumbItems.push({ href: '/', name: 'Главная', isLast: true });
   }
 
   return (
@@ -96,7 +125,7 @@ export function SiteHeader() {
             <BreadcrumbList>
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
-                  <Link href='/'>Home</Link>
+                  <Link href='/'>Главная</Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
 

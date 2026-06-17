@@ -1,6 +1,6 @@
 'use client';
 
-import { Search, User, ChevronDown, ChevronUp, X, CalendarDays } from 'lucide-react';
+import { Search, User, ChevronDown, ChevronUp, X, CalendarDays, RefreshCw } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useDebounce } from '@shared/hooks/use-debounce';
 import { Badge } from '@shared/ui/data-display/badge';
@@ -9,7 +9,6 @@ import { Input } from '@shared/ui/forms/input';
 import { Card, CardContent } from '@shared/ui/layout/card';
 import { CarTypeValues, type CarType } from '@entities/tariffs/enums/CarType.enum';
 import { ServiceClassValues, type ServiceClass } from '@entities/tariffs/enums/ServiceClass.enum';
-import { toast } from 'sonner';
 import type { GetDriverDTO } from '@entities/users/interface';
 import type { GetCarDTO } from '@entities/cars/interface';
 import { useDriverSearch } from '@features/drivers/hooks/useDriverSearch';
@@ -91,29 +90,8 @@ export function DriverPanel({
 
   const handleDriverClick = (driver: GetDriverDTO) => {
     if (isInstantOrder) return;
-
-    const fullDriver = getDriverById ? getDriverById(driver.id) : null;
-    const activeCar = (fullDriver?.activeCar ?? driver.activeCar) as Record<string, unknown> | undefined;
-
-    // Нет активной машины — показываем выбор машины водителя
-    if (!activeCar?.id && !driver.activeCarId) {
-      setCarSelectingDriver(driver);
-      return;
-    }
-
-    // Проверяем соответствие класса машины водителя классу заказа
-    if (requiredServiceClass) {
-      const driverClass = activeCar?.serviceClass as string | undefined;
-
-      if (driverClass && driverClass !== requiredServiceClass) {
-        const driverClassLabel = ServiceClassValues[driverClass as unknown as ServiceClass] || driverClass;
-        const orderClassLabel = ServiceClassValues[requiredServiceClass as unknown as ServiceClass] || requiredServiceClass;
-        toast.error(`Класс автомобиля водителя "${driverClassLabel}" не соответствует классу заказа "${orderClassLabel}".`);
-        return;
-      }
-    }
-
-    selectDriver(driver, fullDriver);
+    // Всегда показываем выбор машины из списка машин водителя
+    setCarSelectingDriver(driver);
   };
 
   const selectDriver = (driver: GetDriverDTO, fullDriver: GetDriverDTO | null) => {
@@ -231,6 +209,15 @@ export function DriverPanel({
                           title='Расписание водителя'
                         >
                           <CalendarDays className='h-4 w-4 text-blue-600' />
+                        </button>
+                      )}
+                      {!isInstantOrder && (
+                        <button
+                          onClick={() => setCarSelectingDriver(selectedDriver)}
+                          className='p-1 rounded-full hover:bg-blue-100 transition-colors'
+                          title='Сменить машину'
+                        >
+                          <RefreshCw className='h-4 w-4 text-blue-500' />
                         </button>
                       )}
                       {!isInstantOrder && (

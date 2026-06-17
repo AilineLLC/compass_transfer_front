@@ -75,6 +75,7 @@ export function PersonalInfoSection() {
             onChange={handleDateOfBirth}
             placeholder='Выберите дату рождения'
             className={errors.profile?.dateOfBirth?.message ? 'border-red-500' : ''}
+            maxDate={new Date()}
           />
           {errors.profile?.dateOfBirth?.message && (
             <p className='text-sm text-red-500'>

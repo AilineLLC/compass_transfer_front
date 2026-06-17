@@ -131,7 +131,7 @@ export function TransfersTableFilters({
             />
             <span className='flex items-center gap-1.5 text-sm font-medium'>
               <ClipboardList className='h-4 w-4 text-amber-500' />
-              Pending заявки
+              Новые заявки
             </span>
           </label>
 
@@ -142,7 +142,7 @@ export function TransfersTableFilters({
             />
             <span className='flex items-center gap-1.5 text-sm font-medium'>
               <Flame className='h-4 w-4 text-orange-500' />
-              Горящие
+              Горячие трансферы
             </span>
           </label>
         </div>

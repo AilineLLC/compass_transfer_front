@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { transfersApi, type GetTransferDTO, type TransferFilters } from '@shared/api/transfers';
 import { transferReservationsApi } from '@shared/api/transfer-reservations';
@@ -21,6 +21,7 @@ interface ColumnVisibility {
 
 export function useTransfersTable() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [transfers, setTransfers] = useState<GetTransferDTO[]>([]);
   const [pendingReservationsMap, setPendingReservationsMap] = useState<Record<string, number>>({});
@@ -44,8 +45,18 @@ export function useTransfersTable() {
   const [sortBy, setSortBy] = useState<string>('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  const [hasPending, setHasPending] = useState<boolean | undefined>(undefined);
-  const [isHot, setIsHot] = useState<boolean | undefined>(undefined);
+  const [hasPending, setHasPending] = useState<boolean | undefined>(() => {
+    const v = searchParams.get('hasPending');
+    if (v === 'true') return true;
+    if (v === 'false') return false;
+    return undefined;
+  });
+  const [isHot, setIsHot] = useState<boolean | undefined>(() => {
+    const v = searchParams.get('isHot');
+    if (v === 'true') return true;
+    if (v === 'false') return false;
+    return undefined;
+  });
 
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>(() => {
     if (typeof window !== 'undefined') {
@@ -192,12 +203,29 @@ export function useTransfersTable() {
   const handleHasPendingChange = (value: boolean | undefined) => {
     resetPagination();
     setHasPending(value);
+
+    const params = new URLSearchParams(searchParams.toString());
+    if (value !== undefined) params.set('hasPending', String(value)); else params.delete('hasPending');
+    router.push(params.toString() ? `/transfers?${params.toString()}` : '/transfers');
   };
 
   const handleIsHotChange = (value: boolean | undefined) => {
     resetPagination();
     setIsHot(value);
+
+    const params = new URLSearchParams(searchParams.toString());
+    if (value !== undefined) params.set('isHot', String(value)); else params.delete('isHot');
+    router.push(params.toString() ? `/transfers?${params.toString()}` : '/transfers');
   };
+
+  // Синхронизация фильтров с URL при внешнем изменении (кнопка назад/вперёд)
+  useEffect(() => {
+    const hp = searchParams.get('hasPending');
+    setHasPending(hp === 'true' ? true : hp === 'false' ? false : undefined);
+
+    const ih = searchParams.get('isHot');
+    setIsHot(ih === 'true' ? true : ih === 'false' ? false : undefined);
+  }, [searchParams]);
 
   const hasNext = currentPageNumber * pageSize < totalCount;
   const hasPrevious = currentPageNumber > 1;

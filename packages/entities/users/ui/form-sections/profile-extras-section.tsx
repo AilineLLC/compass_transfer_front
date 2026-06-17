@@ -111,6 +111,7 @@ export function ProfileExtrasSection() {
             value={lastRideDate}
             onChange={date => toDateString(date, 'profile.lastRideDate')}
             placeholder='Выберите дату'
+            maxDate={new Date()}
           />
         </div>
 
@@ -121,6 +122,7 @@ export function ProfileExtrasSection() {
             value={medicalExamDate}
             onChange={date => toDateString(date, 'profile.medicalExamDate')}
             placeholder='Выберите дату'
+            maxDate={new Date()}
           />
         </div>
 
@@ -131,6 +133,7 @@ export function ProfileExtrasSection() {
             value={backgroundCheckDate}
             onChange={date => toDateString(date, 'profile.backgroundCheckDate')}
             placeholder='Выберите дату'
+            maxDate={new Date()}
           />
         </div>
 

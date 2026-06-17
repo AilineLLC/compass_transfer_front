@@ -53,7 +53,13 @@ export function useCarsTable(initialFilters?: {
 
   // Флаг для отслеживания инициализации
   const [isInitialized, setIsInitialized] = useState(false);
-  
+
+  // Debounce refs для текстовых фильтров
+  const makeDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const modelDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const yearDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const plateDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Данные
   const [cars, setCars] = useState<GetCarDTO[]>([]);
   const [filteredCars, setFilteredCars] = useState<GetCarDTO[]>([]);
@@ -61,15 +67,21 @@ export function useCarsTable(initialFilters?: {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Фильтры
+  // Фильтры (инициализация из URL если присутствует)
   const [searchTerm, setSearchTerm] = useState('');
-  const [makeFilter, setMakeFilter] = useState('');
-  const [modelFilter, setModelFilter] = useState('');
-  const [yearFilter, setYearFilter] = useState('');
+  const [makeFilter, setMakeFilter] = useState(() => searchParams.get('make') || '');
+  const [modelFilter, setModelFilter] = useState(() => searchParams.get('model') || '');
+  const [yearFilter, setYearFilter] = useState(() => searchParams.get('year') || '');
   const [colorFilter, setColorFilter] = useState<CarColor[]>([]);
-  const [licensePlateFilter, setLicensePlateFilter] = useState('');
-  const [typeFilter, setTypeFilter] = useState<VehicleType[]>([]);
-  const [serviceClassFilter, setServiceClassFilter] = useState<ServiceClass[]>([]);
+  const [licensePlateFilter, setLicensePlateFilter] = useState(() => searchParams.get('licensePlate') || '');
+  const [typeFilter, setTypeFilter] = useState<VehicleType[]>(() => {
+    const tp = searchParams.get('type');
+    return tp ? (tp.split(',') as VehicleType[]) : [];
+  });
+  const [serviceClassFilter, setServiceClassFilter] = useState<ServiceClass[]>(() => {
+    const sc = searchParams.get('serviceClass');
+    return sc ? (sc.split(',') as ServiceClass[]) : [];
+  });
   const [statusFilter, setStatusFilter] = useState<VehicleStatus[]>(() => {
     const statusParam = searchParams.get('status') || initialFilters?.status;
 
@@ -172,20 +184,27 @@ export function useCarsTable(initialFilters?: {
     featuresFilter,
   };
 
-  // Стабильная функция загрузки фильтров
+  // Стабильная функция загрузки фильтров (URL params имеют приоритет)
   const onFiltersLoad = useCallback((filters: SavedCarsFilters) => {
-    setMakeFilter(filters.makeFilter || '');
-    setModelFilter(filters.modelFilter || '');
-    setYearFilter(filters.yearFilter || '');
+    setMakeFilter(searchParams.get('make') ?? filters.makeFilter ?? '');
+    setModelFilter(searchParams.get('model') ?? filters.modelFilter ?? '');
+    setYearFilter(searchParams.get('year') ?? filters.yearFilter ?? '');
     setColorFilter(filters.colorFilter || []);
-    setLicensePlateFilter(filters.licensePlateFilter || '');
-    setTypeFilter(filters.typeFilter || []);
-    setServiceClassFilter(filters.serviceClassFilter || []);
-    setStatusFilter(filters.statusFilter || []);
+    setLicensePlateFilter(searchParams.get('licensePlate') ?? filters.licensePlateFilter ?? '');
+    const typeParam = searchParams.get('type');
+    setTypeFilter(typeParam ? (typeParam.split(',') as VehicleType[]) : (filters.typeFilter || []));
+    const scParam = searchParams.get('serviceClass');
+    setServiceClassFilter(scParam ? (scParam.split(',') as ServiceClass[]) : (filters.serviceClassFilter || []));
+    const statusParam = searchParams.get('status');
+    setStatusFilter(
+      statusParam && Object.values(VehicleStatus).includes(statusParam as VehicleStatus)
+        ? [statusParam as VehicleStatus]
+        : (filters.statusFilter || []),
+    );
     setPassengerCapacityFilter(filters.passengerCapacityFilter || '');
     setFeaturesFilter(filters.featuresFilter || []);
-    setIsInitialized(true); // Помечаем как инициализированный
-  }, []);
+    setIsInitialized(true);
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Хук для сохранения фильтров
   const { saveFilters, clearSavedFilters, hasSaved, justSaved } = useSavedFilters({
@@ -324,20 +343,34 @@ export function useCarsTable(initialFilters?: {
     loadCars,
   ]);
 
-  // Синхронизируем фильтр статуса с URL параметрами
+  // Синхронизируем все URL-фильтры при внешнем изменении (кнопка назад/вперёд)
   useEffect(() => {
     const statusParam = searchParams.get('status');
-    let newStatusFilter: VehicleStatus[] = [];
+    const newStatus: VehicleStatus[] = statusParam && Object.values(VehicleStatus).includes(statusParam as VehicleStatus)
+      ? [statusParam as VehicleStatus]
+      : [];
+    if (JSON.stringify(newStatus) !== JSON.stringify(statusFilter)) setStatusFilter(newStatus);
 
-    if (statusParam && Object.values(VehicleStatus).includes(statusParam as VehicleStatus)) {
-      newStatusFilter = [statusParam as VehicleStatus];
-    }
+    const typeParam = searchParams.get('type');
+    const newType = typeParam ? (typeParam.split(',') as VehicleType[]) : [];
+    if (JSON.stringify(newType) !== JSON.stringify(typeFilter)) setTypeFilter(newType);
 
-    // Обновляем только если значение изменилось
-    if (JSON.stringify(newStatusFilter) !== JSON.stringify(statusFilter)) {
-      setStatusFilter(newStatusFilter);
-    }
-  }, [searchParams, statusFilter]);
+    const scParam = searchParams.get('serviceClass');
+    const newSc = scParam ? (scParam.split(',') as ServiceClass[]) : [];
+    if (JSON.stringify(newSc) !== JSON.stringify(serviceClassFilter)) setServiceClassFilter(newSc);
+
+    const makeParam = searchParams.get('make') || '';
+    if (makeParam !== makeFilter) setMakeFilter(makeParam);
+
+    const modelParam = searchParams.get('model') || '';
+    if (modelParam !== modelFilter) setModelFilter(modelParam);
+
+    const yearParam = searchParams.get('year') || '';
+    if (yearParam !== yearFilter) setYearFilter(yearParam);
+
+    const plateParam = searchParams.get('licensePlate') || '';
+    if (plateParam !== licensePlateFilter) setLicensePlateFilter(plateParam);
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Обработчики
   const handleNextPage = () => {
@@ -442,6 +475,10 @@ export function useCarsTable(initialFilters?: {
     setCurrentCursor(null);
     setIsFirstPage(true);
     setCurrentPageNumber(1);
+
+    const params = new URLSearchParams(searchParams.toString());
+    if (types.length > 0) params.set('type', types.join(',')); else params.delete('type');
+    router.push(params.toString() ? `/cars?${params.toString()}` : '/cars');
   };
 
   const handleServiceClassFilterChange = (classes: ServiceClass[]) => {
@@ -449,6 +486,10 @@ export function useCarsTable(initialFilters?: {
     setCurrentCursor(null);
     setIsFirstPage(true);
     setCurrentPageNumber(1);
+
+    const params = new URLSearchParams(searchParams.toString());
+    if (classes.length > 0) params.set('serviceClass', classes.join(',')); else params.delete('serviceClass');
+    router.push(params.toString() ? `/cars?${params.toString()}` : '/cars');
   };
 
   const handleStatusFilterChange = useCallback((statuses: VehicleStatus[]) => {
@@ -529,24 +570,52 @@ export function useCarsTable(initialFilters?: {
       setCurrentCursor(null);
       setIsFirstPage(true);
       setCurrentPageNumber(1);
+
+      if (makeDebounceRef.current) clearTimeout(makeDebounceRef.current);
+      makeDebounceRef.current = setTimeout(() => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (make) params.set('make', make); else params.delete('make');
+        router.replace(params.toString() ? `/cars?${params.toString()}` : '/cars');
+      }, 500);
     },
     setModelFilter: (model: string) => {
       setModelFilter(model);
       setCurrentCursor(null);
       setIsFirstPage(true);
       setCurrentPageNumber(1);
+
+      if (modelDebounceRef.current) clearTimeout(modelDebounceRef.current);
+      modelDebounceRef.current = setTimeout(() => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (model) params.set('model', model); else params.delete('model');
+        router.replace(params.toString() ? `/cars?${params.toString()}` : '/cars');
+      }, 500);
     },
     setYearFilter: (year: string) => {
       setYearFilter(year);
       setCurrentCursor(null);
       setIsFirstPage(true);
       setCurrentPageNumber(1);
+
+      if (yearDebounceRef.current) clearTimeout(yearDebounceRef.current);
+      yearDebounceRef.current = setTimeout(() => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (year) params.set('year', year); else params.delete('year');
+        router.replace(params.toString() ? `/cars?${params.toString()}` : '/cars');
+      }, 500);
     },
     setLicensePlateFilter: (plate: string) => {
       setLicensePlateFilter(plate);
       setCurrentCursor(null);
       setIsFirstPage(true);
       setCurrentPageNumber(1);
+
+      if (plateDebounceRef.current) clearTimeout(plateDebounceRef.current);
+      plateDebounceRef.current = setTimeout(() => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (plate) params.set('licensePlate', plate); else params.delete('licensePlate');
+        router.replace(params.toString() ? `/cars?${params.toString()}` : '/cars');
+      }, 500);
     },
     setPassengerCapacityFilter: (capacity: string) => {
       setPassengerCapacityFilter(capacity);

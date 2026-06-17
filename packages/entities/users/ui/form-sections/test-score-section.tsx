@@ -295,6 +295,7 @@ export function TestScoreSection() {
                     <Input
                       id={`passedDate-${index}`}
                       type='date'
+                      max={new Date().toISOString().split('T')[0]}
                       {...register(`profile.testScore.${index}.passedDate`)}
                       className={`focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0 hover:shadow-md focus:shadow-md focus-visible:shadow-md transition-shadow ${
                         errors.profile?.testScore?.[index]?.passedDate ? 'border-red-500' : ''
@@ -315,6 +316,7 @@ export function TestScoreSection() {
                     <Input
                       id={`expiryDate-${index}`}
                       type='date'
+                      min={new Date().toISOString().split('T')[0]}
                       {...register(`profile.testScore.${index}.expiryDate`)}
                       className='focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0 hover:shadow-md focus:shadow-md focus-visible:shadow-md transition-shadow'
                     />

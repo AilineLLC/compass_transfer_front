@@ -157,6 +157,7 @@ function EntityButton({
   placeholder,
   onClick,
   selected,
+  disabled,
 }: {
   icon: React.ElementType;
   label?: string;
@@ -164,6 +165,7 @@ function EntityButton({
   placeholder: string;
   onClick: () => void;
   selected: boolean;
+  disabled?: boolean;
 }) {
   if (selected && label) {
     return (
@@ -189,12 +191,23 @@ function EntityButton({
     <button
       type='button'
       onClick={onClick}
-      className='w-full flex items-center gap-3 p-2 rounded-xl border border-dashed border-gray-300 bg-gray-50/50 p-3.5 text-left transition-colors hover:border-primary/50 hover:bg-primary/5 group'
+      disabled={disabled}
+      className={`w-full flex items-center gap-3 p-2 rounded-xl border border-dashed p-3.5 text-left transition-colors ${
+        disabled
+          ? 'border-gray-200 bg-gray-50/30 cursor-not-allowed opacity-50'
+          : 'border-gray-300 bg-gray-50/50 hover:border-primary/50 hover:bg-primary/5 group'
+      }`}
     >
-      <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 group-hover:bg-primary/10 transition-colors'>
-        <Icon className='h-4 w-4 text-gray-400 group-hover:text-primary transition-colors' />
+      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors ${
+        disabled ? 'bg-gray-100' : 'bg-gray-100 group-hover:bg-primary/10'
+      }`}>
+        <Icon className={`h-4 w-4 transition-colors ${
+          disabled ? 'text-gray-300' : 'text-gray-400 group-hover:text-primary'
+        }`} />
       </div>
-      <span className='text-sm text-muted-foreground group-hover:text-primary transition-colors'>
+      <span className={`text-sm transition-colors ${
+        disabled ? 'text-gray-400' : 'text-muted-foreground group-hover:text-primary'
+      }`}>
         {placeholder}
       </span>
     </button>
@@ -585,9 +598,10 @@ if (!startLocation) { toast.error('Выберите точку отправле�
                     ? `${selectedCar.licensePlate} · ${selectedCar.passengerCapacity} мест`
                     : undefined
                 }
-                placeholder='Выбрать автомобиль'
+                placeholder={selectedDriver ? 'Выбрать автомобиль' : 'Сначала выберите водителя'}
                 onClick={() => setIsCarModalOpen(true)}
                 selected={!!selectedCar}
+                disabled={!selectedDriver}
               />
             </div>
           </div>
@@ -774,7 +788,10 @@ if (!startLocation) { toast.error('Выберите точку отправле�
       <DriverSelectModal
         isOpen={isDriverModalOpen}
         onClose={() => setIsDriverModalOpen(false)}
-        onSelect={driver => setSelectedDriver(driver)}
+        onSelect={driver => {
+          if (driver.id !== selectedDriver?.id) setSelectedCar(null);
+          setSelectedDriver(driver);
+        }}
         selectedDriverId={selectedDriver?.id}
       />
       <CarSelectModal
@@ -782,6 +799,7 @@ if (!startLocation) { toast.error('Выберите точку отправле�
         onClose={() => setIsCarModalOpen(false)}
         onSelect={car => setSelectedCar(car)}
         selectedCarId={selectedCar?.id}
+        driverId={selectedDriver?.id}
       />
       <CustomerSelectModal
         isOpen={customerModalForId !== null}

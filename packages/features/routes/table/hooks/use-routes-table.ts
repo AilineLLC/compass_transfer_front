@@ -1,7 +1,7 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { routesApi } from '@shared/api/routes';
 import type { RouteDTO } from '@entities/routes/interface/PartnerRouteDTO';
 
@@ -17,13 +17,21 @@ interface ColumnVisibility {
 
 export function useRoutesTable() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [routes, setRoutes] = useState<RouteDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [searchTerm, setSearchTermState] = useState('');
-  const [isPopularFilter, setIsPopularFilterState] = useState<boolean | null>(null);
+  const [searchTerm, setSearchTermState] = useState(() => searchParams.get('search') || '');
+  const [isPopularFilter, setIsPopularFilterState] = useState<boolean | null>(() => {
+    const v = searchParams.get('isPopular');
+    if (v === 'true') return true;
+    if (v === 'false') return false;
+    return null;
+  });
 
   const [currentPageNumber, setCurrentPageNumber] = useState(1);
   const [pageSize, setPageSize] = useState(() => {
@@ -82,6 +90,16 @@ export function useRoutesTable() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Синхронизация с URL при внешнем изменении (кнопка назад/вперёд)
+  useEffect(() => {
+    const search = searchParams.get('search') || '';
+    if (search !== searchTerm) setSearchTermState(search);
+
+    const v = searchParams.get('isPopular');
+    const pop = v === 'true' ? true : v === 'false' ? false : null;
+    if (pop !== isPopularFilter) setIsPopularFilterState(pop);
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filteredRoutes = useMemo(() => {
     let result = [...routes];
@@ -170,11 +188,22 @@ export function useRoutesTable() {
   const setSearchTerm = (term: string) => {
     setSearchTermState(term);
     setCurrentPageNumber(1);
+
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (term) params.set('search', term); else params.delete('search');
+      router.replace(params.toString() ? `/routes?${params.toString()}` : '/routes');
+    }, 500);
   };
 
   const setIsPopularFilter = (val: boolean | null) => {
     setIsPopularFilterState(val);
     setCurrentPageNumber(1);
+
+    const params = new URLSearchParams(searchParams.toString());
+    if (val !== null) params.set('isPopular', String(val)); else params.delete('isPopular');
+    router.push(params.toString() ? `/routes?${params.toString()}` : '/routes');
   };
 
   return {
