@@ -35,7 +35,7 @@ export const MapSearch: React.FC<MapSearchProps> = ({
     setIsLoading(true);
     try {
       const response = await fetch(
-        `/api/geocoding/search?q=${encodeURIComponent(searchQuery)}`
+        `/geocoding-proxy/search?q=${encodeURIComponent(searchQuery)}`
       );
       
       if (response.ok) {
