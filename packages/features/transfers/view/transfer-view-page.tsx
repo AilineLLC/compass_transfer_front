@@ -155,8 +155,8 @@ export function TransferViewPage({ transfer: initialTransfer }: TransferViewPage
       await transferReservationsApi.approveReservation(id);
       await refreshData();
       toast.success('Заявка одобрена');
-    } catch {
-      toast.error('Не удалось одобрить заявку');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Не удалось одобрить заявку');
     } finally {
       setProcessingIds(prev => { const s = new Set(prev); s.delete(id); return s; });
     }

@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { AxiosError } from 'axios';
 import { useState, useMemo, useCallback, useRef } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { toast } from 'sonner';
 import { locationsApi } from '@shared/api/locations';
 import { filesApi } from '@shared/api/files';
@@ -80,8 +80,8 @@ export function useLocationEditFormLogic({
       : null,
   );
 
-  const form = useForm({
-    resolver: zodResolver(locationUpdateSchema),
+  const form = useForm<LocationUpdateFormData>({
+    resolver: zodResolver(locationUpdateSchema) as Resolver<LocationUpdateFormData>,
     mode: 'onSubmit',
     defaultValues: {
       name: initialData.name,
@@ -173,7 +173,7 @@ export function useLocationEditFormLogic({
           popular2: data.popular2,
           isLandingOnly: data.isLandingOnly ?? false,
           isLandingPagePinned: data.isLandingPagePinned ?? false,
-          group: data.group || null,
+          group: null,
           images: orderedImageIds,
           poi: poiData,
           tags: data.tags ?? [],

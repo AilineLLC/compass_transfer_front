@@ -52,7 +52,7 @@ export function LocationFormView({
                   <div className='relative ml-12'>
                     <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
                     <LocationBasicSection
-                      labels={{ name: 'Название локации *', type: 'Тип локации *', group: 'Группа локации' }}
+                      labels={{ name: 'Название локации *', type: 'Тип локации *' }}
                     />
                   </div>
                 </div>

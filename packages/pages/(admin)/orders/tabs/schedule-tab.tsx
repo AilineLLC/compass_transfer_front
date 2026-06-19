@@ -1,6 +1,7 @@
 'use client';
 
-import { Calendar as CalendarIcon, Plane, MapPin } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Calendar as CalendarIcon, Plane, MapPin, PlaneTakeoff, PlaneLanding } from 'lucide-react';
 import { Calendar } from '@shared/ui/data-display/calendar';
 import { Input } from '@shared/ui/forms/input';
 import { Label } from '@shared/ui/forms/label';
@@ -8,6 +9,8 @@ import { Textarea } from '@shared/ui/forms/textarea';
 import { Card, CardContent } from '@shared/ui/layout/card';
 import type { CreateScheduledOrderDTOType } from '@entities/orders/schemas';
 import { useScheduleManagement } from '@features/orders/schedule';
+
+type FlightType = 'departure' | 'arrival' | null;
 
 interface ScheduleTabProps {
   onScheduleChange?: (scheduledTime: string) => void;
@@ -38,6 +41,34 @@ export function ScheduleTab({ onScheduleChange, onValidityChange, initialSchedul
   // Используем значения из основной формы
   const flyReis = (methods?.getValues('flyReis') as string) || '';
   const airFlight = (methods?.getValues('airFlight') as string) || '';
+
+  // Тип рейса: вылет / прилет / не указан
+  const [flightType, setFlightType] = useState<FlightType>(() => {
+    if (airFlight) return 'departure';
+    if (flyReis) return 'arrival';
+    return null;
+  });
+
+  // Синхронизация при загрузке данных в режиме редактирования
+  useEffect(() => {
+    if (flightType === null) {
+      if (airFlight) setFlightType('departure');
+      else if (flyReis) setFlightType('arrival');
+    }
+  }, [airFlight, flyReis, flightType]);
+
+  const handleFlightTypeChange = (type: FlightType) => {
+    setFlightType(type);
+    if (!methods) return;
+    if (type === 'departure') {
+      methods.setValue('flyReis', '');
+    } else if (type === 'arrival') {
+      methods.setValue('airFlight', '');
+    } else {
+      methods.setValue('airFlight', '');
+      methods.setValue('flyReis', '');
+    }
+  };
   const description = (methods?.getValues('description') as string) || '';
 
   // Заблокированные даты (пример - можно оставить для будущих бронирований)
@@ -55,43 +86,87 @@ export function ScheduleTab({ onScheduleChange, onValidityChange, initialSchedul
                 Рейсы
               </h3>
               <div className='space-y-3'>
-                <div className='space-y-1'>
-                  <Label htmlFor='air-flight' className='text-xs font-medium'>
-                    Рейс вылета
-                  </Label>
-                  <Input
-                    id='air-flight'
-                    placeholder='SU 1234'
-                    value={airFlight}
-                    onChange={e => {
-                      const cleanValue = e.target.value.toUpperCase().replace(/[^A-Z0-9\s-]/g, '');
-
-                      if (methods) {
-                        methods.setValue('airFlight', cleanValue);
-                      }
-                    }}
-                    className='font-mono h-8 text-sm'
-                  />
+                {/* Переключатель типа рейса */}
+                <div className='flex rounded-lg border border-gray-200 p-0.5 bg-gray-50 w-fit gap-0.5'>
+                  <button
+                    type='button'
+                    onClick={() => handleFlightTypeChange(null)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                      flightType === null
+                        ? 'bg-white shadow-sm text-gray-900'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    Не указывать
+                  </button>
+                  <button
+                    type='button'
+                    onClick={() => handleFlightTypeChange('departure')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                      flightType === 'departure'
+                        ? 'bg-white shadow-sm text-blue-700'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    <PlaneTakeoff className='h-3.5 w-3.5' />
+                    Вылет
+                  </button>
+                  <button
+                    type='button'
+                    onClick={() => handleFlightTypeChange('arrival')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                      flightType === 'arrival'
+                        ? 'bg-white shadow-sm text-green-700'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    <PlaneLanding className='h-3.5 w-3.5' />
+                    Прилет
+                  </button>
                 </div>
 
-                <div className='space-y-1'>
-                  <Label htmlFor='fly-reis' className='text-xs font-medium'>
-                    Рейс прилета
-                  </Label>
-                  <Input
-                    id='fly-reis'
-                    placeholder='SU 5678'
-                    value={flyReis}
-                    onChange={e => {
-                      const cleanValue = e.target.value.toUpperCase().replace(/[^A-Z0-9\s-]/g, '');
+                {/* Поле ввода номера рейса */}
+                {flightType === 'departure' && (
+                  <div className='space-y-1'>
+                    <Label htmlFor='air-flight' className='text-xs font-medium flex items-center gap-1'>
+                      <PlaneTakeoff className='h-3.5 w-3.5 text-blue-600' />
+                      Номер рейса вылета
+                    </Label>
+                    <Input
+                      id='air-flight'
+                      placeholder='SU 1234'
+                      value={airFlight}
+                      onChange={e => {
+                        const cleanValue = e.target.value.toUpperCase().replace(/[^A-Z0-9\s-]/g, '');
+                        if (methods) methods.setValue('airFlight', cleanValue);
+                      }}
+                      className='font-mono h-8 text-sm'
+                    />
+                  </div>
+                )}
 
-                      if (methods) {
-                        methods.setValue('flyReis', cleanValue);
-                      }
-                    }}
-                    className='font-mono h-8 text-sm'
-                  />
-                </div>
+                {flightType === 'arrival' && (
+                  <div className='space-y-1'>
+                    <Label htmlFor='fly-reis' className='text-xs font-medium flex items-center gap-1'>
+                      <PlaneLanding className='h-3.5 w-3.5 text-green-600' />
+                      Номер рейса прилета
+                    </Label>
+                    <Input
+                      id='fly-reis'
+                      placeholder='SU 5678'
+                      value={flyReis}
+                      onChange={e => {
+                        const cleanValue = e.target.value.toUpperCase().replace(/[^A-Z0-9\s-]/g, '');
+                        if (methods) methods.setValue('flyReis', cleanValue);
+                      }}
+                      className='font-mono h-8 text-sm'
+                    />
+                  </div>
+                )}
+
+                {flightType === null && (
+                  <p className='text-xs text-gray-400 italic'>Рейс не требуется для этого заказа</p>
+                )}
                 <div className='space-y-3'>
                   <h3 className='font-medium flex items-center gap-2'>
                     <MapPin className='h-4 w-4 text-primary' />

@@ -24,7 +24,8 @@
       "Bash(yarn vitest *)",
       "mcp__ide__getDiagnostics",
       "Bash(dir D:devcompass_transfer_front *)",
-      "Bash(xargs -0 grep -l \"tag\" -i)"
+      "Bash(xargs -0 grep -l \"tag\" -i)",
+      "Bash(node -e \"const { PlaneTakeoff, PlaneLanding } = require\\('node_modules/lucide-react'\\); console.log\\(typeof PlaneTakeoff, typeof PlaneLanding\\);\")"
     ]
   }
 }

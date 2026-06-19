@@ -5,7 +5,6 @@ import { Input } from '@shared/ui/forms/input';
 import { Label } from '@shared/ui/forms/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/forms/select';
 import { locationTypeHelpers } from '../helpers/location-type-helpers';
-import { LocationGroupSelect } from './location-group-select';
 import type { LocationCreateFormData } from '../schemas/locationCreateSchema';
 import { LocationType } from '../enums';
 
@@ -80,10 +79,6 @@ export function LocationBasicSection({
         )}
       </div>
 
-      {/* Группа локации */}
-      <div className="space-y-2">
-        <LocationGroupSelect label={labels.group || 'Группа локации'} />
-      </div>
     </div>
   );
 }

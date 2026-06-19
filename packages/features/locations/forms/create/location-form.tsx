@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { AxiosError } from 'axios';
 import { useState, useMemo, useCallback, useRef } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { toast } from 'sonner';
 import { locationsApi } from '@shared/api/locations';
 import { filesApi } from '@shared/api/files';
@@ -44,7 +44,7 @@ export function useLocationFormLogic({
   const adviceImageRef = useRef<AdviceImageItem | null>(null);
 
   const form = useForm<LocationCreateFormData>({
-    resolver: zodResolver(locationCreateSchema),
+    resolver: zodResolver(locationCreateSchema) as Resolver<LocationCreateFormData>,
     mode: 'onSubmit',
     defaultValues: {
       name: '',
@@ -137,7 +137,7 @@ export function useLocationFormLogic({
           popular1: data.popular,
           isLandingOnly: data.isLandingOnly ?? false,
           isLandingPagePinned: data.isLandingPagePinned ?? false,
-          group: data.group,
+          group: null,
           images: orderedImageIds,
           poi: poiData,
           tags: data.tags ?? [],

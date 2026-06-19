@@ -1,9 +1,13 @@
 'use client';
 
 import { useEffect, useCallback, useMemo, type ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { useSignalR } from '@shared/hooks/signal/useSignalR';
 import { logger } from '@shared/lib/logger';
 import { NotificationContext, type NotificationContextType } from '@entities/notifications/context';
+import { NotificationType } from '@entities/notifications';
+import { OrderType, getOrderViewRoute } from '@entities/orders';
 import { deduplicateNotificationsByOrder } from '@entities/notifications/utils';
 import { useNotifications, useNotificationSound } from '@features/notifications/hooks';
 
@@ -33,6 +37,7 @@ interface NotificationProviderProps {
 }
 
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({ children }) => {
+  const router = useRouter();
   const signalR = useSignalR();
   
   // Используем новый хук useNotifications - правильная архитектура!
@@ -143,6 +148,22 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         const wsNotif = data as import('@shared/api/notifications').GetNotificationDTO;
         const isWsOnly = !wsNotif.id || wsNotif.id === '00000000-0000-0000-0000-000000000000';
 
+        if (wsNotif.type === NotificationType.OrderCreated) {
+          const orderRoute = wsNotif.orderId
+            ? getOrderViewRoute(wsNotif.orderId, wsNotif.orderType as unknown as OrderType)
+            : '/orders';
+
+          toast('Новый заказ — требует обработки', {
+            description: wsNotif.content || wsNotif.title || undefined,
+            duration: Infinity,
+            closeButton: true,
+            action: {
+              label: 'Перейти к заказу',
+              onClick: () => router.push(orderRoute),
+            },
+          });
+        }
+
         addOptimisticNotification({ ...wsNotif, isRead: false });
 
         if (!isWsOnly) {
@@ -158,7 +179,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       off('New', handleNewNotification);
       pendingTimers.forEach(t => clearTimeout(t));
     };
-  }, [connection, isConnected, on, off, refresh, addOptimisticNotification, playSound]);
+  }, [connection, isConnected, on, off, refresh, addOptimisticNotification, playSound, router]);
 
   // Автоматическая загрузка при монтировании
   useEffect(() => {
