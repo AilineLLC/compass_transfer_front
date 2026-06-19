@@ -63,7 +63,9 @@ export const routesApi = {
   },
 
   getRouteById: async (id: string): Promise<RouteDTO> => {
-    const result = await apiGet<RouteDTO>(`/Route/${id}`);
+    const result = await apiGet<RouteDTO>(`/Route/${id}`, {
+      headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+    });
 
     if (result.error) {
       throw new ApiRequestError(result.error);

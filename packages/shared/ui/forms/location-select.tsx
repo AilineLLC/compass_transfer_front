@@ -42,6 +42,7 @@ export function LocationSelect({
   const [sheetLocationId, setSheetLocationId] = useState<string | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const loadingForRef = useRef<string | null>(null);
 
   const debouncedSearch = useDebounce(searchQuery, 300);
 
@@ -63,10 +64,16 @@ export function LocationSelect({
 
   // Загрузка выбранной локации при изменении value
   useEffect(() => {
-    if (value && !selectedLocation) {
+    if (value) {
+      if (selectedLocation?.id === value) return;
       loadSelectedLocation(value);
+    } else {
+      loadingForRef.current = null;
+      setSelectedLocation(null);
     }
-  }, [value, selectedLocation]);
+  // selectedLocation намеренно исключён: изменение локации не должно перезапускать загрузку
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
 
   // Закрытие при клике вне компонента
   useEffect(() => {
@@ -133,9 +140,10 @@ export function LocationSelect({
   };
 
   const loadSelectedLocation = async (locationId: string) => {
+    loadingForRef.current = locationId;
     try {
       const location = await locationsApi.getLocationById(locationId);
-
+      if (loadingForRef.current !== locationId) return;
       setSelectedLocation(location);
     } catch (error) {
       logger.error('Ошибка загрузки выбранной локации:', error);
@@ -150,7 +158,9 @@ export function LocationSelect({
   };
 
   const handleClear = () => {
+    loadingForRef.current = null;
     setSelectedLocation(null);
+    setLocations([]);
     onValueChange(null);
     setSearchQuery('');
   };

@@ -26,7 +26,9 @@ interface RouteEditViewProps {
 }
 
 export function RouteEditView({ form, isSubmitting, isLoadingRoute, onUpdate, onBack }: RouteEditViewProps) {
-  const { register, control, formState: { errors } } = form;
+  const { register, control, setValue, watch, formState: { errors } } = form;
+  const startLocationId = watch('startLocationId');
+  const endLocationId = watch('endLocationId');
 
   const getChapterStatus = (id: string): 'complete' | 'warning' | 'error' | 'pending' => {
     if (id === 'basic') {
@@ -65,9 +67,9 @@ export function RouteEditView({ form, isSubmitting, isLoadingRoute, onUpdate, on
     <FormProvider {...form}>
       <div className='flex overflow-hidden h-full pb-2'>
         <div className='shadow-md flex-1 h-full p-4 overflow-auto border bg-white rounded-2xl'>
-          <Card className='h-full flex flex-col overflow-auto pr-4'>
+          <Card className='flex flex-col pr-4'>
             <CardContent className='p-0'>
-              <form className='flex flex-col gap-6'>
+              <form className='flex flex-col gap-6 pb-6'>
                 {/* Глава 1: Основная информация */}
                 <div id='chapter-basic' className='relative flex flex-col gap-4'>
                   <ChapterHeader number={1} title='Основная информация' status={getChapterStatus('basic')} />
@@ -127,18 +129,12 @@ export function RouteEditView({ form, isSubmitting, isLoadingRoute, onUpdate, on
                     <div className='flex flex-col gap-4'>
                       <div className='flex flex-col gap-1.5'>
                         <Label>Точка А (начальная) *</Label>
-                        <Controller
-                          name='startLocationId'
-                          control={control}
-                          render={({ field }) => (
-                            <LocationSelect
-                              value={field.value || null}
-                              onValueChange={val => field.onChange(val ?? '')}
-                              placeholder='Выберите начальную локацию'
-                              isLandingOnly
-                              error={!!errors.startLocationId}
-                            />
-                          )}
+                        <LocationSelect
+                          value={startLocationId || null}
+                          onValueChange={val => setValue('startLocationId', val ?? '', { shouldDirty: true })}
+                          placeholder='Выберите начальную локацию'
+                          isLandingOnly
+                          error={!!errors.startLocationId}
                         />
                         {errors.startLocationId && (
                           <p className='text-sm text-red-500'>{errors.startLocationId.message}</p>
@@ -147,18 +143,12 @@ export function RouteEditView({ form, isSubmitting, isLoadingRoute, onUpdate, on
 
                       <div className='flex flex-col gap-1.5'>
                         <Label>Точка Б (конечная) *</Label>
-                        <Controller
-                          name='endLocationId'
-                          control={control}
-                          render={({ field }) => (
-                            <LocationSelect
-                              value={field.value || null}
-                              onValueChange={val => field.onChange(val ?? '')}
-                              placeholder='Выберите конечную локацию'
-                              isLandingOnly
-                              error={!!errors.endLocationId}
-                            />
-                          )}
+                        <LocationSelect
+                          value={endLocationId || null}
+                          onValueChange={val => setValue('endLocationId', val ?? '', { shouldDirty: true })}
+                          placeholder='Выберите конечную локацию'
+                          isLandingOnly
+                          error={!!errors.endLocationId}
                         />
                         {errors.endLocationId && (
                           <p className='text-sm text-red-500'>{errors.endLocationId.message}</p>

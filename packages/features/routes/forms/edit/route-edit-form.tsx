@@ -67,7 +67,10 @@ export function useRouteEditForm({
           startLocationId: data.startLocationId,
           endLocationId: data.endLocationId,
           isPopular: data.isPopular,
-          prices: data.prices ?? [],
+          prices: (data.prices ?? []).map(p => ({
+            tariffId: p.tariffId ?? '',
+            price: p.price ?? 0,
+          })),
           duration: data.duration ?? 0,
         });
       } catch {
@@ -78,7 +81,8 @@ export function useRouteEditForm({
     };
 
     loadRoute();
-  }, [routeId, form]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeId]);
 
   const onSubmit = useCallback(async (data: RouteEditFormData) => {
     setIsSubmitting(true);

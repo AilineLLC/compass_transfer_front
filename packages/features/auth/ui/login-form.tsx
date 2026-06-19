@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { AuthService } from '@shared/api/auth-service';
 import { cn } from '@shared/lib/utils';
@@ -16,6 +17,7 @@ interface LoginFormProps extends React.ComponentProps<'form'> {
 export function LoginForm({ className, ...props }: LoginFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -92,14 +94,25 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
               Забыли пароль?
             </a>
           </div> */}
-          <Input
-            id='password'
-            type='password'
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            required
-            disabled={isLoading}
-          />
+          <div className='relative'>
+            <Input
+              id='password'
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+              disabled={isLoading}
+              className='pr-10'
+            />
+            <button
+              type='button'
+              onClick={() => setShowPassword(v => !v)}
+              className='absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors'
+              tabIndex={-1}
+            >
+              {showPassword ? <EyeOff className='h-4 w-4' /> : <Eye className='h-4 w-4' />}
+            </button>
+          </div>
         </div>
         <Button type='submit' className='w-full' disabled={isLoading}>
           {isLoading ? 'Вход...' : 'Войти'}

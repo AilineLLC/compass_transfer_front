@@ -91,7 +91,7 @@ export function LocationView({ locationId }: LocationViewProps) {
   }
 
   return (
-    <div className='pr-2 border rounded-2xl overflow-hidden shadow-sm h-full bg-white flex flex-col gap-6 p-6'>
+    <div className='pr-2 border rounded-2xl overflow-auto shadow-sm h-full bg-white flex flex-col gap-6 p-6'>
       {/* Заголовок */}
       <LocationViewHeader location={location} />
 

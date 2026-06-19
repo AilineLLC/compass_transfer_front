@@ -1,14 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useFieldArray, useFormContext } from 'react-hook-form';
+import { Controller, useFieldArray, useFormContext } from 'react-hook-form';
 import { Plus, Trash2, Loader2 } from 'lucide-react';
 import { tariffsApi } from '@shared/api/tariffs';
 import type { GetTariffDTO } from '@shared/api/tariffs';
 import { Button } from '@shared/ui/forms/button';
 import { Input } from '@shared/ui/forms/input';
 import { Label } from '@shared/ui/forms/label';
-import type { RouteCreateFormData } from '../forms/create/route-create-form';
 
 export function RoutePricesSection() {
   const {
@@ -16,7 +15,7 @@ export function RoutePricesSection() {
     control,
     watch,
     formState: { errors },
-  } = useFormContext<RouteCreateFormData>();
+  } = useFormContext();
 
   const { fields, append, remove } = useFieldArray({ control, name: 'prices' });
 
@@ -58,19 +57,29 @@ export function RoutePricesSection() {
             {/* Выбор тарифа */}
             <div className="flex flex-col gap-1 flex-1">
               {index === 0 && <span className="text-xs text-muted-foreground">Тариф</span>}
-              <select
-                {...register(`prices.${index}.tariffId`)}
-                className={`h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${
-                  errors.prices?.[index]?.tariffId ? 'border-red-500' : ''
-                }`}
-              >
-                <option value="">Выберите тариф</option>
-                {availableTariffs.map(t => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                control={control}
+                name={`prices.${index}.tariffId`}
+                render={({ field }) => (
+                  <select
+                    value={field.value ?? ''}
+                    onChange={e => field.onChange(e.target.value)}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    ref={field.ref}
+                    className={`h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${
+                      errors.prices?.[index]?.tariffId ? 'border-red-500' : ''
+                    }`}
+                  >
+                    <option value="">Выберите тариф</option>
+                    {availableTariffs.map(t => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              />
               {errors.prices?.[index]?.tariffId && (
                 <p className="text-xs text-red-500">{errors.prices[index]?.tariffId?.message}</p>
               )}
