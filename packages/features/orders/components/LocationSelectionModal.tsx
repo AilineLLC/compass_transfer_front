@@ -107,7 +107,7 @@ export function LocationSelectionModal({
 
         // Запускаем геокодинг параллельно с поиском в базе (только при запросе ≥ 2 символов)
         const geocodingPromise: Promise<GeocodingResult[]> = trimmedQuery.length >= 2
-          ? fetch(`/geocoding-proxy/search?q=${encodeURIComponent(trimmedQuery)}`)
+          ? fetch(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/api/geocoding/search?q=${encodeURIComponent(trimmedQuery)}`)
               .then(r => r.ok ? r.json() : [])
               .catch(() => [])
           : Promise.resolve([]);
@@ -171,7 +171,7 @@ export function LocationSelectionModal({
         street: '',
       };
       try {
-        const reverseResponse = await fetch(`/geocoding-proxy/reverse?lat=${lat}&lon=${lon}`);
+        const reverseResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/api/geocoding/reverse?lat=${lat}&lon=${lon}`);
         if (reverseResponse.ok) {
           addressData = await reverseResponse.json();
         }
