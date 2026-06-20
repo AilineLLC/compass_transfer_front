@@ -1214,8 +1214,12 @@ export function ScheduledOrderPage({
                       // Форма (только для ScheduleTab)
                       onScheduleChange={
                         activeTab === 'schedule'
-                          ? (scheduledTime: string) =>
-                              methods.setValue('scheduledTime', scheduledTime)
+                          ? (scheduledTime: string) => {
+                              methods.setValue('scheduledTime', scheduledTime);
+                              if (isEditMode && orderStatus === OrderStatus.Expired) {
+                                setOrderStatus(OrderStatus.Pending);
+                              }
+                            }
                           : undefined
                       }
                       onValidityChange={activeTab === 'schedule' ? setScheduleValid : undefined}

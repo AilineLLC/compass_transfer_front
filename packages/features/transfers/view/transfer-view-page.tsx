@@ -31,6 +31,8 @@ import { toast } from 'sonner';
 import { Badge } from '@shared/ui/data-display/badge';
 import { Button } from '@shared/ui/forms/button';
 import { transfersApi, type GetTransferDTO, type TransferPassenger } from '@shared/api/transfers';
+import { getCarFeatureLabel } from '@entities/cars/lib/car-helpers';
+import type { CarFeature } from '@entities/cars/enums';
 import { transferReservationsApi, type TransferReservationDTO } from '@shared/api/transfer-reservations';
 import { DeleteConfirmationModal } from '@shared/ui/modals';
 import { AuditEntityType } from '@entities/audit';
@@ -470,7 +472,7 @@ export function TransferViewPage({ transfer: initialTransfer }: TransferViewPage
                       {transfer.car.features.map(f => (
                         <Badge key={f} variant='outline' className='text-xs gap-1'>
                           <Shield className='h-2.5 w-2.5' />
-                          {f}
+                          {getCarFeatureLabel(f as CarFeature)}
                         </Badge>
                       ))}
                     </div>

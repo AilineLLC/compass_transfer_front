@@ -7,6 +7,7 @@ import { carsApi } from '@shared/api/cars';
 import { Button } from '@shared/ui/forms/button';
 import { DeleteConfirmationModal } from '@shared/ui/modals/delete-confirmation-modal';
 import type { GetDriverDTO } from '@entities/users/interface';
+import { getCarFeatureLabel } from '@entities/cars/lib/car-helpers';
 
 interface DriverCarsInfoProps {
   driver: GetDriverDTO;
@@ -60,7 +61,7 @@ export function DriverCarsInfo({ driver, onCarRemoved }: DriverCarsInfoProps) {
                 </p>
                 {activeCar.features && activeCar.features.length > 0 && (
                   <p className='text-sm text-muted-foreground'>
-                    Опции: {activeCar.features.join(', ')}
+                    Опции: {activeCar.features.map(f => getCarFeatureLabel(f)).join(', ')}
                   </p>
                 )}
                 {activeCar.drivers && activeCar.drivers.length > 0 && (

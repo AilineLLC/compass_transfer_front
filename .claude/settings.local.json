@@ -27,7 +27,9 @@
       "Bash(xargs -0 grep -l \"tag\" -i)",
       "Bash(node -e \"const { PlaneTakeoff, PlaneLanding } = require\\('node_modules/lucide-react'\\); console.log\\(typeof PlaneTakeoff, typeof PlaneLanding\\);\")",
       "Bash(mkdir -p \"C:/Users/DragonPC/Desktop/compass_transfer_front/apps/compass-admin/src/app/geocoding-proxy/search\")",
-      "Bash(mkdir -p \"C:/Users/DragonPC/Desktop/compass_transfer_front/apps/compass-admin/src/app/geocoding-proxy/reverse\")"
+      "Bash(mkdir -p \"C:/Users/DragonPC/Desktop/compass_transfer_front/apps/compass-admin/src/app/geocoding-proxy/reverse\")",
+      "Skill(artifact-design)",
+      "Artifact"
     ]
   }
 }

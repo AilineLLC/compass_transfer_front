@@ -9,6 +9,7 @@ import { locationTypeIcons } from '@entities/locations/enums/LocationType.enum';
 interface RoutePointItemProps {
   point: RoutePoint;
   index: number;
+  waypointNumber?: number;
   isSelected: boolean;
   isDraggable?: boolean;
   isDragging?: boolean;
@@ -24,6 +25,7 @@ interface RoutePointItemProps {
 export function RoutePointItem({
   point,
   index,
+  waypointNumber = 1,
   isSelected,
   isDraggable = false,
   isDragging = false,
@@ -35,10 +37,10 @@ export function RoutePointItem({
   onDrop,
   onDragEnd,
 }: RoutePointItemProps) {
-  const getPointLabel = (p: RoutePoint, i: number) => {
+  const getPointLabel = (p: RoutePoint) => {
     if (p.type === 'start') return 'A';
     if (p.type === 'end') return 'B';
-    return String.fromCharCode(67 + i - 1);
+    return String(waypointNumber);
   };
 
   const getPointColor = (p: RoutePoint) => {
@@ -73,7 +75,7 @@ export function RoutePointItem({
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold shrink-0 ${getPointColor(point)}`}
             >
-              {getPointLabel(point, index)}
+              {getPointLabel(point)}
             </div>
           )}
 
@@ -82,7 +84,7 @@ export function RoutePointItem({
             <div
               className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0 ${getPointColor(point)}`}
             >
-              {getPointLabel(point, index)}
+              {getPointLabel(point)}
             </div>
           )}
 
