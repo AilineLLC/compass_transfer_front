@@ -34,11 +34,9 @@ const filterMenuItemsByRole = (items: typeof sidebarData.navMain, userRole: Role
       return false;
     }
 
-    // Для роли Partner оставляем только "Дашбоард" и "Заказы"
+    // Для роли Partner оставляем только "Заказы"
     if (userRole === Role.Partner) {
-      const allowedItems = ['Дашбоард', 'Заказы'];
-
-      return allowedItems.includes(item.title);
+      return item.title === 'Заказы';
     }
 
     return true;
@@ -48,11 +46,9 @@ const filterMenuItemsByRole = (items: typeof sidebarData.navMain, userRole: Role
 // Функция для фильтрации документов в зависимости от роли
 const filterDocumentsByRole = (items: typeof sidebarData.documents, userRole: Role) => {
   return items.filter(item => {
-    // Для роли Partner оставляем только "Тарифы"
+    // Для роли Partner скрываем все документы
     if (userRole === Role.Partner) {
-      const allowedItems = ['Тарифы'];
-
-      return allowedItems.includes(item.name);
+      return false;
     }
 
     return true;
