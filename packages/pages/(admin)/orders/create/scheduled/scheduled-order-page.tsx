@@ -120,11 +120,16 @@ export function ScheduledOrderPage({
           scheduledTime.trim() !== '' &&
           scheduleValid
         );
-      case 'passengers':
-        // Проверяем что есть хотя бы один пассажир
-        const passengers = methods.getValues('passengers');
+      case 'passengers': {
+        // Проверяем что есть хотя бы один пассажир и у каждого заполнен телефон
+        const passengers = methods.getValues('passengers') as Array<{ phone?: string | null }>;
 
-        return Array.isArray(passengers) && passengers.length > 0;
+        return (
+          Array.isArray(passengers) &&
+          passengers.length > 0 &&
+          passengers.every(p => p.phone && p.phone.trim().length > 0)
+        );
+      }
       case 'map':
         // Проверяем что выбраны точки маршрута
         const startLocation = methods.getValues('startLocationId');
@@ -165,11 +170,19 @@ export function ScheduledOrderPage({
             description: 'Для продолжения необходимо выбрать тариф',
           });
           break;
-        case 'passengers':
-          toast.error('Добавьте пассажиров', {
-            description: 'Для продолжения необходимо добавить хотя бы одного пассажира',
-          });
+        case 'passengers': {
+          const passengersList = methods.getValues('passengers') as Array<{ phone?: string | null }>;
+          if (!Array.isArray(passengersList) || passengersList.length === 0) {
+            toast.error('Добавьте пассажиров', {
+              description: 'Для продолжения необходимо добавить хотя бы одного пассажира',
+            });
+          } else {
+            toast.error('Заполните номер телефона', {
+              description: 'Укажите номер телефона для каждого пассажира',
+            });
+          }
           break;
+        }
         case 'schedule':
           if (!scheduleValid) {
             toast.error('Время в прошлом', {

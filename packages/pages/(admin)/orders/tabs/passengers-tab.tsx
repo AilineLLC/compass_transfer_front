@@ -537,10 +537,15 @@ export function PassengersTab({ users, passengers: initialPassengers, handlePass
                               const digitHint = typeof country.digitCount === 'number'
                                 ? `${country.digitCount} цифр`
                                 : `${country.digitCount[0]}–${country.digitCount[1]} цифр`;
+                              const isEmpty = !nationalNumber;
                               return (
                                 <div className='space-y-1'>
+                                  <div className='flex items-center gap-1'>
+                                    <span className='text-sm font-medium'>Телефон</span>
+                                    <span className='text-red-500 text-sm'>*</span>
+                                  </div>
                                   {/* Единый контейнер — один бордер, одна высота */}
-                                  <div className={`flex h-10 rounded-md border bg-background overflow-hidden transition-colors focus-within:ring-1 focus-within:ring-ring ${phoneErrors[passenger.id] ? 'border-red-500 focus-within:ring-red-500' : 'border-input'}`}>
+                                  <div className={`flex h-10 rounded-md border bg-background overflow-hidden transition-colors focus-within:ring-1 focus-within:ring-ring ${phoneErrors[passenger.id] || isEmpty ? 'border-red-500 focus-within:ring-red-500' : 'border-input'}`}>
                                     <select
                                       value={country.code}
                                       onChange={(e) => handleCountryChange(passenger.id, e.target.value)}
@@ -562,7 +567,9 @@ export function PassengersTab({ users, passengers: initialPassengers, handlePass
                                   </div>
                                   {phoneErrors[passenger.id] ? (
                                     <p className='text-xs text-red-500'>{phoneErrors[passenger.id]}</p>
-                                  ) : nationalNumber && (
+                                  ) : isEmpty ? (
+                                    <p className='text-xs text-red-500'>Номер телефона обязателен</p>
+                                  ) : (
                                     <p className='text-xs text-muted-foreground'>{country.dialCode}{nationalNumber}</p>
                                   )}
                                 </div>

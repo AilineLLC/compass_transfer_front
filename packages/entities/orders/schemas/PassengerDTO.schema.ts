@@ -9,7 +9,7 @@ export const PassengerDTOSchema = z.object({
     .string({ required_error: 'Имя пассажира обязательно' })
     .min(1, { message: 'Имя пассажира обязательно' }),
   lastName: z.string().nullable(),
-  phone: z.string().nullable().optional(),
+  phone: z.string({ required_error: 'Укажите номер телефона пассажира' }).min(1, { message: 'Укажите номер телефона пассажира' }),
   isMainPassenger: z.boolean({ required_error: 'Укажите основного пассажира' }),
 });
 /**
