@@ -55,7 +55,8 @@ interface MapTabProps {
   onRouteChange?: (routePoints: RoutePoint[]) => void;
   onRoutePointsChange?: (startId: string, endId: string, points: RoutePoint[]) => void;
   onRouteDistanceChange?: (distance: number) => void;
-  onRouteLoadingChange?: (loading: boolean) => void; // колбэк для состояния загрузки
+  onRouteLegsChange?: (legs: { distance: number }[]) => void;
+  onRouteLoadingChange?: (loading: boolean) => void;
 }
 
 export function MapTab({
@@ -83,6 +84,7 @@ export function MapTab({
   onRouteChange,
   onRoutePointsChange,
   onRouteDistanceChange,
+  onRouteLegsChange,
   onRouteLoadingChange,
 }: MapTabProps) {
   const { car: requestedCar, isLoading: requestedCarLoading } = useCarById(requestedCarId);
@@ -330,6 +332,7 @@ export function MapTab({
                 }
           }
           onRouteDistanceChange={handleRouteDistanceChange}
+          onRouteLegsChange={onRouteLegsChange}
           getDriverById={getDriverById}
           loadDriverData={loadDriverData}
         />

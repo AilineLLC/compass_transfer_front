@@ -7,6 +7,7 @@ export * from './BusinessType.enum';
 export * from './ActivityStatus.enum';
 export * from './Language.enum';
 export * from './EmploymentType.enum';
+export * from './DriverType.enum';
 
 // Опции для форм
 import { ActivityStatus } from './ActivityStatus.enum';

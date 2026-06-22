@@ -53,6 +53,7 @@ export function useLocationEditFormLogic({
     isLandingPagePinned?: boolean;
     group?: string | null;
     tags?: string[];
+    priceCoefficient?: number | null;
     advice?: { fullName: string; specialization: string | null; content: string } | null;
     adviceImage?: { id: string; path: string } | null;
     images?: LocationImageDTO[];
@@ -98,6 +99,7 @@ export function useLocationEditFormLogic({
       group: initialData.group || '',
       tags: initialData.tags ?? [],
       advice: initialData.advice ?? null,
+      priceCoefficient: initialData.priceCoefficient ?? null,
     },
   });
 
@@ -173,6 +175,7 @@ export function useLocationEditFormLogic({
           popular2: data.popular2,
           isLandingOnly: data.isLandingOnly ?? false,
           isLandingPagePinned: data.isLandingPagePinned ?? false,
+          priceCoefficient: data.priceCoefficient ?? null,
           group: null,
           images: orderedImageIds,
           poi: poiData,

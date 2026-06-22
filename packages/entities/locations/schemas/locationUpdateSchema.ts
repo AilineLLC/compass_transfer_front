@@ -48,6 +48,8 @@ export const locationUpdateSchema = z.object({
 
   tags: z.array(z.string()).default([]),
 
+  priceCoefficient: z.number().min(0, { message: 'Коэффициент не может быть отрицательным' }).nullable().optional(),
+
   advice: z
     .object({
       fullName: z.string().min(1, { message: 'Имя обязательно' }),

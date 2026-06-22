@@ -1,8 +1,8 @@
 'use client';
 
-import { Edit, Trash2, ChevronUp, ChevronDown, MoreHorizontal, Eye } from 'lucide-react';
+import { Edit, Trash2, ChevronUp, ChevronDown, MoreHorizontal, Eye, X } from 'lucide-react';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { DriverCell } from './driver-cell';
 import { Badge } from '@shared/ui/data-display/badge';
 import {
@@ -21,8 +21,13 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@shared/ui/navigation/dropdown-menu';
+import OrdersApi from '@entities/orders/api/orders';
 import { useUserRole } from '@shared/contexts';
 import {
   type GetOrderDTO,
@@ -64,6 +69,25 @@ interface OrdersTableContentProps {
   handleSort: (field: string) => void;
   onDeleteOrder?: (order: GetOrderDTO) => void;
   onRefetch?: () => void;
+}
+
+// Цветовые метки заказов
+const MARK_COLORS = [
+  { value: '#22c55e', label: 'Обработан' },
+  { value: '#ef4444', label: 'Срочный' },
+  { value: '#f97316', label: 'На контроле' },
+  { value: '#eab308', label: 'Ожидание' },
+  { value: '#3b82f6', label: 'В работе' },
+  { value: '#8b5cf6', label: 'VIP' },
+  { value: '#ec4899', label: 'Особый' },
+];
+
+function getRowStyle(color: string | null | undefined): React.CSSProperties | undefined {
+  if (!color) return undefined;
+  const r = parseInt(color.slice(1, 3), 16);
+  const g = parseInt(color.slice(3, 5), 16);
+  const b = parseInt(color.slice(5, 7), 16);
+  return { backgroundColor: `rgba(${r}, ${g}, ${b}, 0.1)`, borderLeft: `3px solid ${color}` };
 }
 
 // Компонент таймера обратного отсчёта до заказа
@@ -172,6 +196,26 @@ export function OrdersTableContent({
     },
   });
 
+  // Оптимистичное локальное состояние цветовых меток
+  const [localColors, setLocalColors] = useState<Map<string, string | null>>(new Map());
+
+  const handleMarkColor = useCallback(async (orderId: string, color: string | null) => {
+    setLocalColors(prev => new Map(prev).set(orderId, color));
+    try {
+      await OrdersApi.markOrder(orderId, color);
+    } catch {
+      setLocalColors(prev => {
+        const next = new Map(prev);
+        next.delete(orderId);
+        return next;
+      });
+    }
+  }, []);
+
+  const getEffectiveColor = useCallback((order: GetOrderDTO): string | null | undefined => {
+    return localColors.has(order.id) ? localColors.get(order.id) : order.markColor;
+  }, [localColors]);
+
   // Проверяем, может ли пользователь удалять заказы (все роли кроме Operator и Partner)
   const canDeleteOrders = userRole !== Role.Operator && userRole !== Role.Partner;
 
@@ -260,7 +304,11 @@ export function OrdersTableContent({
         </TableHeader>
         <TableBody>
           {paginatedOrders.map(order => (
-            <TableRow key={order.id} className='hover:bg-muted/50'>
+            <TableRow
+              key={order.id}
+              className='hover:brightness-95 transition-colors'
+              style={getRowStyle(getEffectiveColor(order))}
+            >
               {columnVisibility.orderNumber && (
                 <TableCell className='flex items-center font-medium'>
                   {orderNumberToString(order.orderNumber)}
@@ -359,14 +407,75 @@ export function OrdersTableContent({
                           Редактировать
                         </DropdownMenuItem>
                       )}
+
+                      <DropdownMenuSeparator />
+
+                      {/* Быстрая метка "Обработан" */}
+                      <DropdownMenuItem
+                        onClick={() =>
+                          handleMarkColor(
+                            order.id,
+                            getEffectiveColor(order) === '#22c55e' ? null : '#22c55e',
+                          )
+                        }
+                      >
+                        <div
+                          className='mr-2 h-3 w-3 rounded-full flex-shrink-0'
+                          style={{ backgroundColor: '#22c55e' }}
+                        />
+                        {getEffectiveColor(order) === '#22c55e' ? 'Снять «Обработан»' : 'Обработан'}
+                      </DropdownMenuItem>
+
+                      {/* Подменю выбора цвета */}
+                      <DropdownMenuSub>
+                        <DropdownMenuSubTrigger>
+                          <div
+                            className='mr-2 h-3 w-3 rounded-full flex-shrink-0 border border-gray-300'
+                            style={{
+                              backgroundColor: getEffectiveColor(order) ?? '#ffffff',
+                            }}
+                          />
+                          Цветовая метка
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent>
+                          {MARK_COLORS.map(c => (
+                            <DropdownMenuItem
+                              key={c.value}
+                              onClick={() => handleMarkColor(order.id, c.value)}
+                            >
+                              <div
+                                className='mr-2 h-3 w-3 rounded-full flex-shrink-0'
+                                style={{ backgroundColor: c.value }}
+                              />
+                              {c.label}
+                              {getEffectiveColor(order) === c.value && (
+                                <span className='ml-auto text-xs text-gray-400'>✓</span>
+                              )}
+                            </DropdownMenuItem>
+                          ))}
+                          {getEffectiveColor(order) && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleMarkColor(order.id, null)}>
+                                <X className='mr-2 h-3.5 w-3.5 text-gray-400' />
+                                Убрать метку
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuSubContent>
+                      </DropdownMenuSub>
+
                       {canDeleteOrders && (
-                        <DropdownMenuItem
-                          className='text-red-600'
-                          onClick={() => openDeleteModal(order)}
-                        >
-                          <Trash2 className='mr-2 h-4 w-4' />
-                          Удалить
-                        </DropdownMenuItem>
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className='text-red-600'
+                            onClick={() => openDeleteModal(order)}
+                          >
+                            <Trash2 className='mr-2 h-4 w-4' />
+                            Удалить
+                          </DropdownMenuItem>
+                        </>
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>

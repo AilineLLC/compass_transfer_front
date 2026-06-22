@@ -1,12 +1,9 @@
 'use client';
 
 import { Filter, RefreshCw } from 'lucide-react';
-import { Button } from '@shared/ui/forms/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/layout/card';
 import { type ServiceClass, type CarType } from '@entities/tariffs/enums';
 import { type GetTariffDTO } from '@entities/tariffs/interface';
 import { TariffCard } from './TariffCard';
-import { Role } from '@entities/users/enums';
 
 interface TariffsListProps {
   tariffs: GetTariffDTO[];
@@ -44,113 +41,50 @@ export function TariffsList({
   userRole,
 }: TariffsListProps) {
   if (!tariffs || tariffs.length === 0) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <p className="text-muted-foreground">Тарифы не найдены</p>
-      </div>
-    );
-  }
-  
-  if (filteredTariffs.length === 0) {
-    return (
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                Выбор тарифа ({filteredTariffs.length} из {tariffs.length})
-              </CardTitle>
-              <div className="flex items-center gap-2">
-                {/* Кнопка обновления тарифов */}
-                {onRefreshTariffs && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={onRefreshTariffs}
-                    disabled={isRefreshingTariffs}
-                    className="flex items-center gap-2"
-                  >
-                    <RefreshCw className={`h-4 w-4 ${isRefreshingTariffs ? 'animate-spin' : ''}`} />
-                    {isRefreshingTariffs ? 'Обновление...' : 'Обновить'}
-                  </Button>
-                )}
-
-                {/* Кнопка фильтра архивных */}
-                {
-                  userRole !== 'partner' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={onToggleArchived}
-                      className="flex items-center gap-2"
-                    >
-                      <Filter className="h-4 w-4" />
-                      {showArchived ? 'Скрыть архивные' : 'Показать архивные'}
-                    </Button>
-                  )
-                }
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className='px-0'>
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">
-                {showArchived
-                  ? 'Нет тарифов для отображения'
-                  : 'Нет активных тарифов. Попробуйте показать архивные тарифы.'
-                }
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <p className='text-sm text-gray-400 py-2'>Тарифы не найдены</p>;
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            Выбор тарифа ({filteredTariffs.length} из {tariffs.length})
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            {/* Кнопка обновления тарифов */}
-            {onRefreshTariffs && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onRefreshTariffs}
-                disabled={isRefreshingTariffs}
-                className="flex items-center gap-2"
-              >
-                <RefreshCw className={`h-4 w-4 ${isRefreshingTariffs ? 'animate-spin' : ''}`} />
-                {isRefreshingTariffs ? 'Обновление...' : 'Обновить'}
-              </Button>
-            )}
-
-            {/* Кнопка фильтра архивных */}
-            {
-              userRole !== 'partner' && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onToggleArchived}
-                  className="flex items-center gap-2"
-                >
-                  <Filter className="h-4 w-4" />
-                  {showArchived ? 'Скрыть архивные' : 'Показать архивные'}
-                </Button>
-              )
-            }
-          </div>
+    <div>
+      {/* Compact header */}
+      <div className='flex items-center justify-between mb-2'>
+        <span className='text-xs text-gray-400'>{filteredTariffs.length} тариф(а)</span>
+        <div className='flex gap-1'>
+          {onRefreshTariffs && (
+            <button
+              type='button'
+              onClick={onRefreshTariffs}
+              disabled={isRefreshingTariffs}
+              className='inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-500 rounded hover:bg-gray-100 transition-colors disabled:opacity-50'
+            >
+              <RefreshCw className={`h-3 w-3 ${isRefreshingTariffs ? 'animate-spin' : ''}`} />
+              {isRefreshingTariffs ? 'Обновление...' : 'Обновить'}
+            </button>
+          )}
+          {userRole !== 'partner' && (
+            <button
+              type='button'
+              onClick={onToggleArchived}
+              className='inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-500 rounded hover:bg-gray-100 transition-colors'
+            >
+              <Filter className='h-3 w-3' />
+              {showArchived ? 'Скрыть архивные' : 'Архивные'}
+            </button>
+          )}
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 transition-opacity duration-300 ${
-          isRefreshingTariffs ? 'opacity-50 pointer-events-none' : 'opacity-100'
-        }`}>
-          {filteredTariffs.map((tariff) => (
+      </div>
+
+      {filteredTariffs.length === 0 ? (
+        <p className='text-sm text-gray-400 py-2 text-center'>
+          {showArchived ? 'Нет тарифов' : 'Нет активных тарифов'}
+        </p>
+      ) : (
+        <div
+          className={`grid grid-cols-2 gap-1.5 max-h-56 overflow-y-auto pr-0.5 transition-opacity duration-200 ${
+            isRefreshingTariffs ? 'opacity-40 pointer-events-none' : ''
+          }`}
+        >
+          {filteredTariffs.map(tariff => (
             <TariffCard
               key={tariff.id}
               tariff={tariff}
@@ -166,7 +100,7 @@ export function TariffsList({
             />
           ))}
         </div>
-      </CardContent>
-    </Card>
+      )}
+    </div>
   );
 }

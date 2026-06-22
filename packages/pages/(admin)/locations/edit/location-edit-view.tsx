@@ -113,6 +113,7 @@ export function LocationEditView({ locationId }: LocationEditViewProps) {
         popular2: location.popular2 ?? false,
         isLandingOnly: location.isLandingOnly ?? false,
         isLandingPagePinned: location.isLandingPagePinned ?? false,
+        priceCoefficient: location.priceCoefficient ?? null,
         group: location.group || '',
         tags: profile?.tags?.map(t => t.id) ?? [],
         advice: profile?.advice

@@ -55,6 +55,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   onLocationSelect,
   isSelectingStart = true,
   onRouteDistanceChange,
+  onRouteLegsChange,
   userRole = 'operator',
 }) => {
   const position: [number, number] = [latitude, longitude];
@@ -88,7 +89,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
 
   // Используем хуки
   const uiScale = useUIScale();
-  const { routeCoordinates, routeDistance, routeStatus } = useRouteBuilder(showRoute, routePoints);
+  const { routeCoordinates, routeDistance, routeLegs, routeStatus } = useRouteBuilder(showRoute, routePoints);
   const { isDriverOffRoute } = useDriverTracking({
     currentDriverLocation,
     routeCoordinates,
@@ -96,9 +97,8 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     onRouteDeviation,
   });
 
-  // Передаем расстояние маршрута через колбэк
+  // Передаем расстояние и сегменты маршрута через колбэки
   useEffect(() => {
-
     if (onRouteDistanceChange) {
       if (routeStatus === 'success' && routeDistance > 0) {
         onRouteDistanceChange(routeDistance);
@@ -106,7 +106,14 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         onRouteDistanceChange(0);
       }
     }
-  }, [routeDistance, routeStatus, onRouteDistanceChange]);
+    if (onRouteLegsChange) {
+      if (routeStatus === 'success') {
+        onRouteLegsChange(routeLegs);
+      } else if (routeStatus === 'error') {
+        onRouteLegsChange([]);
+      }
+    }
+  }, [routeDistance, routeLegs, routeStatus, onRouteDistanceChange, onRouteLegsChange]);
 
   // Показываем загрузку пока не инициализирован клиент
   if (!isClient) {

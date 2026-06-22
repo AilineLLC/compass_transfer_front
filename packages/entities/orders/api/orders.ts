@@ -368,6 +368,18 @@ export class OrdersApi {
       throw new Error(response.error.message || 'Failed to cancel order');
     }
   }
+
+  /**
+   * Установить цветовую метку заказа
+   * PUT /Order/{id}/mark-color
+   */
+  static async markOrder(id: string, markColor: string | null): Promise<void> {
+    const response = await apiPut(`/Order/${id}/mark-color`, markColor);
+
+    if (response.error) {
+      throw new Error(response.error.message || 'Failed to mark order');
+    }
+  }
 }
 
 export default OrdersApi;

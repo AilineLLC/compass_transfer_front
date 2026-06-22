@@ -31,6 +31,7 @@ export interface RouteResult {
   distance: number; // в метрах
   duration: number; // в секундах
   info: RouteTypeInfo;
+  legs?: { distance: number }[]; // расстояние каждого сегмента в метрах
 }
 
 /**
@@ -156,6 +157,8 @@ export interface LeafletMapProps {
   onRouteDeviation?: (isOffRoute: boolean, distance?: number) => void;
   /** Callback для передачи расстояния маршрута в метрах */
   onRouteDistanceChange?: (distance: number) => void;
+  /** Callback для передачи расстояний по сегментам маршрута */
+  onRouteLegsChange?: (legs: { distance: number }[]) => void;
   /** Роль пользователя для скрытия кнопок выбора водителя */
   userRole?: 'admin' | 'operator' | 'partner' | 'driver';
 }

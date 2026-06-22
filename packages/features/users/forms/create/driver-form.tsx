@@ -9,6 +9,7 @@ import { usersApi } from '@shared/api/users';
 import { logger, applyServerErrors } from '@shared/lib';
 import {
   CitizenshipCountry,
+  DriverType,
   VerificationStatus,
   IdentityDocumentType,
   EmploymentType,
@@ -159,18 +160,45 @@ export function useDriverFormLogic({
       );
     }
 
-    // Нормализуем nullable date-поля: пустая строка → null
-    const nullifyEmptyDate = (val: string | null | undefined) =>
+    // Нормализуем nullable-поля: пустая строка → null
+    const nullifyEmpty = (val: string | null | undefined) =>
       val === '' || val === undefined ? null : val;
 
-    cleaned.profile.lastRideDate = nullifyEmptyDate(cleaned.profile.lastRideDate);
-    cleaned.profile.medicalExamDate = nullifyEmptyDate(cleaned.profile.medicalExamDate);
-    cleaned.profile.backgroundCheckDate = nullifyEmptyDate(cleaned.profile.backgroundCheckDate);
-    cleaned.profile.passport = {
-      ...cleaned.profile.passport,
-      issueDate: nullifyEmptyDate(cleaned.profile.passport.issueDate),
-      expiryDate: nullifyEmptyDate(cleaned.profile.passport.expiryDate),
-    };
+    cleaned.profile.lastRideDate = nullifyEmpty(cleaned.profile.lastRideDate);
+    cleaned.profile.medicalExamDate = nullifyEmpty(cleaned.profile.medicalExamDate);
+    cleaned.profile.backgroundCheckDate = nullifyEmpty(cleaned.profile.backgroundCheckDate);
+
+    // Опциональные поля из скрытых разделов
+    cleaned.profile.licenseNumber = nullifyEmpty(cleaned.profile.licenseNumber as string | null | undefined);
+    cleaned.profile.licenseIssueDate = nullifyEmpty(cleaned.profile.licenseIssueDate as string | null | undefined);
+    cleaned.profile.licenseExpiryDate = nullifyEmpty(cleaned.profile.licenseExpiryDate as string | null | undefined);
+    cleaned.profile.dateOfBirth = nullifyEmpty(cleaned.profile.dateOfBirth as string | null | undefined);
+    cleaned.profile.citizenship = nullifyEmpty(cleaned.profile.citizenship as string | null | undefined);
+
+    // passport: null если ни одно поле не заполнено
+    const p = cleaned.profile.passport;
+    const passportHasData = p && (
+      (p.number && p.number.trim() !== '') ||
+      (p.series && p.series.trim() !== '') ||
+      (p.issueDate && p.issueDate.trim() !== '') ||
+      (p.issuedBy && p.issuedBy.trim() !== '') ||
+      (p.expiryDate && p.expiryDate.trim() !== '')
+    );
+    if (passportHasData && p) {
+      cleaned.profile.passport = {
+        ...p,
+        number: nullifyEmpty(p.number as string | null | undefined) as string,
+        issueDate: nullifyEmpty(p.issueDate),
+        expiryDate: nullifyEmpty(p.expiryDate),
+      };
+    } else {
+      (cleaned.profile as any).passport = null;
+    }
+
+    // Пустые массивы вместо undefined
+    cleaned.profile.workExperience = cleaned.profile.workExperience ?? [];
+    cleaned.profile.education = cleaned.profile.education ?? [];
+    cleaned.profile.testScore = cleaned.profile.testScore ?? [];
 
     return cleaned;
   };
@@ -201,10 +229,11 @@ export function useDriverFormLogic({
           avatarUrl: data.avatarUrl || null,
           profile: {
             ...formDataWithoutConfirm.profile,
+            type: DriverType.Compass,
             citizenshipCountry: typeof formDataWithoutConfirm.profile.citizenshipCountry === 'string'
               ? formDataWithoutConfirm.profile.citizenshipCountry as CitizenshipCountry
               : formDataWithoutConfirm.profile.citizenshipCountry,
-          },
+          } as any,
           employment: {
             ...formDataWithoutConfirm.employment,
             employmentType: formDataWithoutConfirm.employment.employmentType as EmploymentType,
@@ -255,19 +284,23 @@ export function useDriverFormLogic({
         return getSecurityStatus(formData, errors, isSubmitted);
       }
       if (chapterId === 'driver-license') {
-        return getDriverLicenseStatus(formData.profile, errors, isSubmitted);
+        // Необязательный раздел — никогда не показываем 'error', только 'complete'/'pending'
+        const s = getDriverLicenseStatus(formData.profile as any, errors, false);
+        return s === 'error' ? 'pending' : s;
       }
       if (chapterId === 'employment') {
         return getDriverEmploymentStatus(formData, errors, isSubmitted);
       }
       if (chapterId === 'passport-data') {
-        return getPassportDataStatus(formData.profile, errors, isSubmitted);
+        const s = getPassportDataStatus(formData.profile as any, errors, false);
+        return s === 'error' ? 'pending' : s;
       }
       if (chapterId === 'personal-info') {
-        return getPersonalInfoStatus(formData.profile, errors, isSubmitted);
+        const s = getPersonalInfoStatus(formData.profile as any, errors, false);
+        return s === 'error' ? 'pending' : s;
       }
       if (chapterId === 'ride-preferences') {
-        return getRidePreferencesStatus(formData.profile, errors, isSubmitted);
+        return getRidePreferencesStatus(formData.profile as any, errors, isSubmitted);
       }
 
       return 'pending';
@@ -282,20 +315,18 @@ export function useDriverFormLogic({
       if (chapterId === 'security') {
         return getSecurityErrors(formData, errors, isSubmitted);
       }
-      if (chapterId === 'driver-license') {
-        return getDriverLicenseErrors(formData.profile, errors, isSubmitted);
-      }
+      // Необязательные разделы — ошибки не блокируют создание
+      if (chapterId === 'driver-license') return [];
+      if (chapterId === 'passport-data') return [];
+      if (chapterId === 'personal-info') return [];
+      if (chapterId === 'additional') return [];
+      if (chapterId === 'work-experience') return [];
+      if (chapterId === 'education') return [];
       if (chapterId === 'employment') {
         return getDriverEmploymentErrors(formData, errors, isSubmitted);
       }
-      if (chapterId === 'passport-data') {
-        return getPassportDataErrors(formData.profile, errors, isSubmitted);
-      }
-      if (chapterId === 'personal-info') {
-        return getPersonalInfoErrors(formData.profile, errors, isSubmitted);
-      }
       if (chapterId === 'ride-preferences') {
-        return getRidePreferencesErrors(formData.profile, errors, isSubmitted);
+        return getRidePreferencesErrors(formData.profile as any, errors, isSubmitted);
       }
 
       return [];

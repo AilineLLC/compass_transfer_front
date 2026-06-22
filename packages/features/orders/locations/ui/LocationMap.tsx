@@ -37,6 +37,7 @@ interface LocationMapProps {
   onLocationToggle: (location: GetLocationDTO, isSelected: boolean) => void;
   onDriverSelect?: (driver: string | ActiveDriverDTO) => void;
   onRouteDistanceChange: (distance: number) => void;
+  onRouteLegsChange?: (legs: { distance: number }[]) => void;
   getDriverById: (id: string) => Record<string, unknown> | null;
   loadDriverData: (id: string) => Promise<void>;
 }
@@ -63,6 +64,7 @@ export function LocationMap({
   onLocationToggle,
   onDriverSelect,
   onRouteDistanceChange,
+  onRouteLegsChange,
   getDriverById,
   loadDriverData
 }: LocationMapProps) {
@@ -119,6 +121,7 @@ export function LocationMap({
             openDriverPopupId={openDriverPopupId}
             dynamicCenter={dynamicMapCenter}
             onRouteDistanceChange={onRouteDistanceChange}
+            onRouteLegsChange={onRouteLegsChange}
             activeDrivers={activeDrivers}
             getDriverById={getDriverById}
             loadDriverData={loadDriverData}

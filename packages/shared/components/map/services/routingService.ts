@@ -9,6 +9,7 @@ interface OSRMRoute {
   geometry: {
     coordinates: [number, number][];
   };
+  legs?: { distance: number }[];
 }
 
 /**
@@ -93,6 +94,7 @@ class OSRMProvider implements RoutingProvider {
             distance: Math.round(route.distance || 0),
             duration: Math.round(route.duration || 0),
             info: ROUTE_TYPE_CONFIG[routeType],
+            legs: route.legs?.map((leg: { distance: number }) => ({ distance: Math.round(leg.distance || 0) })),
           };
         }
       } catch {

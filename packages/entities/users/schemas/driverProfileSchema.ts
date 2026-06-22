@@ -13,27 +13,31 @@ export const driverProfileSchema = z.object({
     .string({
       message: 'Номер водительских прав должен быть строкой',
     })
-    .min(1, { message: 'Номер водительских прав не может быть пустым' }),
+    .nullable()
+    .optional(),
   licenseCategories: z
     .array(z.string(), {
       message: 'Категории прав должны быть массивом строк',
     })
-    .min(1, { message: 'Выберите хотя бы одну категорию прав' }),
+    .optional(),
   licenseIssueDate: z
     .string({
       message: 'Дата выдачи прав должна быть строкой',
     })
-    .min(1, { message: 'Дата выдачи прав не может быть пустой' }),
+    .nullable()
+    .optional(),
   licenseExpiryDate: z
     .string({
       message: 'Дата окончания прав должна быть строкой',
     })
-    .min(1, { message: 'Дата окончания прав не может быть пустой' }),
+    .nullable()
+    .optional(),
   dateOfBirth: z
     .string({
       message: 'Дата рождения должна быть строкой',
     })
-    .min(1, { message: 'Дата рождения не может быть пустой' }),
+    .nullable()
+    .optional(),
   birthPlace: z
     .string({
       message: 'Место рождения должно быть строкой',
@@ -45,14 +49,15 @@ export const driverProfileSchema = z.object({
     .string({
       message: 'Гражданство должно быть строкой',
     })
-    .min(1, { message: 'Гражданство не может быть пустым' })
-    .max(63, { message: 'Гражданство не должно превышать 63 символа' }),
+    .max(63, { message: 'Гражданство не должно превышать 63 символа' })
+    .nullable()
+    .optional(),
   citizenshipCountry: z.union([
     z.nativeEnum(CitizenshipCountry),
     z.string()
   ], {
     message: 'Некорректная страна гражданства',
-  }),
+  }).optional(),
   drivingExperience: z
     .number({
       message: 'Опыт вождения должен быть числом',
@@ -65,7 +70,7 @@ export const driverProfileSchema = z.object({
     .array(z.string(), {
       message: 'Языки должны быть массивом строк',
     })
-    .min(1, { message: 'Выберите хотя бы один язык' }),
+    .optional(),
   taxIdentifier: z
     .string({
       message: 'Налоговый номер должен быть строкой',
@@ -77,12 +82,14 @@ export const driverProfileSchema = z.object({
       message: 'Общее количество поездок должно быть числом',
     })
     .int({ message: 'Общее количество поездок должно быть целым числом' })
-    .min(0, { message: 'Количество поездок не может быть отрицательным' }),
+    .min(0, { message: 'Количество поездок не может быть отрицательным' })
+    .optional(),
   totalDistance: z
     .number({
       message: 'Общее пройденное расстояние должно быть числом',
     })
-    .min(0, { message: 'Пройденное расстояние не может быть отрицательным' }),
+    .min(0, { message: 'Пройденное расстояние не может быть отрицательным' })
+    .optional(),
   lastRideDate: z
     .string({
       message: 'Дата последней поездки должна быть строкой',
@@ -120,8 +127,8 @@ export const driverProfileSchema = z.object({
     .optional(),
   trainingCompleted: z.boolean({
     message: 'Статус обучения должен быть булевым значением',
-  }),
-  passport: driverPassportSchema,
+  }).optional(),
+  passport: driverPassportSchema.optional(),
   workExperience: z
     .array(driverWorkExperienceSchema, {
       message: 'Опыт работы должен быть массивом объектов',

@@ -165,4 +165,9 @@ export interface GetOrderDTO {
    * ID предпочитаемого автомобиля пассажиров
    */
   requestedCar?: string | null;
+
+  /**
+   * Цвет метки заказа (hex-строка, например '#EF4444')
+   */
+  markColor?: string | null;
 }

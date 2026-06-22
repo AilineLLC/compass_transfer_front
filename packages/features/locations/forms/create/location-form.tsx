@@ -63,6 +63,7 @@ export function useLocationFormLogic({
       group: '',
       tags: [],
       advice: null,
+      priceCoefficient: null,
     },
   });
 
@@ -137,6 +138,7 @@ export function useLocationFormLogic({
           popular1: data.popular,
           isLandingOnly: data.isLandingOnly ?? false,
           isLandingPagePinned: data.isLandingPagePinned ?? false,
+          priceCoefficient: data.priceCoefficient ?? null,
           group: null,
           images: orderedImageIds,
           poi: poiData,

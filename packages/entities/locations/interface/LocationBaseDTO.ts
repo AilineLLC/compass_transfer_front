@@ -19,4 +19,5 @@ export interface LocationBaseDTO {
   popular2?: boolean;
   group?: string | null;
   images?: string[];
+  priceCoefficient?: number | null;
 }

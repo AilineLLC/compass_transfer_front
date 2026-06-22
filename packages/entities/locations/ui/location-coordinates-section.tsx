@@ -2,6 +2,7 @@
 
 import { useFormContext } from 'react-hook-form';
 import { Checkbox } from '@shared/ui/forms/checkbox';
+import { Input } from '@shared/ui/forms/input';
 import { Label } from '@shared/ui/forms/label';
 import type { LocationCreateFormData } from '../schemas/locationCreateSchema';
 
@@ -25,6 +26,7 @@ export function LocationCoordinatesSection({
   const popular = watch('popular');
   const isLandingOnly = watch('isLandingOnly');
   const isLandingPagePinned = watch('isLandingPagePinned');
+  const priceCoefficient = watch('priceCoefficient');
 
   return (
     <div className="space-y-6">
@@ -113,6 +115,33 @@ export function LocationCoordinatesSection({
               <p className="text-sm text-red-600">{errors.isLandingPagePinned.message}</p>
             )}
           </div>
+        </div>
+
+        {/* Коэффициент стоимости */}
+        <div className="rounded-lg border p-4 space-y-2">
+          <Label htmlFor="priceCoefficient" className="text-sm font-medium">
+            Коэффициент стоимости поездки
+          </Label>
+          <Input
+            id="priceCoefficient"
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="Например: 1.5"
+            value={priceCoefficient ?? ''}
+            onChange={(e) => {
+              const val = e.target.value;
+              setValue('priceCoefficient', val === '' ? null : parseFloat(val), { shouldValidate: true });
+            }}
+            className="w-full"
+          />
+          <div className="text-sm text-muted-foreground">
+            Множитель цены для поездок в эту точку. Оставьте пустым, если коэффициент не применяется.
+            Например: <span className="font-medium">1.5</span> = цена ×1.5
+          </div>
+          {errors.priceCoefficient && (
+            <p className="text-sm text-red-600">{errors.priceCoefficient.message}</p>
+          )}
         </div>
       </div>
     </div>

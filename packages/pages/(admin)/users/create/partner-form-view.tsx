@@ -2,7 +2,8 @@ import { FormProvider, type UseFormReturn } from 'react-hook-form';
 import { Button } from '@shared/ui/forms/button';
 import { Card, CardContent, ChapterHeader } from '@shared/ui/layout';
 import { FormSidebar } from '@shared/ui/layout/form-sidebar';
-import { BasicDataSection, CompanyDataSection, SecuritySection, PartnerSaleSection } from '@entities/users';
+import { BasicDataSection, CompanyDataSection, SecuritySection, PartnerSaleSection, PartnerDocumentsSection } from '@entities/users';
+import type { PartnerDocumentItem } from '@entities/users';
 import { BusinessType } from '@entities/users/enums';
 import { PARTNER_FORM_CHAPTERS } from '@entities/users/model/form-chapters/partner-chapters';
 import type { PartnerCreateFormData } from '@entities/users/schemas/partnerCreateSchema';
@@ -27,6 +28,7 @@ interface PartnerFormViewProps {
   handleChapterClick: (chapterId: string) => void;
   onBack: () => void;
   selectedRole: string;
+  onDocumentItemsChange: (items: PartnerDocumentItem[]) => void;
 }
 
 export function PartnerFormView({
@@ -37,6 +39,7 @@ export function PartnerFormView({
   onCreate,
   handleChapterClick,
   onBack,
+  onDocumentItemsChange,
 }: PartnerFormViewProps) {
   return (
     <FormProvider {...form}>
@@ -98,6 +101,20 @@ export function PartnerFormView({
                     <PartnerSaleSection />
                   </div>
                 </div>
+
+                {/* Глава 5: Документы */}
+                <div id='chapter-documents' className='relative flex flex-col gap-4'>
+                  <ChapterHeader
+                    number={5}
+                    title='Документы'
+                    status={getChapterStatus('documents')}
+                  />
+                  <div className='relative ml-12'>
+                    <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
+                    <PartnerDocumentsSection onItemsChange={onDocumentItemsChange} />
+                  </div>
+                </div>
+
                 <div className='flex justify-end space-x-4 pt-6'>
                   <Button
                     type='button'

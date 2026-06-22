@@ -62,4 +62,5 @@ export interface LocationDTO {
   poiCount?: number;
   tagCount?: number;
   profile?: LocationProfileDTO | null;
+  priceCoefficient?: number | null;
 }

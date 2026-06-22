@@ -208,13 +208,13 @@ export function DriverSection({
 
           <div className='border-l-4 border-indigo-200 pl-4 flex flex-col gap-2'>
             <label className='text-sm font-medium text-muted-foreground'>Гражданство</label>
-            <p className='text-sm'>{getCitizenshipLabel(driverProfile.citizenship)}</p>
+            <p className='text-sm'>{getCitizenshipLabel(driverProfile.citizenship ?? '')}</p>
           </div>
 
           <div className='border-l-4 border-pink-200 pl-4 flex flex-col gap-2'>
             <label className='text-sm font-medium text-muted-foreground'>Языки</label>
             <div className='flex flex-wrap gap-1'>
-              {driverProfile.languages.map(language => (
+              {(driverProfile.languages ?? []).map(language => (
                 <Badge key={language} variant='secondary' className='text-xs w-fit'>
                   {getLanguageLabel(language)}
                 </Badge>
@@ -364,7 +364,7 @@ export function DriverSection({
             <div className='border-l-4 border-green-200 pl-4 flex flex-col gap-2'>
               <label className='text-sm font-medium text-muted-foreground'>Категории водительского удостоверения</label>
               <div className='flex flex-wrap gap-1'>
-                {driverProfile.licenseCategories.map(category => (
+                {(driverProfile.licenseCategories ?? []).map(category => (
                   <Badge key={category} variant='outline' className='text-xs w-fit'>
                     {getLicenseCategoryLabel(category)}
                   </Badge>
@@ -388,6 +388,7 @@ export function DriverSection({
       </Card>
 
       {/* Паспортные данные */}
+      {driverProfile.passport && (
       <Card>
         <CardHeader>
           <CardTitle className='flex items-center gap-2'>
@@ -433,6 +434,7 @@ export function DriverSection({
           )}
         </CardContent>
       </Card>
+      )}
 
       {/* Опыт работы */}
       {driverProfile.workExperience && driverProfile.workExperience.length > 0 && (
