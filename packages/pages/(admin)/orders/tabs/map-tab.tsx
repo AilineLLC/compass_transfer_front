@@ -40,6 +40,7 @@ interface MapTabProps {
 
   // Запланированное время заказа (для виджета конфликтов водителя)
   scheduledTime?: string | null;
+  completionTimeEstimate?: string | null;
 
   // Тариф заказа — для фильтрации водителей по классу
   selectedTariff?: GetTariffDTO | null;
@@ -67,6 +68,7 @@ export function MapTab({
   rides,
   requestedCarId,
   scheduledTime,
+  completionTimeEstimate,
   // Внешнее состояние
   routePoints: externalRoutePoints,
   setRoutePoints: setExternalRoutePoints,
@@ -137,6 +139,8 @@ export function MapTab({
     additionalStops,
     mode,
     rides,
+    scheduledTime,
+    completionTimeEstimate,
     // Передаем внешнее состояние
     externalRoutePoints,
     setExternalRoutePoints,
@@ -379,6 +383,8 @@ export function MapTab({
             userRole={userRole}
             onViewDriverOrders={(driverId, driverName) => setOrdersWidget({ driverId, driverName })}
             requiredServiceClass={selectedTariff?.serviceClass ?? null}
+            scheduledTime={scheduledTime}
+            completionTimeEstimate={completionTimeEstimate}
           />
         )}
       </div>

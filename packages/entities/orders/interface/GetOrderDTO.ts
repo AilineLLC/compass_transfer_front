@@ -72,6 +72,11 @@ export interface GetOrderDTO {
   completedAt?: string | null;
 
   /**
+   * Примерное время окончания заказа
+   */
+  completionTimeEstimate?: string | null;
+
+  /**
    * Использованный шаблон маршрута (если есть)
    */
   routeId?: string | null;

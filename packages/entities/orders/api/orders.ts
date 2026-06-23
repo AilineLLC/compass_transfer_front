@@ -65,6 +65,9 @@ export interface CreateInstantOrderRequest {
   /** Предварительная стоимость */
   initialPrice: number;
 
+  /** Примерное время завершения заказа (ISO строка) */
+  completionTimeEstimate: string;
+
   /** Пассажиры */
   passengers: Array<{
     customerId?: string | null;

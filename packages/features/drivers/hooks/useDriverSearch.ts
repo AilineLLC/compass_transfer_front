@@ -22,14 +22,18 @@ export interface DriverSearchParams {
   role?: string[];
   sortBy?: string;
   sortOrder?: 'Asc' | 'Desc';
+  hasNoScheduledOrdersFrom?: string;
+  hasNoScheduledOrdersTo?: string;
 }
 
 /**
  * Расширенный тип для API запроса с параметрами пагинации
  */
-type DriverSearchApiParams = DriverSearchParams & {
+type DriverSearchApiParams = Omit<DriverSearchParams, 'hasNoScheduledOrdersFrom' | 'hasNoScheduledOrdersTo'> & {
   First?: boolean;
   Size?: number;
+  HasNoScheduledOrdersFrom?: string;
+  HasNoScheduledOrdersTo?: string;
 };
 
 /**
@@ -48,10 +52,13 @@ export const useDriverSearch = () => {
     setError(null);
 
     try {
+      const { hasNoScheduledOrdersFrom, hasNoScheduledOrdersTo, ...rest } = params;
       const searchParams: DriverSearchApiParams = {
         First: true,
         Size: 50,
-        ...params
+        ...rest,
+        ...(hasNoScheduledOrdersFrom && { HasNoScheduledOrdersFrom: hasNoScheduledOrdersFrom }),
+        ...(hasNoScheduledOrdersTo && { HasNoScheduledOrdersTo: hasNoScheduledOrdersTo }),
       };
 
       const response = await apiClient.get<{

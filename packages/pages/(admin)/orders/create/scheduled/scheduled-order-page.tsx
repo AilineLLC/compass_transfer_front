@@ -37,6 +37,14 @@ import { useSelfProfile } from '@entities/users/hooks/useSelfProfile';
 import { usersApi } from '@shared/api/users';
 import { locationsApi } from '@shared/api/locations';
 
+// Примерное время завершения: distanceMeters / (80 км/ч если >= 30 км, иначе 50 км/ч)
+function calcCompletionTime(startIso: string, distanceMeters: number): string {
+  const distanceKm = distanceMeters / 1000;
+  const speedKmh = distanceKm >= 30 ? 80 : 50;
+  const travelMs = (distanceKm / speedKmh) * 3600 * 1000;
+  return new Date(new Date(startIso).getTime() + travelMs).toISOString();
+}
+
 // Интерфейс для точки маршрута в форме заказа
 interface OrderRoutePoint {
   id: string;
@@ -710,6 +718,14 @@ export function ScheduledOrderPage({
       return;
     }
 
+    if (!routeDistance || routeDistance === 0) {
+      toast.error('Маршрут не построен', {
+        description: 'Дождитесь построения маршрута для расчёта времени завершения',
+      });
+      setOpenSections(prev => { const s = new Set(prev); s.add('map'); return s; });
+      return;
+    }
+
     // Для admin/operator — проверяем что driverPrice заполнена
     if ((userRole === 'admin' || userRole === 'operator') && !driverPrice) {
       toast.error('Укажите сумму водителя', {
@@ -779,6 +795,13 @@ export function ScheduledOrderPage({
           }
 
           return new Date().toISOString(); // Текущая дата в UTC
+        })(),
+        completionTimeEstimate: (() => {
+          const dateValue = methods.getValues('scheduledTime');
+          const startIso = (dateValue && typeof dateValue === 'string')
+            ? new Date(dateValue).toISOString()
+            : new Date().toISOString();
+          return calcCompletionTime(startIso, routeDistance);
         })(),
         passengers: (() => {
           const passengersData = methods.getValues('passengers');
@@ -1137,6 +1160,7 @@ export function ScheduledOrderPage({
                 onRouteLoadingChange={setRouteLoading}
                 selectedTariff={selectedTariff as unknown as GetTariffDTO}
                 scheduledTime={(formData.scheduledTime as string) || existingOrder?.scheduledTime}
+                completionTimeEstimate={existingOrder?.completionTimeEstimate}
                 requestedCarId={existingOrder?.requestedCar}
                 userRole={userRole}
               />

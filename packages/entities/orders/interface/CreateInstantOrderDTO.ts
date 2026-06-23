@@ -13,6 +13,8 @@ export interface CreateInstantOrderDTO {
   additionalStops: string[];
   services: OrderServiceDTO[];
   initialPrice: number;
+  /** Примерное время завершения заказа (ISO строка) */
+  completionTimeEstimate: string;
   passengers: PassengerDTO[];
   paymentId?: string;
 }

@@ -21,6 +21,7 @@ function convertToUpdateData(data: CreateScheduledOrderRequest, orderId: string)
     services: data.services || [],
     initialPrice: data.initialPrice,
     scheduledTime: data.scheduledTime,
+    completionTimeEstimate: data.completionTimeEstimate,
     passengers: [], // Пассажиры обновляются отдельным запросом
     status: (data.status as string) || (OrderStatus.Pending as string),
     subStatus: (data as any).subStatus || 'SearchingDriver',
