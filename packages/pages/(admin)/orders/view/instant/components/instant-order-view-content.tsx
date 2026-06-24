@@ -1,6 +1,6 @@
 'use client'
 
-import { MapPin, User, Car, Info, DollarSign, ExternalLink, Settings } from 'lucide-react';
+import { MapPin, User, Car, Info, DollarSign, ExternalLink, Settings, CheckCircle2 } from 'lucide-react';
 import { AuditEntityType } from '@entities/audit';
 import { AuditSection } from '@features/audit';
 import { useState } from 'react';
@@ -406,6 +406,23 @@ export function InstantOrderViewContent({ order }: InstantOrderViewContentProps)
             }>
               {formatFinalPrice(order.finalPrice)}
             </span>
+          </div>
+          {order.driverPrice != null && (
+            <div className='flex justify-between text-sm'>
+              <span className='text-muted-foreground'>Сумма водителю:</span>
+              <span>{formatPriceWithUsd(order.driverPrice, usdRate)}</span>
+            </div>
+          )}
+          <div className='flex justify-between text-sm items-center border-t pt-2'>
+            <span className='text-muted-foreground'>Выплата водителю:</span>
+            {order.driverPayedOut ? (
+              <span className='flex items-center gap-1 text-emerald-600 font-medium'>
+                <CheckCircle2 className='h-4 w-4' />
+                Оплачено
+              </span>
+            ) : (
+              <span className='text-orange-500 font-medium'>Не выплачено</span>
+            )}
           </div>
         </CardContent>
       </Card>

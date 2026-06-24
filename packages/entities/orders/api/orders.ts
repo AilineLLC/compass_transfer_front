@@ -383,6 +383,18 @@ export class OrdersApi {
       throw new Error(response.error.message || 'Failed to mark order');
     }
   }
+
+  /**
+   * Отметить/снять выплату водителю
+   * PUT /Order/{uuid}/driver-payed-out
+   */
+  static async markDriverPayedOut(id: string, value: boolean): Promise<void> {
+    const response = await apiPut(`/Order/${id}/driver-payed-out`, value);
+
+    if (response.error) {
+      throw new Error(response.error.message || 'Failed to mark driver payed out');
+    }
+  }
 }
 
 export default OrdersApi;

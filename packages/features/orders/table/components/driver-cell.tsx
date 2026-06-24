@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, CalendarDays, Search, Settings, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDebounce } from '@shared/hooks/use-debounce';
@@ -43,12 +43,22 @@ export function DriverCell({ order, onRefetch }: DriverCellProps) {
   const { drivers, isLoading: isSearching, searchDrivers, searchDriversByName } = useDriverSearch();
   const debouncedSearch = useDebounce(searchQuery, 300);
 
+  const fetchDrivers = useCallback(() => {
+    return searchDrivers({
+      role: ['Driver'],
+      sortBy: 'fullName',
+      sortOrder: 'Asc',
+      ...(order.scheduledTime && { hasNoScheduledOrdersFrom: order.scheduledTime }),
+      ...(order.completionTimeEstimate && { hasNoScheduledOrdersTo: order.completionTimeEstimate }),
+    });
+  }, [searchDrivers, order.scheduledTime, order.completionTimeEstimate]);
+
   useEffect(() => {
     if (!open) return;
     if (debouncedSearch.trim().length >= 2) {
       searchDriversByName(debouncedSearch);
     } else {
-      searchDrivers({ role: ['Driver'], sortBy: 'fullName', sortOrder: 'Asc' });
+      fetchDrivers();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch, open]);
@@ -56,7 +66,7 @@ export function DriverCell({ order, onRefetch }: DriverCellProps) {
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
     if (isOpen) {
-      searchDrivers({ role: ['Driver'], sortBy: 'fullName', sortOrder: 'Asc' });
+      fetchDrivers();
     } else {
       setSearchQuery('');
       setViewingDriverId(null);
@@ -190,6 +200,7 @@ export function DriverCell({ order, onRefetch }: DriverCellProps) {
                 className='h-8 pl-8 text-sm'
               />
             </div>
+
             <div className='max-h-52 space-y-1 overflow-y-auto'>
               {isSearching ? (
                 <div className='py-4 text-center text-sm text-gray-500'>Загрузка...</div>

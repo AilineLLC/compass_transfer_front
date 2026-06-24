@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, Edit, Trash2, DollarSign, BellRing } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, DollarSign, BellRing, Banknote, CheckCircle2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { notificationsApi } from '@shared/api/notifications';
@@ -11,6 +11,7 @@ import { OrderStatus } from '@entities/orders/enums';
 import type { GetOrderDTO } from '@entities/orders/interface';
 import { NotificationType } from '@entities/notifications';
 import { Role } from '@entities/users/enums';
+import { useDriverPayedOut } from '@features/orders/hooks/use-driver-payed-out';
 import { OrderPaymentsModal } from '../../components/order-payments-modal';
 
 interface ScheduledOrderViewActionsProps {
@@ -18,17 +19,22 @@ interface ScheduledOrderViewActionsProps {
   onEdit: () => void;
   onDelete?: () => void;
   onBack: () => void;
+  onRefetch?: () => void;
 }
 
 export function ScheduledOrderViewActions({
   order,
   onEdit,
   onDelete,
-  onBack
+  onBack,
+  onRefetch,
 }: ScheduledOrderViewActionsProps) {
   const [isPaymentsModalOpen, setIsPaymentsModalOpen] = useState(false);
   const [isNotifying, setIsNotifying] = useState(false);
   const { userRole } = useUserRole();
+  const { toggleDriverPayedOut, isPending: isPayedOutPending } = useDriverPayedOut({
+    onSuccess: onRefetch,
+  });
 
   // Партнеры не могут редактировать и удалять заказы
   const canEditOrders = userRole !== Role.Partner;
@@ -106,6 +112,26 @@ export function ScheduledOrderViewActions({
             {isNotifying ? 'Отправка...' : 'Уведомить водителя повторно'}
           </Button>
         )}
+
+        {/* Выплата водителю */}
+        <Button
+          onClick={() => toggleDriverPayedOut(order)}
+          variant={order.driverPayedOut ? 'secondary' : 'outline'}
+          className={`w-full justify-start ${order.driverPayedOut ? 'text-cyan-600 border-cyan-200 bg-cyan-50 hover:bg-cyan-100' : ''}`}
+          disabled={isPayedOutPending}
+        >
+          {order.driverPayedOut ? (
+            <>
+              <CheckCircle2 className='h-4 w-4 mr-2 text-cyan-500' />
+              {isPayedOutPending ? 'Сохранение...' : 'Снять «Оплачен водителю»'}
+            </>
+          ) : (
+            <>
+              <Banknote className='h-4 w-4 mr-2' />
+              {isPayedOutPending ? 'Сохранение...' : 'Оплачен водителю'}
+            </>
+          )}
+        </Button>
 
         {/* Кнопка просмотра платежей */}
         <Button

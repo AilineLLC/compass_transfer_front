@@ -149,7 +149,7 @@ export function DriverPanel({
   };
 
   return (
-    <div className='absolute bottom-4 left-4 right-4 z-[1000] max-w-2xl mx-auto'>
+    <div className='absolute bottom-0 left-4 right-4 z-[1000] max-w-2xl mx-auto'>
       <Card className='backdrop-blur-sm bg-white/80 rounded-t-2xl border'>
         <CardContent className='p-3 sm:p-4'>
 

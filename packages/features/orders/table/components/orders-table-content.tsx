@@ -1,6 +1,6 @@
 'use client';
 
-import { Edit, Trash2, ChevronUp, ChevronDown, MoreHorizontal, Eye, X } from 'lucide-react';
+import { Edit, Trash2, ChevronUp, ChevronDown, MoreHorizontal, Eye, X, Banknote, CheckCircle2 } from 'lucide-react';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import React, { useState, useEffect, useCallback } from 'react';
 import { DriverCell } from './driver-cell';
@@ -41,6 +41,7 @@ import {
 } from '@entities/orders';
 import { Role } from '@entities/users/enums';
 import { useDeleteOrder } from '@features/orders/hooks/use-delete-order';
+import { useDriverPayedOut } from '@features/orders/hooks/use-driver-payed-out';
 import { useUsdRate } from '@shared/hooks';
 import { formatPriceWithUsd } from '@shared/utils/format-price-with-usd';
 
@@ -196,6 +197,10 @@ export function OrdersTableContent({
     },
   });
 
+  const { toggleDriverPayedOut, isPending: isPayedOutPending } = useDriverPayedOut({
+    onSuccess: () => onRefetch?.(),
+  });
+
   // Оптимистичное локальное состояние цветовых меток
   const [localColors, setLocalColors] = useState<Map<string, string | null>>(new Map());
 
@@ -310,9 +315,14 @@ export function OrdersTableContent({
               style={getRowStyle(getEffectiveColor(order))}
             >
               {columnVisibility.orderNumber && (
-                <TableCell className='flex items-center font-medium'>
+                <TableCell className='flex items-center font-medium gap-1'>
                   {orderNumberToString(order.orderNumber)}
-                  {(!order.creatorId || order.requestedCar) && <span className='text-[#1B59F8] animate-pulse text-xl mb-1 ml-2'>•</span> }
+                  {(!order.creatorId || order.requestedCar) && <span className='text-[#1B59F8] animate-pulse text-xl mb-1 ml-2'>•</span>}
+                  {order.driverPayedOut && (
+                    <span title='Выплачено водителю'>
+                      <CheckCircle2 className='h-4 w-4 text-emerald-500 flex-shrink-0' />
+                    </span>
+                  )}
                 </TableCell>
               )}
               {columnVisibility.startLocation && (
@@ -424,6 +434,24 @@ export function OrdersTableContent({
                           style={{ backgroundColor: '#22c55e' }}
                         />
                         {getEffectiveColor(order) === '#22c55e' ? 'Снять «Обработан»' : 'Обработан'}
+                      </DropdownMenuItem>
+
+                      {/* Быстрая отметка "Оплачен водителю" */}
+                      <DropdownMenuItem
+                        disabled={isPayedOutPending}
+                        onClick={() => toggleDriverPayedOut(order)}
+                      >
+                        {order.driverPayedOut ? (
+                          <>
+                            <CheckCircle2 className='mr-2 h-4 w-4 text-cyan-500' />
+                            <span className='text-cyan-600'>Снять «Оплачен водителю»</span>
+                          </>
+                        ) : (
+                          <>
+                            <Banknote className='mr-2 h-4 w-4' />
+                            Оплачен водителю
+                          </>
+                        )}
                       </DropdownMenuItem>
 
                       {/* Подменю выбора цвета */}

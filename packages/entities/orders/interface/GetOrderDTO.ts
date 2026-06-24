@@ -175,4 +175,9 @@ export interface GetOrderDTO {
    * Цвет метки заказа (hex-строка, например '#EF4444')
    */
   markColor?: string | null;
+
+  /**
+   * Флаг выплаты водителю: true — деньги переданы водителю
+   */
+  driverPayedOut?: boolean | null;
 }

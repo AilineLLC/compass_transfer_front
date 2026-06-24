@@ -34,6 +34,11 @@ const filterMenuItemsByRole = (items: typeof sidebarData.navMain, userRole: Role
       return false;
     }
 
+    // "Финансы" — только Admin и Operator
+    if (item.title === 'Финансы' && userRole !== Role.Admin && userRole !== Role.Operator) {
+      return false;
+    }
+
     // Для роли Partner оставляем только "Заказы"
     if (userRole === Role.Partner) {
       return item.title === 'Заказы';

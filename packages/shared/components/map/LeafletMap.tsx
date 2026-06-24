@@ -1,7 +1,8 @@
 'use client';
 
+import 'leaflet/dist/leaflet.css';
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle, useMap } from 'react-leaflet';
 // Импорты типов и компонентов
 import {
   MapClickHandler,
@@ -15,6 +16,19 @@ import {
 import { useRouteBuilder, useDriverTracking, useUIScale } from './hooks';
 import { createPinIcon, getColorByType } from './icons';
 import type { LeafletMapProps } from './types';
+
+// Вызывает invalidateSize когда контейнер карты меняет размер (в т.ч. после display:none → block)
+function MapInvalidator() {
+  const map = useMap();
+  useEffect(() => {
+    const container = map.getContainer();
+    map.invalidateSize();
+    const observer = new ResizeObserver(() => map.invalidateSize());
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [map]);
+  return null;
+}
 
 /**
  * Компонент карты на основе React-Leaflet и OpenStreetMap
@@ -65,18 +79,8 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   useEffect(() => {
     setIsClient(true);
 
-    // Динамический импорт Leaflet только на клиенте
+    // Исправляем проблему с иконками маркеров в Next.js
     import('leaflet').then(L => {
-      // Динамически добавляем CSS
-      if (typeof document !== 'undefined') {
-        const link = document.createElement('link');
-
-        link.rel = 'stylesheet';
-        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-        document.head.appendChild(link);
-      }
-
-      // Исправляем проблему с иконками маркеров в Next.js
       delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
       L.Icon.Default.mergeOptions({
         iconRetinaUrl:
@@ -151,6 +155,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         style={{ height: '100%', width: '100%' }}
         scrollWheelZoom
       >
+        <MapInvalidator />
         {/* Обычная карта без топографии и POI */}
         <TileLayer attribution='' url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' />
 
