@@ -11,6 +11,7 @@ export interface TransferReservationDTO {
   reservedSeats: number;
   name: string;
   phone: string;
+  startAddress?: string | null;
 }
 
 export interface TransferReservationsApiResponse {
