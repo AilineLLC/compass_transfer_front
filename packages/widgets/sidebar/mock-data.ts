@@ -13,6 +13,7 @@ import {
   ClipboardList,
   Navigation,
   Wallet,
+  SquareDashedBottom,
 } from 'lucide-react';
 import { sidebarMockData } from '@entities/users/mock-data';
 
@@ -281,6 +282,29 @@ export const sidebarData = {
         {
           title: 'Создать локацию',
           url: '/locations/create',
+        },
+      ],
+    },
+    {
+      name: 'Области',
+      url: '/areas',
+      icon: SquareDashedBottom,
+      items: [
+        {
+          title: 'Все области',
+          url: '/areas',
+        },
+        {
+          title: 'Активные',
+          url: '/areas?isActive=true',
+        },
+        {
+          title: 'Неактивные',
+          url: '/areas?isActive=false',
+        },
+        {
+          title: 'Создать область',
+          url: '/areas/create',
         },
       ],
     },

@@ -6,8 +6,10 @@ import { useState, useMemo, useCallback, useRef } from 'react';
 import { useForm, type Resolver } from 'react-hook-form';
 import { toast } from 'sonner';
 import { locationsApi } from '@shared/api/locations';
+import { locationGroupsApi } from '@shared/api/location-groups';
 import { filesApi } from '@shared/api/files';
 import { logger } from '@shared/lib';
+import { findBestAreaForPoint } from '@shared/lib/geo';
 import type { LocationType } from '@entities/locations/enums';
 import { parseAddress } from '@entities/locations/lib/address-parser';
 import {
@@ -160,14 +162,23 @@ export function useLocationEditFormLogic({
           [addressComponents.houseNumber, addressComponents.street].filter(Boolean).join(', ') ||
           'Локация без названия';
 
+        let groupId: string | null = null;
+        try {
+          const areasResponse = await locationGroupsApi.getLocationGroups({ size: 500 });
+          const matchedArea = findBestAreaForPoint(data.latitude, data.longitude, areasResponse.data);
+          groupId = matchedArea?.id ?? null;
+        } catch {
+          // не блокируем обновление если области недоступны
+        }
+
         const apiData = {
           name: locationName,
           description: data.description || null,
           type: data.type,
           address: data.address,
-          city: addressComponents.city || 'Бишкек',
+          city: data.city || addressComponents.city || 'Бишкек',
           country: addressComponents.country || 'Кыргызстан',
-          region: addressComponents.region || data.region || 'Не известно',
+          region: data.region || addressComponents.region || 'Не известно',
           latitude: data.latitude,
           longitude: data.longitude,
           isActive: data.isActive,
@@ -176,7 +187,7 @@ export function useLocationEditFormLogic({
           isLandingOnly: data.isLandingOnly ?? false,
           isLandingPagePinned: data.isLandingPagePinned ?? false,
           priceCoefficient: data.priceCoefficient ?? null,
-          group: null,
+          group: groupId,
           images: orderedImageIds,
           poi: poiData,
           tags: data.tags ?? [],

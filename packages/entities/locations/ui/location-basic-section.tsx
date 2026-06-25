@@ -7,11 +7,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { locationTypeHelpers } from '../helpers/location-type-helpers';
 import type { LocationCreateFormData } from '../schemas/locationCreateSchema';
 import { LocationType } from '../enums';
+import { KYRGYZSTAN_REGIONS } from '@shared/constants/kyrgyzstan-regions';
 
 interface LocationBasicSectionProps {
   labels?: {
     name?: string;
     type?: string;
+    city?: string;
+    region?: string;
     group?: string;
   };
 }
@@ -63,7 +66,7 @@ export function LocationBasicSection({
             setValue('type', value as LocationType, { shouldValidate: true, shouldDirty: true });
           }}
         >
-          <SelectTrigger className="w-full">
+          <SelectTrigger className="w-full h-10">
             <SelectValue placeholder="Выберите тип локации" />
           </SelectTrigger>
           <SelectContent>
@@ -77,6 +80,48 @@ export function LocationBasicSection({
         {errors.type && (
           <p className="text-sm text-red-600">{errors.type.message}</p>
         )}
+      </div>
+
+      {/* Город и Регион */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">
+            {labels.city || 'Город'}
+          </Label>
+          <Select
+            value={formData.city || ''}
+            onValueChange={(value: string) => {
+              setValue('city', value, { shouldValidate: true, shouldDirty: true });
+            }}
+          >
+            <SelectTrigger className="w-full h-10">
+              <SelectValue placeholder="Выберите город" />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(KYRGYZSTAN_REGIONS).map(([key, label]) => (
+                <SelectItem key={key} value={key}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {errors.city && (
+            <p className="text-sm text-red-600">{errors.city.message}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="region" className="text-sm font-medium">
+            {labels.region || 'Регион / Район'}
+          </Label>
+          <Input
+            id="region"
+            {...register('region')}
+            placeholder="Например: Ленинский район"
+            className="w-full"
+          />
+          {errors.region && (
+            <p className="text-sm text-red-600">{errors.region.message}</p>
+          )}
+        </div>
       </div>
 
     </div>

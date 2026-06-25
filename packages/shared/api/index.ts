@@ -9,3 +9,4 @@ export * from './cars';
 export * from './services';
 export * from './tariffs';
 export * from './notifications';
+export * from './areas';

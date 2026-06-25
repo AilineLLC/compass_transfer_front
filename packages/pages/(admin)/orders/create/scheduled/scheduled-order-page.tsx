@@ -70,32 +70,41 @@ interface OrderPageProps {
   initialScheduledTime?: string;
 }
 
-// Рассчитывает итоговую km-стоимость с учётом коэффициентов конечных точек сегментов
+// Рассчитывает итоговую km-стоимость с учётом коэффициентов точек маршрута.
+// priceCoefficient источника применяется только если пункт назначения в другой области (group).
 function calcKmPrice(
   routeDistance: number,
   routeLegs: { distance: number }[],
-  routePoints: { type: string; location: { priceCoefficient?: number | null } | null }[],
+  routePoints: { type: string; location: { priceCoefficient?: number | null; group?: string | null } | null }[],
   perKmPrice: number,
 ): number {
   if (routeDistance <= 0) return 0;
+
+  type LocPoint = { priceCoefficient?: number | null; group?: string | null } | null | undefined;
+  const crossAreaCoeff = (src: LocPoint, dst: LocPoint): number => {
+    const sameArea = src?.group && dst?.group && src.group === dst.group;
+    return sameArea ? 1 : (src?.priceCoefficient ?? 1);
+  };
 
   const orderedPoints = [
     routePoints.find(p => p.type === 'start'),
     ...routePoints.filter(p => p.type === 'intermediate'),
     routePoints.find(p => p.type === 'end'),
-  ].filter(Boolean) as { location: { priceCoefficient?: number | null } | null }[];
+  ].filter(Boolean) as { location: { priceCoefficient?: number | null; group?: string | null } | null }[];
 
   if (routeLegs.length > 0 && routeLegs.length === orderedPoints.length - 1) {
-    // Мультистоп: Σ(km_i × coeff_i), где coeff_i — коэффициент конечной точки сегмента
+    // Мультистоп: Σ(km_i × coeff_i), где coeff_i — коэффициент источника сегмента (только если разные области)
     return routeLegs.reduce((sum, leg, i) => {
-      const destCoeff = orderedPoints[i + 1]?.location?.priceCoefficient ?? 1;
-      return sum + (leg.distance / 1000) * destCoeff * perKmPrice;
+      const coeff = crossAreaCoeff(orderedPoints[i]?.location, orderedPoints[i + 1]?.location);
+      return sum + (leg.distance / 1000) * coeff * perKmPrice;
     }, 0);
   }
 
-  // Fallback: весь маршрут × коэффициент конечной локации
-  const endCoeff = routePoints.find(p => p.type === 'end')?.location?.priceCoefficient ?? 1;
-  return (routeDistance / 1000) * endCoeff * perKmPrice;
+  // Fallback: весь маршрут × коэффициент начальной локации (только если разные области)
+  const startLoc = routePoints.find(p => p.type === 'start')?.location;
+  const endLoc = routePoints.find(p => p.type === 'end')?.location;
+  const coeff = crossAreaCoeff(startLoc, endLoc);
+  return (routeDistance / 1000) * coeff * perKmPrice;
 }
 
 export function ScheduledOrderPage({

@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { toast } from 'sonner';
 import { locationsApi, type LocationFilters } from '@shared/api/locations';
+import { locationGroupsApi, type LocationGroupDTO } from '@shared/api/location-groups';
 import { useSavedFilters } from '@shared/hooks';
 import type { LocationType } from '@entities/locations/enums';
 import type { LocationDTO } from '@entities/locations/interface/LocationDTO';
@@ -13,7 +14,7 @@ interface ColumnVisibility {
   name: boolean;
   address: boolean;
   district: boolean;
-  city: boolean;
+  group: boolean;
   country: boolean;
   region: boolean;
   coordinates: boolean;
@@ -26,7 +27,7 @@ interface SavedLocationFilters {
   nameFilter: string;
   addressFilter: string;
   districtFilter: string;
-  cityFilter: string;
+  groupFilter: string;
   countryFilter: string;
   regionFilter: string;
 }
@@ -41,13 +42,19 @@ export function useLocationsTable(_initialFilters?: {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const cityDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const regionDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Данные
   const [locations, setLocations] = useState<LocationDTO[]>([]);
   const [filteredLocations, setFilteredLocations] = useState<LocationDTO[]>([]);
   const [paginatedLocations, setPaginatedLocations] = useState<LocationDTO[]>([]);
+  const [groups, setGroups] = useState<LocationGroupDTO[]>([]);
+
+  useEffect(() => {
+    locationGroupsApi.getLocationGroups({ size: 500 })
+      .then(r => setGroups(r.data))
+      .catch(() => {});
+  }, []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,7 +63,7 @@ export function useLocationsTable(_initialFilters?: {
   const [nameFilter, setNameFilter] = useState('');
   const [addressFilter, setAddressFilter] = useState('');
   const [districtFilter, setDistrictFilter] = useState('');
-  const [cityFilter, setCityFilter] = useState(() => searchParams.get('city') || '');
+  const [groupFilter, setGroupFilter] = useState(() => searchParams.get('group') || '');
   const [countryFilter, setCountryFilter] = useState('');
   const [regionFilter, setRegionFilter] = useState(() => searchParams.get('region') || '');
   const [typeFilter, setTypeFilter] = useState<LocationType[]>(() => {
@@ -128,7 +135,7 @@ export function useLocationsTable(_initialFilters?: {
       name: true,
       address: true,
       district: false,
-      city: true,
+      group: true,
       country: false,
       region: true,
       coordinates: false,
@@ -165,9 +172,8 @@ export function useLocationsTable(_initialFilters?: {
         params.district = districtFilter;
         params.districtOp = 'Contains';
       }
-      if (cityFilter) {
-        params.city = cityFilter;
-        params.cityOp = 'Contains';
+      if (groupFilter) {
+        params.group = groupFilter;
       }
       if (countryFilter) {
         params.country = countryFilter;
@@ -216,7 +222,7 @@ export function useLocationsTable(_initialFilters?: {
     nameFilter,
     addressFilter,
     districtFilter,
-    cityFilter,
+    groupFilter,
     countryFilter,
     regionFilter,
     typeFilter,
@@ -250,8 +256,8 @@ export function useLocationsTable(_initialFilters?: {
     const newP1 = p1Param === 'true' ? true : p1Param === 'false' ? false : null;
     if (newP1 !== popular1Filter) setPopular1Filter(newP1);
 
-    const city = searchParams.get('city') || '';
-    if (city !== cityFilter) setCityFilter(city);
+    const group = searchParams.get('group') || '';
+    if (group !== groupFilter) setGroupFilter(group);
 
     const region = searchParams.get('region') || '';
     if (region !== regionFilter) setRegionFilter(region);
@@ -262,7 +268,7 @@ export function useLocationsTable(_initialFilters?: {
     nameFilter: '',
     addressFilter: '',
     districtFilter: '',
-    cityFilter: '',
+    groupFilter: '',
     countryFilter: '',
     regionFilter: '',
   };
@@ -271,17 +277,17 @@ export function useLocationsTable(_initialFilters?: {
     nameFilter,
     addressFilter,
     districtFilter,
-    cityFilter,
+    groupFilter,
     countryFilter,
     regionFilter,
-  }), [nameFilter, addressFilter, districtFilter, cityFilter, countryFilter, regionFilter]);
+  }), [nameFilter, addressFilter, districtFilter, groupFilter, countryFilter, regionFilter]);
 
   // Функция загрузки сохраненных фильтров
   const onFiltersLoad = useCallback((filters: SavedLocationFilters) => {
     setNameFilter(filters.nameFilter || '');
     setAddressFilter(filters.addressFilter || '');
     setDistrictFilter(filters.districtFilter || '');
-    setCityFilter(filters.cityFilter || '');
+    setGroupFilter(filters.groupFilter || '');
     setCountryFilter(filters.countryFilter || '');
     setRegionFilter(filters.regionFilter || '');
   }, []);
@@ -406,12 +412,15 @@ export function useLocationsTable(_initialFilters?: {
     loading,
     error,
 
+    // Данные (группы для фильтра)
+    groups,
+
     // Фильтры
     searchTerm,
     nameFilter,
     addressFilter,
     districtFilter,
-    cityFilter,
+    groupFilter,
     countryFilter,
     regionFilter,
     typeFilter,
@@ -462,18 +471,14 @@ export function useLocationsTable(_initialFilters?: {
       setIsFirstPage(true);
       setCurrentPageNumber(1);
     },
-    setCityFilter: (city: string) => {
-      setCityFilter(city);
+    setGroupFilter: (group: string) => {
+      setGroupFilter(group);
       setCurrentCursor(null);
       setIsFirstPage(true);
       setCurrentPageNumber(1);
-
-      if (cityDebounceRef.current) clearTimeout(cityDebounceRef.current);
-      cityDebounceRef.current = setTimeout(() => {
-        const params = new URLSearchParams(searchParams.toString());
-        if (city) params.set('city', city); else params.delete('city');
-        router.replace(params.toString() ? `/locations?${params.toString()}` : '/locations');
-      }, 500);
+      const params = new URLSearchParams(searchParams.toString());
+      if (group) params.set('group', group); else params.delete('group');
+      router.replace(params.toString() ? `/locations?${params.toString()}` : '/locations');
     },
     setCountryFilter: (country: string) => {
       setCountryFilter(country);

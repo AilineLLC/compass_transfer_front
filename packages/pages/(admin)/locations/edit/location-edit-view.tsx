@@ -106,6 +106,8 @@ export function LocationEditView({ locationId }: LocationEditViewProps) {
         description: profile?.description || '',
         type: location.type,
         address: location.address || '',
+        city: location.city || '',
+        region: location.region || '',
         latitude: location.latitude || 0,
         longitude: location.longitude || 0,
         isActive: location.isActive ?? true,
