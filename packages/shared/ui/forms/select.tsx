@@ -13,16 +13,8 @@ const Select = React.forwardRef<
   React.ComponentRef<typeof SelectPrimitive.Root>,
   SelectProps
 >(({ value, onValueChange, ...props }, ref) => {
-  const [forceRender, setForceRender] = React.useState(0);
-
-  // Костыль: принудительный перерендер при изменении value
-  React.useEffect(() => {
-    setForceRender(prev => prev + 1);
-  }, [value]);
-
   return (
     <SelectPrimitive.Root
-      key={forceRender} // Принудительный перерендер
       value={value || undefined}
       onValueChange={(newValue) => {
         onValueChange?.(newValue);
