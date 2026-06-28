@@ -15,6 +15,7 @@ export interface GetDriverDTO {
   fullName: string;
   avatarUrl?: string | null;
   online?: boolean | null;
+  activeRideStatus?: 'Arrived' | 'InProgress' | 'Paused' | null;
   rating?: number | null;
   isAvailable?: boolean;
   verificationStatus?: VerificationStatus;

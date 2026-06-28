@@ -44,6 +44,9 @@ export interface CreateScheduledOrderDTO {
   /** Запланированное время */
   scheduledTime: string;
 
+  /** Примерное время завершения заказа (ISO строка) */
+  completionTimeEstimate: string;
+
   /** Информация о пассажирах */
   passengers: CreatePassengerDTO[];
 

@@ -24,7 +24,8 @@ function convertToUpdateData(data: CreateInstantOrderRequest | CreateInstantOrde
     routeId: data.routeId || null,
     services: data.services || [],
     initialPrice: data.initialPrice,
-    status: OrderStatus.Pending, // По умолчанию статус Pending при обновлении
+    completionTimeEstimate: (data as CreateInstantOrderRequest).completionTimeEstimate || new Date().toISOString(),
+    status: OrderStatus.Pending,
     paymentMethodType: (data as CreateInstantOrderRequest).paymentMethodType ?? PaymentMethodType.Cash,
     driverPrice: (data as CreateInstantOrderRequest).driverPrice ?? null,
   };

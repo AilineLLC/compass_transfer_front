@@ -51,8 +51,9 @@ export function useLocationEditFormLogic({
     popular2: boolean;
     isLandingOnly?: boolean | null;
     isLandingPagePinned?: boolean;
-    group?: string | null;
     tags?: string[];
+    priceCoefficient?: number | null;
+    polyPriceCoefficient?: number[] | null;
     advice?: { fullName: string; specialization: string | null; content: string } | null;
     adviceImage?: { id: string; path: string } | null;
     images?: LocationImageDTO[];
@@ -95,9 +96,10 @@ export function useLocationEditFormLogic({
       popular2: initialData.popular2,
       isLandingOnly: initialData.isLandingOnly ?? false,
       isLandingPagePinned: initialData.isLandingPagePinned ?? false,
-      group: initialData.group || '',
       tags: initialData.tags ?? [],
       advice: initialData.advice ?? null,
+      priceCoefficient: initialData.priceCoefficient ?? null,
+      polyPriceCoefficient: initialData.polyPriceCoefficient ?? null,
     },
   });
 
@@ -163,9 +165,9 @@ export function useLocationEditFormLogic({
           description: data.description || null,
           type: data.type,
           address: data.address,
-          city: addressComponents.city || 'Бишкек',
+          city: data.city || addressComponents.city || 'Бишкек',
           country: addressComponents.country || 'Кыргызстан',
-          region: addressComponents.region || data.region || 'Не известно',
+          region: data.region || addressComponents.region || 'Не известно',
           latitude: data.latitude,
           longitude: data.longitude,
           isActive: data.isActive,
@@ -173,6 +175,8 @@ export function useLocationEditFormLogic({
           popular2: data.popular2,
           isLandingOnly: data.isLandingOnly ?? false,
           isLandingPagePinned: data.isLandingPagePinned ?? false,
+          priceCoefficient: data.priceCoefficient ?? null,
+          polyPriceCoefficient: data.polyPriceCoefficient?.length ? data.polyPriceCoefficient : null,
           group: null,
           images: orderedImageIds,
           poi: poiData,

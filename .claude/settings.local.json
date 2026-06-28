@@ -30,7 +30,11 @@
       "Bash(mkdir -p \"C:/Users/DragonPC/Desktop/compass_transfer_front/apps/compass-admin/src/app/geocoding-proxy/reverse\")",
       "Skill(artifact-design)",
       "Artifact",
-      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\DragonPC\\\\Desktop\\\\compass_transfer_front\\\\apps\\\\compass-admin\\\\src\\\\app\" -Recurse -Depth 3 | Select-Object FullName, PSIsContainer | Where-Object { $_.PSIsContainer -eq $false } | Select-Object -First 60)"
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\DragonPC\\\\Desktop\\\\compass_transfer_front\\\\apps\\\\compass-admin\\\\src\\\\app\" -Recurse -Depth 3 | Select-Object FullName, PSIsContainer | Where-Object { $_.PSIsContainer -eq $false } | Select-Object -First 60)",
+      "PowerShell(yarn workspace *)",
+      "Bash(yarn workspace *)",
+      "Bash(xargs cat)",
+      "Bash(node -e ' *)"
     ]
   }
 }

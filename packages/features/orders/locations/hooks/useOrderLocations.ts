@@ -28,6 +28,8 @@ interface UseOrderLocationsParams {
   externalOpenDriverPopupId?: string | null;
   setExternalOpenDriverPopupId?: (id: string | null) => void;
 
+  scheduledTime?: string | null;
+  completionTimeEstimate?: string | null;
   onRouteChange?: (routePoints: RoutePoint[]) => void;
   onRoutePointsChange?: (startId: string, endId: string, points: RoutePoint[]) => void;
 }
@@ -88,6 +90,8 @@ export const useOrderLocations = ({
   setExternalDynamicMapCenter,
   externalOpenDriverPopupId,
   setExternalOpenDriverPopupId,
+  scheduledTime,
+  completionTimeEstimate,
   // Колбэки
   onRouteChange,
   onRoutePointsChange
@@ -209,7 +213,9 @@ export const useOrderLocations = ({
           params: {
             First: true,
             Size: 1000,
-            IsActive: true
+            IsActive: true,
+            ...(scheduledTime && { HasNoScheduledOrdersFrom: scheduledTime }),
+            ...(completionTimeEstimate && { HasNoScheduledOrdersTo: completionTimeEstimate }),
           }
         });
 
@@ -222,7 +228,7 @@ export const useOrderLocations = ({
     };
 
     fetchDrivers();
-  }, []);
+  }, [scheduledTime, completionTimeEstimate]);
 
   // Инициализируем точки маршрута ОДИН РАЗ при загрузке данных в режиме редактирования.
   // Используем fetchLocationById как основной путь — работает для любых локаций

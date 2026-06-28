@@ -20,7 +20,6 @@ interface ColumnVisibility {
   name: boolean;
   address: boolean;
   district: boolean;
-  city: boolean;
   country: boolean;
   region: boolean;
   coordinates: boolean;
@@ -38,8 +37,6 @@ interface LocationsTableFiltersProps {
   setAddressFilter: (address: string) => void;
   districtFilter: string;
   setDistrictFilter: (district: string) => void;
-  cityFilter: string;
-  setCityFilter: (city: string) => void;
   countryFilter: string;
   setCountryFilter: (country: string) => void;
   regionFilter: string;
@@ -74,8 +71,6 @@ export function LocationsTableFilters({
   setAddressFilter,
   districtFilter,
   setDistrictFilter,
-  cityFilter,
-  setCityFilter,
   countryFilter,
   setCountryFilter,
   regionFilter,
@@ -113,7 +108,6 @@ export function LocationsTableFilters({
     setNameFilter('');
     setAddressFilter('');
     setDistrictFilter('');
-    setCityFilter('');
     setCountryFilter('');
     setRegionFilter('');
     handleTypeFilterChange([]);
@@ -127,10 +121,9 @@ export function LocationsTableFilters({
     nameFilter,
     addressFilter,
     districtFilter,
-    cityFilter,
     countryFilter,
     regionFilter,
-  ].filter(Boolean).length + 
+  ].filter(Boolean).length +
   typeFilter.length + 
   (isActiveFilter !== null ? 1 : 0) +
   (popular1Filter !== null ? 1 : 0) +
@@ -258,7 +251,6 @@ export function LocationsTableFilters({
                   { key: 'name', label: 'Название' },
                   { key: 'address', label: 'Адрес' },
                   { key: 'district', label: 'Район' },
-                  { key: 'city', label: 'Город' },
                   { key: 'country', label: 'Страна' },
                   { key: 'region', label: 'Регион' },
                   { key: 'coordinates', label: 'Координаты' },
@@ -316,16 +308,6 @@ export function LocationsTableFilters({
                 placeholder='Введите район...'
                 value={districtFilter}
                 onChange={(e) => setDistrictFilter(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor='city'>Город</Label>
-              <Input
-                id='city'
-                placeholder='Введите город...'
-                value={cityFilter}
-                onChange={(e) => setCityFilter(e.target.value)}
               />
             </div>
 

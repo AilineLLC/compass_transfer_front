@@ -21,7 +21,6 @@ interface ColumnVisibility {
   name: boolean;
   address: boolean;
   district: boolean;
-  city: boolean;
   country: boolean;
   region: boolean;
   coordinates: boolean;
@@ -101,7 +100,6 @@ export function LocationsTableContent({
             {columnVisibility.name && <SortableHeader field='name' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Название</SortableHeader>}
             {columnVisibility.address && <SortableHeader field='address' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Адрес</SortableHeader>}
             {columnVisibility.district && <SortableHeader field='district' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Район</SortableHeader>}
-            {columnVisibility.city && <SortableHeader field='city' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Город</SortableHeader>}
             {columnVisibility.country && <SortableHeader field='country' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Страна</SortableHeader>}
             {columnVisibility.region && <SortableHeader field='region' sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort}>Регион</SortableHeader>}
             {columnVisibility.coordinates && <TableHead>Координаты</TableHead>}
@@ -131,9 +129,6 @@ export function LocationsTableContent({
               )}
               {columnVisibility.district && (
                 <TableCell>{location.district || '—'}</TableCell>
-              )}
-              {columnVisibility.city && (
-                <TableCell>{location.city}</TableCell>
               )}
               {columnVisibility.country && (
                 <TableCell>{location.country}</TableCell>

@@ -75,6 +75,11 @@ export function SiteHeader() {
     tariffs: 'Тарифы',
     documentation: 'Документация',
     routes: 'Маршруты',
+    areas: 'Области',
+    finances: 'Финансы',
+    transfers: 'Трансферы',
+    tariffs: 'Тарифы',
+    drivers: 'Водители',
   };
 
   const SKIP_BREADCRUMB_PATHS = new Set([
@@ -87,6 +92,7 @@ export function SiteHeader() {
     '/users/edit/terminal',
     '/cars/edit',
     '/locations/edit',
+    '/areas/edit',
     '/notifications/edit',
     '/orders/edit/partner',
     '/routes/edit',

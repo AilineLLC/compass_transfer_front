@@ -23,6 +23,14 @@ import {
 } from '../../tabs';
 import { SummaryTab } from '../../tabs/summary-tab';
 
+// Примерное время завершения: distanceMeters / (80 км/ч если >= 30 км, иначе 50 км/ч)
+function calcCompletionTime(startIso: string, distanceMeters: number): string {
+  const distanceKm = distanceMeters / 1000;
+  const speedKmh = distanceKm >= 30 ? 80 : 50;
+  const travelMs = (distanceKm / speedKmh) * 3600 * 1000;
+  return new Date(new Date(startIso).getTime() + travelMs).toISOString();
+}
+
 interface InstantOrderPageProps {
   mode: 'create' | 'edit';
   id?: string; // ID заказа для режима редактирования
@@ -425,10 +433,17 @@ export function InstantOrderPage({
       return;
     }
 
+    if (!routeDistance || routeDistance === 0) {
+      toast.error('Маршрут не построен', {
+        description: 'Дождитесь построения маршрута для расчёта времени завершения',
+      });
+      return;
+    }
+
     try {
       // Определяем итоговую цену: кастомная или автоматическая
-      const finalPrice = useCustomPrice && customPrice 
-        ? Math.round(parseFloat(customPrice.replace(/[^\d.,]/g, '').replace(',', '.'))) 
+      const finalPrice = useCustomPrice && customPrice
+        ? Math.round(parseFloat(customPrice.replace(/[^\d.,]/g, '').replace(',', '.')))
         : currentPrice;
 
       // Отправляем заказ с параметрами: mode, useCustomPrice, customPrice, currentPrice, finalPrice
@@ -450,8 +465,9 @@ export function InstantOrderPage({
             quantity: service.quantity || 1,
             notes: service.notes || null,
           })),
-        initialPrice: finalPrice, // ✅ Используем кастомную цену, если она установлена
-        paymentId: null, // Для мгновенных заказов пока null
+        initialPrice: finalPrice,
+        completionTimeEstimate: calcCompletionTime(new Date().toISOString(), routeDistance),
+        paymentId: null,
         paymentMethodType: userRole === 'partner' ? PaymentMethodType.Card : paymentMethodType,
         driverPrice:
           (userRole === 'admin' || userRole === 'operator') && driverPrice

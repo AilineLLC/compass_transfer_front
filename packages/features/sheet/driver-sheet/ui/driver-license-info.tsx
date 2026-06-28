@@ -21,24 +21,29 @@ export function DriverLicenseInfo({ driver }: DriverLicenseInfoProps) {
           <div className='flex justify-between'>
             <span className='text-sm text-muted-foreground'>Категории:</span>
             <span className='font-medium'>
-              {driver.profile.licenseCategories.length > 0
-                ? driver.profile.licenseCategories.join(', ')
+              {(driver.profile.licenseCategories ?? []).length > 0
+                ? (driver.profile.licenseCategories ?? []).join(', ')
                 : 'Не указаны'
               }
             </span>
           </div>
+          {driver.profile.licenseIssueDate && (
           <div className='flex justify-between'>
             <span className='text-sm text-muted-foreground'>Дата выдачи:</span>
             <span className='font-medium'>
               {new Date(driver.profile.licenseIssueDate).toLocaleDateString('ru-RU')}
             </span>
           </div>
+          )}
+          {driver.profile.licenseExpiryDate && (
           <div className='flex justify-between'>
             <span className='text-sm text-muted-foreground'>Срок действия:</span>
             <span className='font-medium'>
               {new Date(driver.profile.licenseExpiryDate).toLocaleDateString('ru-RU')}
             </span>
           </div>
+          )}
+          {driver.profile.licenseExpiryDate && (
           <div className='flex justify-between'>
             <span className='text-sm text-muted-foreground'>Статус:</span>
             <span className={`font-medium ${
@@ -52,6 +57,7 @@ export function DriverLicenseInfo({ driver }: DriverLicenseInfoProps) {
               }
             </span>
           </div>
+          )}
         </div>
       </div>
     </div>

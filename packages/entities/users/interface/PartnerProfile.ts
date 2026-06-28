@@ -15,4 +15,6 @@ export interface PartnerProfile {
   website?: string | null;
   /** Массив ID маршрутов, доступных партнеру */
   partnerRoutes?: string[];
+  /** Массив ID загруженных документов партнёра */
+  documents?: string[] | null;
 }

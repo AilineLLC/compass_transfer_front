@@ -43,6 +43,7 @@ export function useOrdersTable(initialFilters?: {
   subStatus?: string;
   airFlight?: string;
   flyReis?: string;
+  participantId?: string;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -69,6 +70,10 @@ export function useOrdersTable(initialFilters?: {
   const [subStatusFilter, setSubStatusFilter] = useState<OrderSubStatus[]>(
     initialFilters?.subStatus ? [initialFilters.subStatus as OrderSubStatus] : [],
   );
+  // Фильтр по водителю
+  const [participantId, setParticipantId] = useState<string | undefined>(initialFilters?.participantId);
+  const [participantName, setParticipantName] = useState<string | undefined>(undefined);
+
   // Локальные состояния для ввода (без debounce)
   const [airFlightInput, setAirFlightInput] = useState(initialFilters?.airFlight || '');
   const [flyReisInput, setFlyReisInput] = useState(initialFilters?.flyReis || '');
@@ -245,6 +250,9 @@ export function useOrdersTable(initialFilters?: {
       if (searchByPassengers) {
         params.mainPassengerName = searchByPassengers;
       }
+      if (participantId) {
+        params.participantId = participantId;
+      }
 
       // Для партнеров используем API для заказов созданных ими
       const response =
@@ -278,6 +286,7 @@ export function useOrdersTable(initialFilters?: {
     flyReisFilter,
     searchTerm,
     searchByPassengers,
+    participantId,
     userRole,
   ]);
 
@@ -497,6 +506,8 @@ export function useOrdersTable(initialFilters?: {
     airFlightFilter,
     flyReisInput,
     flyReisFilter,
+    participantId,
+    participantName,
     showAdvancedFilters,
 
     // Пагинация
@@ -540,6 +551,14 @@ export function useOrdersTable(initialFilters?: {
       const params = new URLSearchParams(searchParams.toString());
       if (orderNumber) params.set('orderNumber', orderNumber); else params.delete('orderNumber');
       router.replace(params.toString() ? `/orders?${params.toString()}` : '/orders');
+    },
+    setParticipant: (id: string | undefined, name: string | undefined) => {
+      setParticipantId(id);
+      setParticipantName(name);
+      setCursorsHistory([]);
+      setCurrentCursor(null);
+      setIsFirstPage(true);
+      setCurrentPageNumber(1);
     },
     setAirFlightInput: (airFlight: string) => {
       setAirFlightInput(airFlight);

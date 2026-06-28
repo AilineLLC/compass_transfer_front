@@ -72,6 +72,11 @@ export interface GetOrderDTO {
   completedAt?: string | null;
 
   /**
+   * Примерное время окончания заказа
+   */
+  completionTimeEstimate?: string | null;
+
+  /**
    * Использованный шаблон маршрута (если есть)
    */
   routeId?: string | null;
@@ -165,4 +170,14 @@ export interface GetOrderDTO {
    * ID предпочитаемого автомобиля пассажиров
    */
   requestedCar?: string | null;
+
+  /**
+   * Цвет метки заказа (hex-строка, например '#EF4444')
+   */
+  markColor?: string | null;
+
+  /**
+   * Флаг выплаты водителю: true — деньги переданы водителю
+   */
+  driverPayedOut?: boolean | null;
 }

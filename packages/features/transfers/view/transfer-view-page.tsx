@@ -615,6 +615,12 @@ export function TransferViewPage({ transfer: initialTransfer }: TransferViewPage
                           <Armchair className='h-3 w-3' />
                           {r.reservedSeats} {r.reservedSeats === 1 ? 'место' : 'мест'}
                         </span>
+                        {r.startAddress && (
+                          <span className='flex items-center gap-1 text-xs text-muted-foreground mt-0.5'>
+                            <MapPin className='h-3 w-3 shrink-0' />
+                            {r.startAddress}
+                          </span>
+                        )}
                       </div>
                       <Badge
                         variant='outline'

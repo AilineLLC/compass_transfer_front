@@ -1,9 +1,6 @@
 'use client';
 
-import { Plus, Minus } from 'lucide-react';
-import Image from 'next/image';
-import { Badge } from '@shared/ui/data-display/badge';
-import { Button } from '@shared/ui/forms/button';
+import { Check, Minus, Plus } from 'lucide-react';
 import type { GetOrderServiceDTO } from '@entities/orders/interface';
 import type { GetServiceDTO } from '@entities/services/interface';
 
@@ -26,99 +23,63 @@ export function ServiceCard({
   const quantity = selectedService?.quantity || 0;
   const isSelected = quantity > 0;
 
+  if (service.isQuantifiable) {
+    return (
+      <div
+        className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm transition-all ${
+          isSelected
+            ? 'border-blue-400 bg-blue-50'
+            : 'border-gray-200 bg-white'
+        }`}
+      >
+        <span className='font-medium text-sm text-gray-800'>{service.name}</span>
+        <span className='text-gray-400 text-xs'>{formatPrice(service.price)}</span>
+        {isSelected ? (
+          <>
+            <button
+              type='button'
+              onClick={() => onQuantityChange(service.id, quantity - 1)}
+              className='w-5 h-5 rounded flex items-center justify-center hover:bg-gray-200 transition-colors text-gray-600'
+            >
+              <Minus className='h-3 w-3' />
+            </button>
+            <span className='w-5 text-center font-semibold text-sm text-blue-700'>{quantity}</span>
+            <button
+              type='button'
+              onClick={() => onQuantityChange(service.id, quantity + 1)}
+              className='w-5 h-5 rounded flex items-center justify-center hover:bg-blue-200 transition-colors text-blue-600 bg-blue-100'
+            >
+              <Plus className='h-3 w-3' />
+            </button>
+          </>
+        ) : (
+          <button
+            type='button'
+            onClick={() => onToggle(service.id, true)}
+            className='w-5 h-5 rounded flex items-center justify-center bg-blue-500 text-white hover:bg-blue-600 transition-colors'
+          >
+            <Plus className='h-3 w-3' />
+          </button>
+        )}
+      </div>
+    );
+  }
+
   return (
-    <div
-      className={`border rounded-lg p-4 transition-all flex-1 min-w-[300px] max-w-[400px] h-[400px] ${
-        isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+    <button
+      type='button'
+      onClick={() => onToggle(service.id, false)}
+      className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm transition-all ${
+        isSelected
+          ? 'border-blue-500 bg-blue-50 text-blue-700'
+          : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
       }`}
     >
-      <div className="flex flex-col h-full">
-        {/* Картинка плейсхолдер */}
-        <div className="mb-3 relative">
-          <Image
-            src="/auto/hongqi.jpg"
-            alt={service.name}
-            width={400}
-            height={128}
-            className="w-full h-32 object-cover rounded-md bg-gray-100"
-            onError={() => {
-              // Обработка ошибки загрузки изображения
-            }}
-          />
-        </div>
-
-        {/* Заголовок и бейджи */}
-        <div className="mb-3">
-          <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <h4 className="font-medium">{service.name}</h4>
-            <Badge variant="outline">
-              {formatPrice(service.price)}
-            </Badge>
-            {service.isQuantifiable && (
-              <Badge variant="secondary" className="text-xs">
-                Количественная
-              </Badge>
-            )}
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {service.description}
-          </p>
-        </div>
-
-        {/* Кнопки управления */}
-        <div className="mt-auto">
-          <div className="flex items-center justify-center gap-2">
-            {service.isQuantifiable && isSelected ? (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onQuantityChange(service.id, quantity - 1)}
-                >
-                  <Minus className="h-4 w-4" />
-                </Button>
-                <span className="w-8 text-center font-medium">{quantity}</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onQuantityChange(service.id, quantity + 1)}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-            ) : (
-              <Button
-                variant={isSelected ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => onToggle(service.id, service.isQuantifiable)}
-                className="w-full"
-              >
-                {isSelected ? 'Убрать' : 'Добавить'}
-              </Button>
-            )}
-          </div>
-
-          {/* Резервируем место для общей стоимости количественных услуг */}
-          {service.isQuantifiable && (
-            <div className="mt-3 pt-3 border-t min-h-[2rem]">
-              {isSelected ? (
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">
-                    {formatPrice(service.price)} × {quantity}
-                  </span>
-                  <span className="font-medium">
-                    {formatPrice(service.price * quantity)}
-                  </span>
-                </div>
-              ) : (
-                <div className="text-xs text-muted-foreground text-center opacity-50">
-                  Выберите для расчета стоимости
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+      {isSelected && <Check className='h-3.5 w-3.5 text-blue-500 flex-shrink-0' />}
+      <span className='font-medium'>{service.name}</span>
+      <span className={`text-xs ${isSelected ? 'text-blue-500' : 'text-gray-400'}`}>
+        {formatPrice(service.price)}
+      </span>
+    </button>
   );
 }

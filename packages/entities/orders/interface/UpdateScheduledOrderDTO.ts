@@ -39,6 +39,9 @@ export interface UpdateScheduledOrderDTO {
   /** Запланированное время */
   scheduledTime: string;
 
+  /** Примерное время завершения заказа (ISO строка) */
+  completionTimeEstimate: string;
+
   /** Информация о пассажирах (без ID, так как это данные для обновления) */
   passengers: PassengerDTO[];
 

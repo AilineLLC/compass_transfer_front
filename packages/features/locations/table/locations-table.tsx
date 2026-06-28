@@ -26,7 +26,6 @@ export function LocationsTable({
     nameFilter,
     addressFilter,
     districtFilter,
-    cityFilter,
     countryFilter,
     regionFilter,
     typeFilter,
@@ -45,7 +44,6 @@ export function LocationsTable({
     setNameFilter,
     setAddressFilter,
     setDistrictFilter,
-    setCityFilter,
     setCountryFilter,
     setRegionFilter,
     setIsActiveFilter,
@@ -101,8 +99,6 @@ export function LocationsTable({
         setAddressFilter={setAddressFilter}
         districtFilter={districtFilter}
         setDistrictFilter={setDistrictFilter}
-        cityFilter={cityFilter}
-        setCityFilter={setCityFilter}
         countryFilter={countryFilter}
         setCountryFilter={setCountryFilter}
         regionFilter={regionFilter}

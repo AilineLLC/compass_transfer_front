@@ -12,6 +12,7 @@ import {
   ArrowLeftRight,
   ClipboardList,
   Navigation,
+  Wallet,
 } from 'lucide-react';
 import { sidebarMockData } from '@entities/users/mock-data';
 
@@ -183,6 +184,17 @@ export const sidebarData = {
       ],
     },
     {
+      title: 'Финансы',
+      url: '/finances',
+      icon: Wallet,
+      items: [
+        {
+          title: 'Выплаты водителям',
+          url: '/finances',
+        },
+      ],
+    },
+    {
       title: 'Уведомления',
       url: '/notifications',
       icon: Bell,
@@ -272,7 +284,7 @@ export const sidebarData = {
         },
       ],
     },
-    {
+{
       name: 'Услуги',
       url: '/services',
       icon: Settings,

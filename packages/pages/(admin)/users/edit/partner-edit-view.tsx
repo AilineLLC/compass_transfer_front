@@ -7,7 +7,8 @@ import { usersApi } from '@shared/api/users';
 import { Card, CardContent } from '@shared/ui/layout';
 import { ChapterHeader } from '@shared/ui/layout/chapter-header';
 import { FormSidebar } from '@shared/ui/layout/form-sidebar';
-import { BasicDataSection, CompanyDataSection, PartnerSaleSection } from '@entities/users';
+import { BasicDataSection, CompanyDataSection, PartnerSaleSection, PartnerDocumentsSection } from '@entities/users';
+import type { PartnerDocumentItem } from '@entities/users';
 import { BusinessType, VerificationStatus } from '@entities/users/enums';
 import type { GetPartnerDTO } from '@entities/users/interface';
 import { PARTNER_FORM_CHAPTERS } from '@entities/users/model/form-chapters/partner-chapters';
@@ -37,6 +38,8 @@ interface PartnerEditFormViewProps {
   onUpdate: () => void;
   handleChapterClick: (chapterId: string) => void;
   onBack: () => void;
+  onDocumentItemsChange: (items: PartnerDocumentItem[]) => void;
+  existingDocumentIds: string[];
 }
 
 export function PartnerEditView({ userId }: PartnerEditViewProps) {
@@ -130,7 +133,12 @@ export function PartnerEditView({ userId }: PartnerEditViewProps) {
     notFound();
   }
 
-  return <PartnerEditFormView {...logic} />;
+  return (
+    <PartnerEditFormView
+      {...logic}
+      existingDocumentIds={partner?.profile?.documents ?? []}
+    />
+  );
 }
 
 function PartnerEditFormView({
@@ -141,6 +149,8 @@ function PartnerEditFormView({
   onUpdate,
   handleChapterClick,
   onBack,
+  onDocumentItemsChange,
+  existingDocumentIds,
 }: PartnerEditFormViewProps) {
   return (
     <FormProvider {...form}>
@@ -195,6 +205,23 @@ function PartnerEditFormView({
                     {/* Вертикальная линия */}
                     <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
                     <PartnerSaleSection />
+                  </div>
+                </div>
+
+                {/* Глава 4: Документы */}
+                <div id='chapter-documents' className='relative flex flex-col gap-4'>
+                  <ChapterHeader
+                    number={4}
+                    title='Документы'
+                    status={getChapterStatus('documents')}
+                  />
+                  <div className='relative ml-12'>
+                    {/* Вертикальная линия */}
+                    <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
+                    <PartnerDocumentsSection
+                      existingDocumentIds={existingDocumentIds}
+                      onItemsChange={onDocumentItemsChange}
+                    />
                   </div>
                 </div>
               </form>

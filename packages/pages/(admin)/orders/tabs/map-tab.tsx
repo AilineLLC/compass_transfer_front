@@ -40,6 +40,7 @@ interface MapTabProps {
 
   // Запланированное время заказа (для виджета конфликтов водителя)
   scheduledTime?: string | null;
+  completionTimeEstimate?: string | null;
 
   // Тариф заказа — для фильтрации водителей по классу
   selectedTariff?: GetTariffDTO | null;
@@ -55,7 +56,8 @@ interface MapTabProps {
   onRouteChange?: (routePoints: RoutePoint[]) => void;
   onRoutePointsChange?: (startId: string, endId: string, points: RoutePoint[]) => void;
   onRouteDistanceChange?: (distance: number) => void;
-  onRouteLoadingChange?: (loading: boolean) => void; // колбэк для состояния загрузки
+  onRouteLegsChange?: (legs: { distance: number }[]) => void;
+  onRouteLoadingChange?: (loading: boolean) => void;
 }
 
 export function MapTab({
@@ -66,6 +68,7 @@ export function MapTab({
   rides,
   requestedCarId,
   scheduledTime,
+  completionTimeEstimate,
   // Внешнее состояние
   routePoints: externalRoutePoints,
   setRoutePoints: setExternalRoutePoints,
@@ -83,6 +86,7 @@ export function MapTab({
   onRouteChange,
   onRoutePointsChange,
   onRouteDistanceChange,
+  onRouteLegsChange,
   onRouteLoadingChange,
 }: MapTabProps) {
   const { car: requestedCar, isLoading: requestedCarLoading } = useCarById(requestedCarId);
@@ -135,6 +139,8 @@ export function MapTab({
     additionalStops,
     mode,
     rides,
+    scheduledTime,
+    completionTimeEstimate,
     // Передаем внешнее состояние
     externalRoutePoints,
     setExternalRoutePoints,
@@ -269,7 +275,7 @@ export function MapTab({
       </div>
 
       {/* Правая колонка - Карта */}
-      <div className='flex-[2] w-full lg:w-1/2 relative'>
+      <div className='flex-[2] w-full lg:w-1/2 relative h-full'>
         {/* Кнопки управления видимостью */}
         <div className='absolute top-6 right-6 z-[500] flex gap-2'>
           <Button
@@ -330,12 +336,13 @@ export function MapTab({
                 }
           }
           onRouteDistanceChange={handleRouteDistanceChange}
+          onRouteLegsChange={onRouteLegsChange}
           getDriverById={getDriverById}
           loadDriverData={loadDriverData}
         />
         {/* Виджет расписания водителя */}
         {ordersWidget && (
-          <div className='absolute left-4 top-4 z-[600] w-80 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden'>
+          <div className='absolute left-1 top-1 z-[1600] w-80 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden'>
             <div className='flex items-center justify-between px-3 py-2 border-b border-gray-100 bg-gray-50'>
               <span className='text-xs font-medium text-gray-700 truncate pr-2'>{ordersWidget.driverName}</span>
               <button
@@ -376,6 +383,8 @@ export function MapTab({
             userRole={userRole}
             onViewDriverOrders={(driverId, driverName) => setOrdersWidget({ driverId, driverName })}
             requiredServiceClass={selectedTariff?.serviceClass ?? null}
+            scheduledTime={scheduledTime}
+            completionTimeEstimate={completionTimeEstimate}
           />
         )}
       </div>

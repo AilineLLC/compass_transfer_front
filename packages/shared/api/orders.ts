@@ -27,6 +27,7 @@ export interface OrderFilters {
   scheduledTimeOp?: 'GreaterThan' | 'GreaterThanOrEqual' | 'Equal' | 'LessThanOrEqual' | 'LessThan';
   services?: string[];
   customerId?: string;
+  participantId?: string;
   airFlight?: string;
   airFlightOp?:
     | 'Equals'

@@ -65,6 +65,9 @@ export interface CreateInstantOrderRequest {
   /** Предварительная стоимость */
   initialPrice: number;
 
+  /** Примерное время завершения заказа (ISO строка) */
+  completionTimeEstimate: string;
+
   /** Пассажиры */
   passengers: Array<{
     customerId?: string | null;
@@ -366,6 +369,30 @@ export class OrdersApi {
 
     if (response.error) {
       throw new Error(response.error.message || 'Failed to cancel order');
+    }
+  }
+
+  /**
+   * Установить цветовую метку заказа
+   * PUT /Order/{id}/mark-color
+   */
+  static async markOrder(id: string, markColor: string | null): Promise<void> {
+    const response = await apiPut(`/Order/${id}/mark-color`, markColor);
+
+    if (response.error) {
+      throw new Error(response.error.message || 'Failed to mark order');
+    }
+  }
+
+  /**
+   * Отметить/снять выплату водителю
+   * PUT /Order/{uuid}/driver-payed-out
+   */
+  static async markDriverPayedOut(id: string, value: boolean): Promise<void> {
+    const response = await apiPut(`/Order/${id}/driver-payed-out`, value);
+
+    if (response.error) {
+      throw new Error(response.error.message || 'Failed to mark driver payed out');
     }
   }
 }

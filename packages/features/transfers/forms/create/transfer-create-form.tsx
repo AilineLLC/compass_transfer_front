@@ -967,6 +967,12 @@ if (!startLocation) { toast.error('Выберите точку отправле�
           setSelectedDriver(driver);
         }}
         selectedDriverId={selectedDriver?.id}
+        scheduledTime={departureTime ? new Date(departureTime).toISOString() : null}
+        completionTimeEstimate={
+          departureTime && duration
+            ? new Date(new Date(departureTime).getTime() + Number(duration) * 60_000).toISOString()
+            : null
+        }
       />
       <CarSelectModal
         isOpen={isCarModalOpen}
