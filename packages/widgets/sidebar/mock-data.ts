@@ -11,7 +11,6 @@ import {
   DollarSign,
   ArrowLeftRight,
   ClipboardList,
-  Navigation,
   Wallet,
   SquareDashedBottom,
 } from 'lucide-react';
@@ -240,25 +239,6 @@ export const sidebarData = {
         {
           title: 'Создать тариф',
           url: '/tariffs/create',
-        },
-      ],
-    },
-    {
-      name: 'Направления',
-      url: '/routes',
-      icon: Navigation,
-      items: [
-        {
-          title: 'Все направления',
-          url: '/routes',
-        },
-        {
-          title: 'Популярные',
-          url: '/routes?isPopular=true',
-        },
-        {
-          title: 'Добавить направление',
-          url: '/routes/create',
         },
       ],
     },

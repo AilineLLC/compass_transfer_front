@@ -39,6 +39,8 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children, acce
   const handlersSetup = useRef<boolean>(false);
   // Bug fix #8: ref-guard prevents parallel connect() calls (React StrictMode double-invoke)
   const connectingRef = useRef<boolean>(false);
+  // Prevents the 3-second fallback from showing the app during an auth redirect
+  const isRedirectingRef = useRef<boolean>(false);
 
   // Bug fix #1: idempotent — skip if already registered
   const setupNotificationHandlers = useCallback(() => {
@@ -107,8 +109,8 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children, acce
 
       if (!accessToken || isTokenExpired(accessToken)) {
         hasFailed.current = true;
+        isRedirectingRef.current = true;
         setIsConnecting(false);
-        setShowWelcome(false);
         await performLogoutAndRedirect();
         return;
       }
@@ -116,8 +118,8 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children, acce
       const isValid = await checkTokenValidity();
       if (!isValid) {
         hasFailed.current = true;
+        isRedirectingRef.current = true;
         setIsConnecting(false);
-        setShowWelcome(false);
         await performLogoutAndRedirect();
         return;
       }
@@ -170,6 +172,8 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children, acce
               errText.toLowerCase().includes('auth') ||
               errText.toLowerCase().includes('token');
             if (isAuthError) {
+              isRedirectingRef.current = true;
+              setShowWelcome(true);
               performLogoutAndRedirect();
             }
 
@@ -255,10 +259,12 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children, acce
     };
   }, [connection]);
 
-  // Fallback: always exit splash after 3 seconds
+  // Fallback: exit splash after 3 seconds, but not if auth failed and a redirect is in progress
   useEffect(() => {
     const timer = setTimeout(() => {
-      setShowWelcome(false);
+      if (!isRedirectingRef.current) {
+        setShowWelcome(false);
+      }
     }, 3000);
 
     return () => clearTimeout(timer);
@@ -283,6 +289,12 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children, acce
   }), [connection, isConnected, isConnecting, error, connect, disconnect, on, off]);
 
   if (showWelcome) {
+    const splashText = isRedirectingRef.current
+      ? 'Перенаправление на страницу входа...'
+      : isConnecting
+        ? 'Подключение к серверу...'
+        : 'Инициализация...';
+
     return (
       <SignalRContext.Provider value={value}>
         <div className="flex items-center justify-center h-screen bg-white">
@@ -291,7 +303,7 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children, acce
               <WelcomeIcon className="w-full h-full h-auto mx-auto animate-pulse" />
             </div>
             <div className="text-lg font-medium text-gray-700">
-              {isConnecting ? 'Подключение к серверу...' : 'Инициализация...'}
+              {splashText}
             </div>
           </div>
         </div>
