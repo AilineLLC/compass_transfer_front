@@ -70,40 +70,72 @@ interface OrderPageProps {
   initialScheduledTime?: string;
 }
 
+// Ray-casting point-in-polygon check.
+// poly: flat array [lat1, lng1, lat2, lng2, ...]
+function isPointInPolygon(lat: number, lng: number, poly: number[] | null | undefined): boolean {
+  if (!poly || poly.length < 6) return false;
+  const n = poly.length / 2;
+  let inside = false;
+  let j = n - 1;
+  for (let i = 0; i < n; i++) {
+    const latI = poly[i * 2];
+    const lngI = poly[i * 2 + 1];
+    const latJ = poly[j * 2];
+    const lngJ = poly[j * 2 + 1];
+    if ((lngI > lng) !== (lngJ > lng) && lat < ((latJ - latI) * (lng - lngI)) / (lngJ - lngI) + latI) {
+      inside = !inside;
+    }
+    j = i;
+  }
+  return inside;
+}
+
+type SegLocPoint = {
+  latitude?: number | null;
+  longitude?: number | null;
+  priceCoefficient?: number | null;
+  profile?: { polyPriceCoefficient?: number[] | null } | null;
+} | null | undefined;
+
 // Рассчитывает итоговую km-стоимость с учётом коэффициентов точек маршрута.
-// priceCoefficient источника применяется только если пункт назначения в другой области (group).
+// Коэффициент пункта назначения применяется только если Точка А (источник сегмента)
+// НЕ входит в polyPriceCoefficient-зону пункта назначения. Сравнение областей не используется.
 function calcKmPrice(
   routeDistance: number,
   routeLegs: { distance: number }[],
-  routePoints: { type: string; location: { priceCoefficient?: number | null; group?: string | null } | null }[],
+  routePoints: { type: string; location: SegLocPoint }[],
   perKmPrice: number,
 ): number {
   if (routeDistance <= 0) return 0;
 
-  type LocPoint = { priceCoefficient?: number | null; group?: string | null } | null | undefined;
-  const crossAreaCoeff = (src: LocPoint, dst: LocPoint): number => {
-    const sameArea = src?.group && dst?.group && src.group === dst.group;
-    return sameArea ? 1 : (src?.priceCoefficient ?? 1);
+  const getCoeff = (src: SegLocPoint, dst: SegLocPoint): number => {
+    const poly = dst?.profile?.polyPriceCoefficient;
+    const srcLat = src?.latitude ?? null;
+    const srcLng = src?.longitude ?? null;
+    if (srcLat !== null && srcLng !== null && poly?.length) {
+      if (isPointInPolygon(srcLat, srcLng, poly)) return 1;
+    }
+    return dst?.priceCoefficient ?? 1;
   };
 
   const orderedPoints = [
     routePoints.find(p => p.type === 'start'),
     ...routePoints.filter(p => p.type === 'intermediate'),
     routePoints.find(p => p.type === 'end'),
-  ].filter(Boolean) as { location: { priceCoefficient?: number | null; group?: string | null } | null }[];
+  ].filter(Boolean) as { location: SegLocPoint }[];
 
   if (routeLegs.length > 0 && routeLegs.length === orderedPoints.length - 1) {
-    // Мультистоп: Σ(km_i × coeff_i), где coeff_i — коэффициент источника сегмента (только если разные области)
+    // Мультистоп: Σ(km_i × coeff_i)
     return routeLegs.reduce((sum, leg, i) => {
-      const coeff = crossAreaCoeff(orderedPoints[i]?.location, orderedPoints[i + 1]?.location);
+      const coeff = getCoeff(orderedPoints[i]?.location, orderedPoints[i + 1]?.location);
       return sum + (leg.distance / 1000) * coeff * perKmPrice;
     }, 0);
   }
 
-  // Fallback: весь маршрут × коэффициент начальной локации (только если разные области)
+  // Fallback: весь маршрут × коэффициент конечной локации (если Точка А не в зоне отключения)
   const startLoc = routePoints.find(p => p.type === 'start')?.location;
   const endLoc = routePoints.find(p => p.type === 'end')?.location;
-  const coeff = crossAreaCoeff(startLoc, endLoc);
+  const coeff = getCoeff(startLoc, endLoc);
   return (routeDistance / 1000) * coeff * perKmPrice;
 }
 

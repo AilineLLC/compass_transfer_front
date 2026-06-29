@@ -15,6 +15,7 @@ export function OrdersTable({
     subStatus?: string;
     airFlight?: string;
     flyReis?: string;
+    participantId?: string;
   };
 }) {
   const {
@@ -28,6 +29,8 @@ export function OrdersTable({
     subStatusFilter,
     airFlightInput,
     flyReisInput,
+    participantId,
+    participantName,
     showAdvancedFilters,
     pageSize,
     columnVisibility,
@@ -39,6 +42,7 @@ export function OrdersTable({
     sortOrder,
     setSearchTerm,
     setSearchByPassengers,
+    setParticipant,
     setAirFlightInput,
     setFlyReisInput,
     setShowAdvancedFilters,
@@ -77,6 +81,9 @@ export function OrdersTable({
         setSearchTerm={setSearchTerm}
         searchByPassengers={searchByPassengers}
         setSearchByPassengers={setSearchByPassengers}
+        participantId={participantId}
+        participantName={participantName}
+        setParticipant={setParticipant}
         typeFilter={typeFilter}
         handleTypeFilterChange={handleTypeFilterChange}
         statusFilter={statusFilter}

@@ -34,6 +34,7 @@ export interface LocationProfileDTO {
   poi: PoiItemDTO[];
   tags: TagDTO[];
   advice: LocationAdviceDTO | null;
+  polyPriceCoefficient?: number[] | null;
 }
 
 export type { TagDTO };
@@ -56,7 +57,6 @@ export interface LocationDTO {
   popular2: boolean;
   isLandingOnly: boolean | null;
   isLandingPagePinned?: boolean;
-  group?: string | null;
   id: string;
   transient?: boolean;
   poiCount?: number;

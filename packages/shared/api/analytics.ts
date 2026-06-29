@@ -18,6 +18,8 @@ export interface DriverPayoutItem {
   status: string;
   pendingPayout: number;
   pendingPayoutCount: number;
+  payoutPaid: number;
+  payoutPaidCount: number;
 }
 
 export interface DriversPayoutResponse {

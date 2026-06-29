@@ -20,7 +20,6 @@ interface ColumnVisibility {
   name: boolean;
   address: boolean;
   district: boolean;
-  group: boolean;
   country: boolean;
   region: boolean;
   coordinates: boolean;
@@ -38,9 +37,6 @@ interface LocationsTableFiltersProps {
   setAddressFilter: (address: string) => void;
   districtFilter: string;
   setDistrictFilter: (district: string) => void;
-  groupFilter: string;
-  setGroupFilter: (group: string) => void;
-  groups: Array<{ id: string; name: string }>;
   countryFilter: string;
   setCountryFilter: (country: string) => void;
   regionFilter: string;
@@ -75,9 +71,6 @@ export function LocationsTableFilters({
   setAddressFilter,
   districtFilter,
   setDistrictFilter,
-  groupFilter,
-  setGroupFilter,
-  groups,
   countryFilter,
   setCountryFilter,
   regionFilter,
@@ -115,7 +108,6 @@ export function LocationsTableFilters({
     setNameFilter('');
     setAddressFilter('');
     setDistrictFilter('');
-    setGroupFilter('');
     setCountryFilter('');
     setRegionFilter('');
     handleTypeFilterChange([]);
@@ -129,10 +121,9 @@ export function LocationsTableFilters({
     nameFilter,
     addressFilter,
     districtFilter,
-    groupFilter,
     countryFilter,
     regionFilter,
-  ].filter(Boolean).length + 
+  ].filter(Boolean).length +
   typeFilter.length + 
   (isActiveFilter !== null ? 1 : 0) +
   (popular1Filter !== null ? 1 : 0) +
@@ -260,7 +251,6 @@ export function LocationsTableFilters({
                   { key: 'name', label: 'Название' },
                   { key: 'address', label: 'Адрес' },
                   { key: 'district', label: 'Район' },
-                  { key: 'group', label: 'Область' },
                   { key: 'country', label: 'Страна' },
                   { key: 'region', label: 'Регион' },
                   { key: 'coordinates', label: 'Координаты' },
@@ -319,24 +309,6 @@ export function LocationsTableFilters({
                 value={districtFilter}
                 onChange={(e) => setDistrictFilter(e.target.value)}
               />
-            </div>
-
-            <div>
-              <Label htmlFor='group'>Область</Label>
-              <Select
-                value={groupFilter || 'all'}
-                onValueChange={value => setGroupFilter(value === 'all' ? '' : value)}
-              >
-                <SelectTrigger id='group'>
-                  <SelectValue placeholder='Выберите область' />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value='all'>Все области</SelectItem>
-                  {groups.map(g => (
-                    <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
 
             <div>

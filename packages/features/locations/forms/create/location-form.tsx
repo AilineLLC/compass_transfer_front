@@ -6,10 +6,8 @@ import { useState, useMemo, useCallback, useRef } from 'react';
 import { useForm, type Resolver } from 'react-hook-form';
 import { toast } from 'sonner';
 import { locationsApi } from '@shared/api/locations';
-import { locationGroupsApi } from '@shared/api/location-groups';
 import { filesApi } from '@shared/api/files';
 import { logger } from '@shared/lib';
-import { findBestAreaForPoint } from '@shared/lib/geo';
 import { LocationType } from '@entities/locations/enums';
 import { parseAddress } from '@entities/locations/lib/address-parser';
 import {
@@ -62,10 +60,10 @@ export function useLocationFormLogic({
       popular: false,
       isLandingOnly: false,
       isLandingPagePinned: false,
-      group: '',
       tags: [],
       advice: null,
       priceCoefficient: null,
+      polyPriceCoefficient: null,
     },
   });
 
@@ -126,15 +124,6 @@ export function useLocationFormLogic({
           [addressComponents.houseNumber, addressComponents.street].filter(Boolean).join(', ') ||
           'Новая локация';
 
-        let groupId: string | null = null;
-        try {
-          const areasResponse = await locationGroupsApi.getLocationGroups({ size: 500 });
-          const matchedArea = findBestAreaForPoint(data.latitude, data.longitude, areasResponse.data);
-          groupId = matchedArea?.id ?? null;
-        } catch {
-          // не блокируем создание если области недоступны
-        }
-
         const apiData = {
           name: locationName,
           description: data.description || null,
@@ -150,7 +139,8 @@ export function useLocationFormLogic({
           isLandingOnly: data.isLandingOnly ?? false,
           isLandingPagePinned: data.isLandingPagePinned ?? false,
           priceCoefficient: data.priceCoefficient ?? null,
-          group: groupId,
+          polyPriceCoefficient: data.polyPriceCoefficient?.length ? data.polyPriceCoefficient : null,
+          group: null,
           images: orderedImageIds,
           poi: poiData,
           tags: data.tags ?? [],

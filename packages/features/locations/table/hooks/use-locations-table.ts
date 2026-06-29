@@ -4,7 +4,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { toast } from 'sonner';
 import { locationsApi, type LocationFilters } from '@shared/api/locations';
-import { locationGroupsApi, type LocationGroupDTO } from '@shared/api/location-groups';
 import { useSavedFilters } from '@shared/hooks';
 import type { LocationType } from '@entities/locations/enums';
 import type { LocationDTO } from '@entities/locations/interface/LocationDTO';
@@ -14,7 +13,6 @@ interface ColumnVisibility {
   name: boolean;
   address: boolean;
   district: boolean;
-  group: boolean;
   country: boolean;
   region: boolean;
   coordinates: boolean;
@@ -27,7 +25,6 @@ interface SavedLocationFilters {
   nameFilter: string;
   addressFilter: string;
   districtFilter: string;
-  groupFilter: string;
   countryFilter: string;
   regionFilter: string;
 }
@@ -48,13 +45,6 @@ export function useLocationsTable(_initialFilters?: {
   const [locations, setLocations] = useState<LocationDTO[]>([]);
   const [filteredLocations, setFilteredLocations] = useState<LocationDTO[]>([]);
   const [paginatedLocations, setPaginatedLocations] = useState<LocationDTO[]>([]);
-  const [groups, setGroups] = useState<LocationGroupDTO[]>([]);
-
-  useEffect(() => {
-    locationGroupsApi.getLocationGroups({ size: 500 })
-      .then(r => setGroups(r.data))
-      .catch(() => {});
-  }, []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,7 +53,6 @@ export function useLocationsTable(_initialFilters?: {
   const [nameFilter, setNameFilter] = useState('');
   const [addressFilter, setAddressFilter] = useState('');
   const [districtFilter, setDistrictFilter] = useState('');
-  const [groupFilter, setGroupFilter] = useState(() => searchParams.get('group') || '');
   const [countryFilter, setCountryFilter] = useState('');
   const [regionFilter, setRegionFilter] = useState(() => searchParams.get('region') || '');
   const [typeFilter, setTypeFilter] = useState<LocationType[]>(() => {
@@ -135,7 +124,6 @@ export function useLocationsTable(_initialFilters?: {
       name: true,
       address: true,
       district: false,
-      group: true,
       country: false,
       region: true,
       coordinates: false,
@@ -171,9 +159,6 @@ export function useLocationsTable(_initialFilters?: {
       if (districtFilter) {
         params.district = districtFilter;
         params.districtOp = 'Contains';
-      }
-      if (groupFilter) {
-        params.group = groupFilter;
       }
       if (countryFilter) {
         params.country = countryFilter;
@@ -222,7 +207,6 @@ export function useLocationsTable(_initialFilters?: {
     nameFilter,
     addressFilter,
     districtFilter,
-    groupFilter,
     countryFilter,
     regionFilter,
     typeFilter,
@@ -256,9 +240,6 @@ export function useLocationsTable(_initialFilters?: {
     const newP1 = p1Param === 'true' ? true : p1Param === 'false' ? false : null;
     if (newP1 !== popular1Filter) setPopular1Filter(newP1);
 
-    const group = searchParams.get('group') || '';
-    if (group !== groupFilter) setGroupFilter(group);
-
     const region = searchParams.get('region') || '';
     if (region !== regionFilter) setRegionFilter(region);
   }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -268,7 +249,6 @@ export function useLocationsTable(_initialFilters?: {
     nameFilter: '',
     addressFilter: '',
     districtFilter: '',
-    groupFilter: '',
     countryFilter: '',
     regionFilter: '',
   };
@@ -277,17 +257,15 @@ export function useLocationsTable(_initialFilters?: {
     nameFilter,
     addressFilter,
     districtFilter,
-    groupFilter,
     countryFilter,
     regionFilter,
-  }), [nameFilter, addressFilter, districtFilter, groupFilter, countryFilter, regionFilter]);
+  }), [nameFilter, addressFilter, districtFilter, countryFilter, regionFilter]);
 
   // Функция загрузки сохраненных фильтров
   const onFiltersLoad = useCallback((filters: SavedLocationFilters) => {
     setNameFilter(filters.nameFilter || '');
     setAddressFilter(filters.addressFilter || '');
     setDistrictFilter(filters.districtFilter || '');
-    setGroupFilter(filters.groupFilter || '');
     setCountryFilter(filters.countryFilter || '');
     setRegionFilter(filters.regionFilter || '');
   }, []);
@@ -412,15 +390,11 @@ export function useLocationsTable(_initialFilters?: {
     loading,
     error,
 
-    // Данные (группы для фильтра)
-    groups,
-
     // Фильтры
     searchTerm,
     nameFilter,
     addressFilter,
     districtFilter,
-    groupFilter,
     countryFilter,
     regionFilter,
     typeFilter,
@@ -470,15 +444,6 @@ export function useLocationsTable(_initialFilters?: {
       setCurrentCursor(null);
       setIsFirstPage(true);
       setCurrentPageNumber(1);
-    },
-    setGroupFilter: (group: string) => {
-      setGroupFilter(group);
-      setCurrentCursor(null);
-      setIsFirstPage(true);
-      setCurrentPageNumber(1);
-      const params = new URLSearchParams(searchParams.toString());
-      if (group) params.set('group', group); else params.delete('group');
-      router.replace(params.toString() ? `/locations?${params.toString()}` : '/locations');
     },
     setCountryFilter: (country: string) => {
       setCountryFilter(country);

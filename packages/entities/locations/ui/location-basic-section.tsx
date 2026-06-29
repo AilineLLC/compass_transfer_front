@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { Input } from '@shared/ui/forms/input';
 import { Label } from '@shared/ui/forms/label';
@@ -26,16 +27,28 @@ export function LocationBasicSection({
     register,
     watch,
     setValue,
+    clearErrors,
     formState: { errors },
   } = useFormContext<LocationCreateFormData>();
 
   const formData = watch();
 
+  // Zod v4 treats null/undefined as "Invalid option" for z.enum().
+  // getSafeValue masks the invalid form value in the Select display, so we must
+  // also write the safe fallback back into the form whenever the stored value is invalid.
+  // clearErrors removes any stale type error that persisted because shouldValidate:false
+  // in setValue does not clear pre-existing errors.
+  useEffect(() => {
+    const rawType = formData.type as string;
+    if (!rawType || !locationTypeHelpers.isValid(rawType)) {
+      setValue('type', locationTypeHelpers.getDefault(), { shouldDirty: false, shouldValidate: false });
+    }
+    clearErrors('type');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.type]);
+
   return (
     <div className="space-y-6">
-      {/* Скрытое поле для регистрации в форме */}
-      <input type="hidden" {...register('type')} />
-
       {/* Название локации */}
       <div className="space-y-2">
         <Label htmlFor="name" className="text-sm font-medium">

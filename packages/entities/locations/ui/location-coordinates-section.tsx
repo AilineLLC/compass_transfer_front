@@ -1,10 +1,16 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useFormContext } from 'react-hook-form';
 import { Checkbox } from '@shared/ui/forms/checkbox';
 import { Input } from '@shared/ui/forms/input';
 import { Label } from '@shared/ui/forms/label';
 import type { LocationCreateFormData } from '../schemas/locationCreateSchema';
+
+const AreaDrawingMap = dynamic(
+  () => import('@shared/ui/maps/area-drawing-map').then(m => m.AreaDrawingMap),
+  { ssr: false, loading: () => <div className='h-[400px] bg-gray-100 rounded-lg animate-pulse' /> },
+);
 
 interface LocationCoordinatesSectionProps {
   labels?: {
@@ -27,6 +33,9 @@ export function LocationCoordinatesSection({
   const isLandingOnly = watch('isLandingOnly');
   const isLandingPagePinned = watch('isLandingPagePinned');
   const priceCoefficient = watch('priceCoefficient');
+  const polyPriceCoefficient = watch('polyPriceCoefficient') as number[] | null | undefined;
+  const latitude = watch('latitude') as number | undefined;
+  const longitude = watch('longitude') as number | undefined;
 
   return (
     <div className="space-y-6">
@@ -143,6 +152,38 @@ export function LocationCoordinatesSection({
             <p className="text-sm text-red-600">{errors.priceCoefficient.message}</p>
           )}
         </div>
+
+        {/* Полигон отключения коэффициента */}
+        <div className="rounded-lg border p-4 space-y-3">
+          <div>
+            <Label className="text-sm font-medium">Зона отключения коэффициента</Label>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Нарисуйте полигон, внутри которого коэффициент стоимости этой локации <span className="font-medium text-red-600">не применяется</span>.
+              Например — зона аэропорта, где трансфер считается по базовой цене без наценки.
+              Оставьте пустым, если исключений нет.
+            </p>
+          </div>
+
+          <AreaDrawingMap
+            poly={polyPriceCoefficient ?? []}
+            onChange={poly => setValue('polyPriceCoefficient', poly.length ? poly : null)}
+            height="400px"
+            initialCenter={latitude && longitude ? [latitude, longitude] : undefined}
+            locationPoint={latitude && longitude ? [latitude, longitude] : undefined}
+          />
+
+          {latitude && longitude && (
+            <p className="text-xs text-gray-500 flex items-center gap-1">
+              <span className="inline-block w-2.5 h-2.5 rounded-full bg-red-500 flex-shrink-0" />
+              Красная точка — координата локации
+            </p>
+          )}
+
+          {polyPriceCoefficient && polyPriceCoefficient.length > 0 && polyPriceCoefficient.length < 6 && (
+            <p className="text-xs text-amber-600">Нужно минимум 3 точки для замкнутого полигона</p>
+          )}
+        </div>
+
       </div>
     </div>
   );

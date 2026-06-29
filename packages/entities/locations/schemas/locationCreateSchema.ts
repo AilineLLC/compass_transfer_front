@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { LocationType } from '../enums';
 
 export const locationCreateSchema = z.object({
   name: z
@@ -12,11 +11,9 @@ export const locationCreateSchema = z.object({
     .optional()
     .or(z.literal('')),
 
-  type: z
-    .nativeEnum(LocationType, {
-      required_error: 'Тип локации обязателен',
-      invalid_type_error: 'Неверный тип локации',
-    }),
+  type: z.enum(
+    ['Home', 'Work', 'Airport', 'Station', 'Hotel', 'Restaurant', 'Shop', 'Entertainment', 'Medical', 'Educational', 'BusinessCenter', 'Other'] as const,
+  ).catch('Airport'),
 
   address: z
     .string()
@@ -39,14 +36,14 @@ export const locationCreateSchema = z.object({
 
   popular: z.boolean({ required_error: 'Необходимо указать популярность' }),
 
-  group: z.string().optional().or(z.literal('')),
-
   isLandingOnly: z.boolean().nullable().default(false),
   isLandingPagePinned: z.boolean().default(false),
 
   tags: z.array(z.string()).default([]),
 
   priceCoefficient: z.number().min(0, { message: 'Коэффициент не может быть отрицательным' }).nullable().optional(),
+
+  polyPriceCoefficient: z.array(z.number()).nullable().optional(),
 
   advice: z
     .object({

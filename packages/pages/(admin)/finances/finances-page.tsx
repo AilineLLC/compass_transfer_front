@@ -4,21 +4,19 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Banknote,
+  CheckCircle2,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronUp,
   Loader2,
-  Search,
   TrendingUp,
   User,
   Wallet,
-  X,
 } from 'lucide-react';
 import { analyticsApi, type DriverPayoutItem, type DriverAnalytics, type DriversPayoutFilters } from '@shared/api/analytics';
 import { Badge } from '@shared/ui/data-display/badge';
 import { Button } from '@shared/ui/forms/button';
-import { Input } from '@shared/ui/forms/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/layout';
 import {
   Dialog,
@@ -40,7 +38,9 @@ const PAGE_SIZE = 20;
 
 const SORT_BY_OPTIONS = [
   { value: 'PendingPayout', label: 'Сумма к выплате' },
-  { value: 'PendingPayoutCount', label: 'Кол-во заказов' },
+  { value: 'PendingPayoutCount', label: 'Заказов к выплате' },
+  { value: 'PayoutPaid', label: 'Выплачено (сумма)' },
+  { value: 'PayoutPaidCount', label: 'Выплачено (поездки)' },
   { value: 'FullName', label: 'Имя' },
 ];
 
@@ -92,16 +92,26 @@ function DriverDetailModal({
         </DialogHeader>
 
         <div className='space-y-4'>
-          <div className='flex items-center justify-between p-4 rounded-xl bg-orange-50 border border-orange-200'>
-            <div>
-              <p className='text-xs text-orange-600 font-medium uppercase tracking-wide'>К выплате</p>
-              <p className='text-2xl font-bold text-orange-700'>
+          <div className='grid grid-cols-2 gap-3'>
+            <div className='p-4 rounded-xl bg-orange-50 border border-orange-200'>
+              <p className='text-xs text-orange-600 font-medium uppercase tracking-wide mb-1'>К выплате</p>
+              <p className='text-xl font-bold text-orange-700'>
                 {formatPriceWithUsd(driver.pendingPayout, usdRate)}
               </p>
+              <p className='text-xs text-orange-500 mt-1'>
+                {driver.pendingPayoutCount} {driver.pendingPayoutCount === 1 ? 'поездка' : 'поездок'}
+              </p>
             </div>
-            <div className='text-right'>
-              <p className='text-xs text-orange-600 font-medium uppercase tracking-wide'>Заказов</p>
-              <p className='text-2xl font-bold text-orange-700'>{driver.pendingPayoutCount}</p>
+            <div className='p-4 rounded-xl bg-green-50 border border-green-200'>
+              <p className='text-xs text-green-600 font-medium uppercase tracking-wide mb-1'>Выплачено</p>
+              <p className='text-xl font-bold text-green-700'>
+                {driver.payoutPaid > 0 ? formatPriceWithUsd(driver.payoutPaid, usdRate) : '—'}
+              </p>
+              <p className='text-xs text-green-500 mt-1'>
+                {driver.payoutPaidCount > 0
+                  ? `${driver.payoutPaidCount} ${driver.payoutPaidCount === 1 ? 'поездка' : 'поездок'}`
+                  : 'нет выплат'}
+              </p>
             </div>
           </div>
 
@@ -167,8 +177,6 @@ export function FinancesPage() {
   const [drivers, setDrivers] = useState<DriverPayoutItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [cursorStack, setCursorStack] = useState<(string | undefined)[]>([]);
   const [after, setAfter] = useState<string | undefined>(undefined);
   const [hasNext, setHasNext] = useState(false);
@@ -176,12 +184,6 @@ export function FinancesPage() {
   const [selectedDriver, setSelectedDriver] = useState<DriverPayoutItem | null>(null);
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const usdRate = useUsdRate();
-
-  // debounce search
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search), 400);
-    return () => clearTimeout(t);
-  }, [search]);
 
   const buildApiFilters = useCallback((cursor?: string): DriversPayoutFilters => ({
     size: PAGE_SIZE,
@@ -210,7 +212,7 @@ export function FinancesPage() {
     setAfter(undefined);
     setCursorStack([]);
     load(undefined);
-  }, [debouncedSearch, filters]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleNext = () => {
     const lastId = drivers[drivers.length - 1]?.id;
@@ -232,6 +234,7 @@ export function FinancesPage() {
   };
 
   const totalPending = drivers.reduce((s, d) => s + d.pendingPayout, 0);
+  const totalPaid = drivers.reduce((s, d) => s + d.payoutPaid, 0);
   const driversWithDebt = drivers.filter(d => d.pendingPayout > 0).length;
   const page = cursorStack.length + 1;
 
@@ -253,28 +256,41 @@ export function FinancesPage() {
 
           {/* Сводные карточки */}
           {!loading && drivers.length > 0 && (
-            <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
+            <div className='grid grid-cols-2 sm:grid-cols-4 gap-3'>
               <Card className='border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100/40'>
                 <CardContent className='pt-4 pb-4 flex items-center gap-3'>
-                  <div className='p-2 rounded-lg bg-orange-100'>
+                  <div className='p-2 rounded-lg bg-orange-100 shrink-0'>
                     <Banknote className='h-5 w-5 text-orange-600' />
                   </div>
-                  <div>
-                    <p className='text-xs text-orange-600 font-medium'>К выплате (страница)</p>
-                    <p className='text-lg font-bold text-orange-700'>
+                  <div className='min-w-0'>
+                    <p className='text-xs text-orange-600 font-medium truncate'>К выплате</p>
+                    <p className='text-base font-bold text-orange-700 truncate'>
                       {formatPriceWithUsd(totalPending, usdRate)}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className='border-green-200 bg-gradient-to-br from-green-50 to-green-100/40'>
+                <CardContent className='pt-4 pb-4 flex items-center gap-3'>
+                  <div className='p-2 rounded-lg bg-green-100 shrink-0'>
+                    <CheckCircle2 className='h-5 w-5 text-green-600' />
+                  </div>
+                  <div className='min-w-0'>
+                    <p className='text-xs text-green-600 font-medium truncate'>Выплачено</p>
+                    <p className='text-base font-bold text-green-700 truncate'>
+                      {formatPriceWithUsd(totalPaid, usdRate)}
                     </p>
                   </div>
                 </CardContent>
               </Card>
               <Card className='border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100/40'>
                 <CardContent className='pt-4 pb-4 flex items-center gap-3'>
-                  <div className='p-2 rounded-lg bg-blue-100'>
+                  <div className='p-2 rounded-lg bg-blue-100 shrink-0'>
                     <TrendingUp className='h-5 w-5 text-blue-600' />
                   </div>
-                  <div>
-                    <p className='text-xs text-blue-600 font-medium'>С задолженностью</p>
-                    <p className='text-lg font-bold text-blue-700'>
+                  <div className='min-w-0'>
+                    <p className='text-xs text-blue-600 font-medium truncate'>С задолженностью</p>
+                    <p className='text-base font-bold text-blue-700'>
                       {driversWithDebt} / {drivers.length}
                     </p>
                   </div>
@@ -282,38 +298,20 @@ export function FinancesPage() {
               </Card>
               <Card className='border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100/40'>
                 <CardContent className='pt-4 pb-4 flex items-center gap-3'>
-                  <div className='p-2 rounded-lg bg-gray-100'>
+                  <div className='p-2 rounded-lg bg-gray-100 shrink-0'>
                     <User className='h-5 w-5 text-gray-600' />
                   </div>
-                  <div>
-                    <p className='text-xs text-gray-600 font-medium'>Страница</p>
-                    <p className='text-lg font-bold text-gray-700'>{page}</p>
+                  <div className='min-w-0'>
+                    <p className='text-xs text-gray-600 font-medium truncate'>Страница</p>
+                    <p className='text-base font-bold text-gray-700'>{page}</p>
                   </div>
                 </CardContent>
               </Card>
             </div>
           )}
 
-          {/* Поиск + сортировка */}
+          {/* Сортировка */}
           <div className='flex gap-2 items-center'>
-            <div className='relative flex-1'>
-              <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground' />
-              <Input
-                placeholder='Поиск по имени, телефону...'
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className='pl-9 pr-9 h-9'
-              />
-              {search && (
-                <button
-                  onClick={() => setSearch('')}
-                  className='absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground'
-                >
-                  <X className='h-4 w-4' />
-                </button>
-              )}
-            </div>
-
             <Select
               value={filters.sortBy}
               onValueChange={v => setFilter('sortBy', v)}
@@ -366,8 +364,8 @@ export function FinancesPage() {
                 <div className='divide-y'>
                   <div className='grid grid-cols-[1fr_auto_auto] gap-4 px-4 py-2 bg-muted/40 text-xs text-muted-foreground font-medium'>
                     <span>Водитель</span>
-                    <span className='text-right w-20'>Заказов</span>
                     <span className='text-right w-36'>К выплате</span>
+                    <span className='text-right w-36'>Выплачено</span>
                   </div>
 
                   {drivers.map(driver => (
@@ -391,18 +389,24 @@ export function FinancesPage() {
                           </p>
                         </div>
                       </div>
-                      <span className='text-sm font-semibold text-right w-20'>
-                        {driver.pendingPayoutCount}
-                      </span>
-                      <span
-                        className={`text-sm font-bold text-right w-36 ${
-                          driver.pendingPayout > 0 ? 'text-orange-600' : 'text-muted-foreground'
-                        }`}
-                      >
-                        {driver.pendingPayout > 0
-                          ? formatPriceWithUsd(driver.pendingPayout, usdRate)
-                          : '—'}
-                      </span>
+
+                      <div className='text-right w-36'>
+                        <p className={`text-sm font-bold ${driver.pendingPayout > 0 ? 'text-orange-600' : 'text-muted-foreground'}`}>
+                          {driver.pendingPayout > 0 ? formatPriceWithUsd(driver.pendingPayout, usdRate) : '—'}
+                        </p>
+                        <p className='text-xs text-muted-foreground mt-0.5'>
+                          {driver.pendingPayoutCount > 0 ? `${driver.pendingPayoutCount} поезд.` : ''}
+                        </p>
+                      </div>
+
+                      <div className='text-right w-36'>
+                        <p className={`text-sm font-bold ${driver.payoutPaid > 0 ? 'text-green-600' : 'text-muted-foreground'}`}>
+                          {driver.payoutPaid > 0 ? formatPriceWithUsd(driver.payoutPaid, usdRate) : '—'}
+                        </p>
+                        <p className='text-xs text-muted-foreground mt-0.5'>
+                          {driver.payoutPaidCount > 0 ? `${driver.payoutPaidCount} поезд.` : ''}
+                        </p>
+                      </div>
                     </button>
                   ))}
                 </div>

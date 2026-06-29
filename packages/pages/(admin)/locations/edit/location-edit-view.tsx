@@ -20,6 +20,7 @@ import type {
 } from '@entities/locations';
 import type { LocationDTO, LocationImageDTO, PoiItemDTO } from '@entities/locations/interface';
 import { LocationType } from '@entities/locations/enums';
+import { locationTypeHelpers } from '@entities/locations/helpers/location-type-helpers';
 import { LOCATION_FORM_CHAPTERS } from '@entities/locations/model/form-chapters/location-chapters';
 import type { LocationUpdateFormData } from '@entities/locations/schemas/locationUpdateSchema';
 import { useLocationEditFormLogic } from '@features/locations/forms/edit/location-edit-form';
@@ -87,7 +88,6 @@ export function LocationEditView({ locationId }: LocationEditViewProps) {
       popular: false,
       popular2: false,
       isLandingOnly: false,
-      group: null,
       tags: [],
       advice: null,
       adviceImage: null,
@@ -104,7 +104,7 @@ export function LocationEditView({ locationId }: LocationEditViewProps) {
       logic.form.reset({
         name: location.name || '',
         description: profile?.description || '',
-        type: location.type,
+        type: locationTypeHelpers.isValid(location.type as string) ? location.type : LocationType.Airport,
         address: location.address || '',
         city: location.city || '',
         region: location.region || '',
@@ -116,7 +116,7 @@ export function LocationEditView({ locationId }: LocationEditViewProps) {
         isLandingOnly: location.isLandingOnly ?? false,
         isLandingPagePinned: location.isLandingPagePinned ?? false,
         priceCoefficient: location.priceCoefficient ?? null,
-        group: location.group || '',
+        polyPriceCoefficient: profile?.polyPriceCoefficient ?? null,
         tags: profile?.tags?.map(t => t.id) ?? [],
         advice: profile?.advice
           ? {

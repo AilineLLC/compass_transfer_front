@@ -49,7 +49,6 @@ export const LocationBaseDTOSchema = z.object({
   isActive: z.boolean().describe('Активна ли локация'),
   popular1: z.boolean().optional().describe('Популярная локация 1'),
   popular2: z.boolean().optional().describe('Популярная локация 2'),
-  group: z.string().nullable().optional().describe('Группа локации'),
   priceCoefficient: z.number().min(0).nullable().optional().describe('Коэффициент стоимости поездки'),
 });
 /**

@@ -21,6 +21,8 @@ interface AreaDrawingMapProps {
   onChange: (poly: number[]) => void;
   height?: string;
   className?: string;
+  initialCenter?: [number, number];
+  locationPoint?: [number, number];
 }
 
 // Fix Leaflet default icons
@@ -151,13 +153,15 @@ export function AreaDrawingMap({
   onChange,
   height = '450px',
   className = '',
+  initialCenter,
+  locationPoint,
 }: AreaDrawingMapProps) {
   const [drawMode, setDrawMode] = useState<DrawMode>('none');
 
   const positions = polyToPositions(poly);
   const pointCount = positions.length;
 
-  const defaultCenter: [number, number] = pointCount > 0 ? positions[0] : [42.856219, 74.603967];
+  const defaultCenter: [number, number] = pointCount > 0 ? positions[0] : (initialCenter ?? [42.856219, 74.603967]);
 
   const handlePolygonPoint = useCallback(
     (p: [number, number]) => {
@@ -295,6 +299,19 @@ export function AreaDrawingMap({
               }}
             />
           ))}
+
+          {locationPoint && (
+            <CircleMarker
+              center={locationPoint}
+              radius={10}
+              pathOptions={{
+                color: '#dc2626',
+                fillColor: '#ef4444',
+                fillOpacity: 0.9,
+                weight: 3,
+              }}
+            />
+          )}
         </MapContainer>
       </div>
     </div>

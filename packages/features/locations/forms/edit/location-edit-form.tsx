@@ -6,10 +6,8 @@ import { useState, useMemo, useCallback, useRef } from 'react';
 import { useForm, type Resolver } from 'react-hook-form';
 import { toast } from 'sonner';
 import { locationsApi } from '@shared/api/locations';
-import { locationGroupsApi } from '@shared/api/location-groups';
 import { filesApi } from '@shared/api/files';
 import { logger } from '@shared/lib';
-import { findBestAreaForPoint } from '@shared/lib/geo';
 import type { LocationType } from '@entities/locations/enums';
 import { parseAddress } from '@entities/locations/lib/address-parser';
 import {
@@ -53,9 +51,9 @@ export function useLocationEditFormLogic({
     popular2: boolean;
     isLandingOnly?: boolean | null;
     isLandingPagePinned?: boolean;
-    group?: string | null;
     tags?: string[];
     priceCoefficient?: number | null;
+    polyPriceCoefficient?: number[] | null;
     advice?: { fullName: string; specialization: string | null; content: string } | null;
     adviceImage?: { id: string; path: string } | null;
     images?: LocationImageDTO[];
@@ -98,10 +96,10 @@ export function useLocationEditFormLogic({
       popular2: initialData.popular2,
       isLandingOnly: initialData.isLandingOnly ?? false,
       isLandingPagePinned: initialData.isLandingPagePinned ?? false,
-      group: initialData.group || '',
       tags: initialData.tags ?? [],
       advice: initialData.advice ?? null,
       priceCoefficient: initialData.priceCoefficient ?? null,
+      polyPriceCoefficient: initialData.polyPriceCoefficient ?? null,
     },
   });
 
@@ -162,15 +160,6 @@ export function useLocationEditFormLogic({
           [addressComponents.houseNumber, addressComponents.street].filter(Boolean).join(', ') ||
           'Локация без названия';
 
-        let groupId: string | null = null;
-        try {
-          const areasResponse = await locationGroupsApi.getLocationGroups({ size: 500 });
-          const matchedArea = findBestAreaForPoint(data.latitude, data.longitude, areasResponse.data);
-          groupId = matchedArea?.id ?? null;
-        } catch {
-          // не блокируем обновление если области недоступны
-        }
-
         const apiData = {
           name: locationName,
           description: data.description || null,
@@ -187,7 +176,8 @@ export function useLocationEditFormLogic({
           isLandingOnly: data.isLandingOnly ?? false,
           isLandingPagePinned: data.isLandingPagePinned ?? false,
           priceCoefficient: data.priceCoefficient ?? null,
-          group: groupId,
+          polyPriceCoefficient: data.polyPriceCoefficient?.length ? data.polyPriceCoefficient : null,
+          group: null,
           images: orderedImageIds,
           poi: poiData,
           tags: data.tags ?? [],

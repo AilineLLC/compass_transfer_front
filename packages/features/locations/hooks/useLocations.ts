@@ -62,6 +62,7 @@ export const useLocations = () => {
       // Базовые параметры
       const params: Record<string, string | number | boolean | string[]> = {
         First: true,
+        Includes: ['Profile'],
       };
 
       // Если есть строка поиска – добавляем ограничение размера
@@ -119,6 +120,7 @@ export const useLocations = () => {
     try {
       const response = await apiClient.get<GetLocationDTO>(
         `/Location/${id}`.replace('{uuid}', id),
+        { params: { Includes: ['Profile'] } },
       );
 
       if (response.error) {
@@ -224,6 +226,7 @@ export const useLocations = () => {
         First: true,
         Size: 5000, // Большой размер для всех локаций
         IsActive: true, // Только активные локации
+        Includes: ['Profile'],
         // БЕЗ CoordinateBox - загружаем ВСЕ!
       };
 

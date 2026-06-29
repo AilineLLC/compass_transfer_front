@@ -22,12 +22,10 @@ export function LocationsTable({
     paginatedLocations,
     loading,
     error,
-    groups,
     searchTerm,
     nameFilter,
     addressFilter,
     districtFilter,
-    groupFilter,
     countryFilter,
     regionFilter,
     typeFilter,
@@ -46,7 +44,6 @@ export function LocationsTable({
     setNameFilter,
     setAddressFilter,
     setDistrictFilter,
-    setGroupFilter,
     setCountryFilter,
     setRegionFilter,
     setIsActiveFilter,
@@ -102,9 +99,6 @@ export function LocationsTable({
         setAddressFilter={setAddressFilter}
         districtFilter={districtFilter}
         setDistrictFilter={setDistrictFilter}
-        groupFilter={groupFilter}
-        setGroupFilter={setGroupFilter}
-        groups={groups}
         countryFilter={countryFilter}
         setCountryFilter={setCountryFilter}
         regionFilter={regionFilter}
@@ -138,7 +132,6 @@ export function LocationsTable({
         sortOrder={sortOrder}
         handleSort={handleSort}
         onDeleteLocation={openDeleteModal}
-        groupsMap={new Map(groups.map(g => [g.id, g.name]))}
       />
 
       {loading && (
