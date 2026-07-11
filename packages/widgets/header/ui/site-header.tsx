@@ -17,7 +17,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@shared/ui/navigation/breadcrumb';
-import { useNotifications } from '@features/notifications/hooks/useNotifications';
+import { useNotificationContext } from '@entities/notifications/context';
 import { NotificationsSheet } from '@features/sheet';
 import { CurrencyWidget } from '@widgets/currency';
 import { WeatherWidget } from '@widgets/weather';
@@ -26,70 +26,98 @@ export function SiteHeader() {
   const pathname = usePathname();
   const [isNotificationsOpen, setIsNotificationsOpen] = React.useState(false);
 
-  // Используем хук для получения уведомлений
-  const { unreadCount, actions: { loadNotifications } } = useNotifications();
-
-  // Загружаем уведомления при монтировании
-  React.useEffect(() => {
-    loadNotifications();
-  }, [loadNotifications]);
+  const { unreadCount, actions: { refresh } } = useNotificationContext();
 
   // Подписываемся на события обновления уведомлений из других компонентов
   React.useEffect(() => {
     const unsubscribe = notificationsEvents.subscribe(() => {
-      loadNotifications();
+      refresh();
     });
-
     return unsubscribe;
-  }, [loadNotifications]);
+  }, [refresh]);
 
-  // Перезагружаем уведомления при закрытии Sheet для обновления badge
+  // Перезагружаем при закрытии шторки
   React.useEffect(() => {
     if (!isNotificationsOpen) {
-      // Небольшая задержка для завершения анимации закрытия
-      const timer = setTimeout(() => {
-        loadNotifications();
-      }, 300);
-      
+      const timer = setTimeout(() => refresh(), 300);
       return () => clearTimeout(timer);
     }
-  }, [isNotificationsOpen, loadNotifications]);
+  }, [isNotificationsOpen, refresh]);
 
-  // Периодически обновляем уведомления для синхронизации badge
+  // Полинг каждые 30 секунд как резервный механизм
   React.useEffect(() => {
-    const interval = setInterval(() => {
-      loadNotifications();
-    }, 30000); // Обновляем каждые 30 секунд
-
+    const interval = setInterval(() => refresh(), 30000);
     return () => clearInterval(interval);
-  }, [loadNotifications]);
+  }, [refresh]);
 
+  const SEGMENT_TRANSLATIONS: Record<string, string> = {
+    users: 'Пользователи',
+    admin: 'Администраторы',
+    driver: 'Водители',
+    customer: 'Клиенты',
+    operator: 'Операторы',
+    partner: 'Партнёры',
+    terminal: 'Терминалы',
+    create: 'Создание',
+    edit: 'Редактирование',
+    view: 'Просмотр',
+    cars: 'Автомобили',
+    locations: 'Локации',
+    notifications: 'Уведомления',
+    me: 'Мои',
+    orders: 'Заказы',
+    instant: 'Срочные',
+    scheduled: 'Запланированные',
+    payments: 'Платежи',
+    profile: 'Профиль',
+    services: 'Услуги',
+    support: 'Поддержка',
+    tariffs: 'Тарифы',
+    documentation: 'Документация',
+    routes: 'Маршруты',
+    areas: 'Области',
+    finances: 'Финансы',
+    transfers: 'Трансферы',
+    tariffs: 'Тарифы',
+    drivers: 'Водители',
+  };
 
+  const SKIP_BREADCRUMB_PATHS = new Set([
+    '/users/edit',
+    '/users/edit/driver',
+    '/users/edit/admin',
+    '/users/edit/customer',
+    '/users/edit/operator',
+    '/users/edit/partner',
+    '/users/edit/terminal',
+    '/cars/edit',
+    '/locations/edit',
+    '/areas/edit',
+    '/notifications/edit',
+    '/orders/edit/partner',
+    '/routes/edit',
+    '/services/edit',
+    '/tariffs/edit',
+  ]);
 
-  // Преобразуем путь в breadcrumb элементы
   const pathSegments = pathname.split('/').filter(Boolean);
 
-  // Создаем breadcrumb структуру
-  const breadcrumbItems = pathSegments.map((segment, index) => {
-    const href = '/' + pathSegments.slice(0, index + 1).join('/');
-    const isLast = index === pathSegments.length - 1;
+  const breadcrumbItems = pathSegments
+    .map((segment, index) => {
+      const href = '/' + pathSegments.slice(0, index + 1).join('/');
+      const isLast = index === pathSegments.length - 1;
+      const segmentName =
+        SEGMENT_TRANSLATIONS[segment.toLowerCase()] ??
+        segment
+          .split('-')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+      return { href, name: segmentName, isLast };
+    })
+    .filter(item => item.isLast || !SKIP_BREADCRUMB_PATHS.has(item.href));
 
-    // Красивые названия для сегментов
-    const segmentName = segment
-      .split('-')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-
-    return {
-      href,
-      name: segmentName,
-      isLast,
-    };
-  });
-
-  // Если мы на главной странице, показываем Dashboard
   if (pathSegments.length === 0) {
-    breadcrumbItems.push({ href: '/', name: 'Dashboard', isLast: true });
+    breadcrumbItems.push({ href: '/', name: 'Главная', isLast: true });
   }
 
   return (
@@ -103,7 +131,7 @@ export function SiteHeader() {
             <BreadcrumbList>
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
-                  <Link href='/'>Home</Link>
+                  <Link href='/'>Главная</Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
 
@@ -126,13 +154,9 @@ export function SiteHeader() {
         </div>
 
         <div className='ml-auto px-3 flex items-center gap-2'>
-          {/* Виджет курса валют - инициализируется сразу */}
           <CurrencyWidget />
-
-          {/* Виджет погоды */}
           <WeatherWidget />
 
-          {/* Кнопка уведомлений */}
           <Button
             variant='ghost'
             size='sm'
@@ -152,7 +176,6 @@ export function SiteHeader() {
         </div>
       </header>
 
-      {/* NotificationsSheet компонент */}
       <NotificationsSheet
         open={isNotificationsOpen}
         onOpenChange={setIsNotificationsOpen}

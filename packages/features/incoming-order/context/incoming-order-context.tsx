@@ -97,14 +97,10 @@ export function IncomingOrderProvider({ children, onOrderAccepted }: IncomingOrd
       }
     };
 
-    // Подписываемся на событие RideRequestNotification
-    // Подписываемся на RideRequestNotification
-    on('RideRequestNotification', handleRideRequest);
+    on('RideRequest', handleRideRequest);
 
     return () => {
-      // Отписываемся при размонтировании
-      // Отписываемся от RideRequestNotification
-      off('RideRequestNotification', handleRideRequest);
+      off('RideRequest', handleRideRequest);
     };
   }, [on, off, showOrder]);
 

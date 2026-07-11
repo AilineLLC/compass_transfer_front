@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { usersApi } from '@shared/api/users';
 import {
@@ -18,9 +18,13 @@ export function useUsersTable(_initialRoleFilter?: string) {
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState('fullName');
   const [sortOrder, setSortOrder] = useState<'Asc' | 'Desc'>('Asc');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [emailFilter, setEmailFilter] = useState('');
-  const [phoneFilter, setPhoneFilter] = useState('');
+  const [searchTerm, setSearchTerm] = useState(() => searchParams.get('search') || '');
+  const [emailFilter, setEmailFilter] = useState(() => searchParams.get('email') || '');
+  const [phoneFilter, setPhoneFilter] = useState(() => searchParams.get('phone') || '');
+
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const emailDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const phoneDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Получаем роль из URL параметров
   const roleFromUrl = searchParams.get('role');
@@ -263,10 +267,9 @@ export function useUsersTable(_initialRoleFilter?: string) {
     setCurrentPageNumber(1);
   };
 
-  // Синхронизация roleFilter с URL параметрами
+  // Синхронизация фильтров с URL параметрами
   useEffect(() => {
     const currentRoleFromUrl = searchParams.get('role');
-
     if (
       currentRoleFromUrl &&
       Object.values(UserRole).includes(currentRoleFromUrl as UserRoleType)
@@ -275,7 +278,16 @@ export function useUsersTable(_initialRoleFilter?: string) {
     } else if (!currentRoleFromUrl) {
       setRoleFilter('all');
     }
-  }, [searchParams]);
+
+    const currentSearch = searchParams.get('search') || '';
+    if (currentSearch !== searchTerm) setSearchTerm(currentSearch);
+
+    const currentEmail = searchParams.get('email') || '';
+    if (currentEmail !== emailFilter) setEmailFilter(currentEmail);
+
+    const currentPhone = searchParams.get('phone') || '';
+    if (currentPhone !== phoneFilter) setPhoneFilter(currentPhone);
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
 
@@ -320,6 +332,13 @@ export function useUsersTable(_initialRoleFilter?: string) {
       setCurrentCursor(null);
       setIsFirstPage(true);
       setCurrentPageNumber(1);
+
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+      searchDebounceRef.current = setTimeout(() => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (term) params.set('search', term); else params.delete('search');
+        router.replace(params.toString() ? `/users?${params.toString()}` : '/users');
+      }, 500);
     },
     setEmailFilter: (email: string) => {
       setEmailFilter(email);
@@ -327,6 +346,13 @@ export function useUsersTable(_initialRoleFilter?: string) {
       setCurrentCursor(null);
       setIsFirstPage(true);
       setCurrentPageNumber(1);
+
+      if (emailDebounceRef.current) clearTimeout(emailDebounceRef.current);
+      emailDebounceRef.current = setTimeout(() => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (email) params.set('email', email); else params.delete('email');
+        router.replace(params.toString() ? `/users?${params.toString()}` : '/users');
+      }, 500);
     },
     setPhoneFilter: (phone: string) => {
       setPhoneFilter(phone);
@@ -334,6 +360,13 @@ export function useUsersTable(_initialRoleFilter?: string) {
       setCurrentCursor(null);
       setIsFirstPage(true);
       setCurrentPageNumber(1);
+
+      if (phoneDebounceRef.current) clearTimeout(phoneDebounceRef.current);
+      phoneDebounceRef.current = setTimeout(() => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (phone) params.set('phone', phone); else params.delete('phone');
+        router.replace(params.toString() ? `/users?${params.toString()}` : '/users');
+      }, 500);
     },
     setOnlineFilter: (filter: 'all' | 'online' | 'offline') => {
       setOnlineFilter(filter);

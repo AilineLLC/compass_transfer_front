@@ -1,3 +1,7 @@
+'use client';
+
+import { useState } from 'react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { FormProvider, type UseFormReturn } from 'react-hook-form';
 import { Button } from '@shared/ui/forms/button';
 import { Card, CardContent, ChapterHeader } from '@shared/ui/layout';
@@ -10,6 +14,9 @@ import {
   PassportDataSection,
   EmploymentSection,
   RidePreferencesSection,
+  ProfileExtrasSection,
+  WorkExperienceSection,
+  EducationSection,
   DRIVER_FORM_CHAPTERS,
 } from '@entities/users';
 import type { DriverCreateFormData } from '@entities/users/schemas/driverCreateSchema';
@@ -34,6 +41,8 @@ export function DriverFormView({
   handleChapterClick,
   onBack,
 }: DriverFormViewProps) {
+  const [showOptional, setShowOptional] = useState(false);
+
   return (
     <FormProvider {...form}>
       <div className='flex overflow-hidden h-full'>
@@ -41,6 +50,7 @@ export function DriverFormView({
           <Card className='h-full flex flex-col overflow-auto pr-4'>
             <CardContent className='p-0'>
               <form className='flex flex-col gap-4'>
+
                 {/* Глава 1: Базовые данные */}
                 <div id='chapter-basic' className='relative flex flex-col gap-4'>
                   <ChapterHeader
@@ -52,6 +62,7 @@ export function DriverFormView({
                     <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
                     <BasicDataSection
                       showOptionalPhoneWarning={getChapterStatus('basic') === 'warning'}
+                      showVerificationStatus
                     />
                   </div>
                 </div>
@@ -69,49 +80,10 @@ export function DriverFormView({
                   </div>
                 </div>
 
-                {/* Глава 3: Водительское удостоверение */}
-                <div id='chapter-license' className='relative flex flex-col gap-4'>
-                  <ChapterHeader
-                    number={3}
-                    title='Водительское удостоверение'
-                    status={getChapterStatus('driver-license')}
-                  />
-                  <div className='relative ml-12'>
-                    <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
-                    <DriverLicenseSection />
-                  </div>
-                </div>
-
-                {/* Глава 4: Личная информация */}
-                <div id='chapter-personal' className='relative flex flex-col gap-4'>
-                  <ChapterHeader
-                    number={4}
-                    title='Личная информация'
-                    status={getChapterStatus('personal-info')}
-                  />
-                  <div className='relative ml-12'>
-                    <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
-                    <PersonalInfoSection />
-                  </div>
-                </div>
-
-                {/* Глава 5: Паспортные данные */}
-                <div id='chapter-passport' className='relative flex flex-col gap-4'>
-                  <ChapterHeader
-                    number={5}
-                    title='Паспортные данные'
-                    status={getChapterStatus('passport-data')}
-                  />
-                  <div className='relative ml-12'>
-                    <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
-                    <PassportDataSection />
-                  </div>
-                </div>
-
-                {/* Глава 6: Трудоустройство */}
+                {/* Глава 3: Трудоустройство */}
                 <div id='chapter-employment' className='relative flex flex-col gap-4'>
                   <ChapterHeader
-                    number={6}
+                    number={3}
                     title='Трудоустройство'
                     status={getChapterStatus('employment')}
                   />
@@ -121,10 +93,10 @@ export function DriverFormView({
                   </div>
                 </div>
 
-                {/* Глава 7: Предпочтения поездок */}
-                <div id='chapter-preferences' className='relative flex flex-col gap-4'>
+                {/* Глава 4: Предпочтения поездок */}
+                <div id='chapter-ride-preferences' className='relative flex flex-col gap-4'>
                   <ChapterHeader
-                    number={7}
+                    number={4}
                     title='Предпочтения поездок'
                     status={getChapterStatus('ride-preferences')}
                   />
@@ -133,6 +105,112 @@ export function DriverFormView({
                     <RidePreferencesSection />
                   </div>
                 </div>
+
+                {/* Кнопка раскрытия необязательных разделов */}
+                <div className='flex justify-center py-2'>
+                  <Button
+                    type='button'
+                    variant='outline'
+                    onClick={() => setShowOptional(v => !v)}
+                    className='gap-2 focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0 hover:shadow-md focus:shadow-md focus-visible:shadow-md transition-shadow'
+                  >
+                    {showOptional ? (
+                      <>
+                        <ChevronUp className='h-4 w-4' />
+                        Скрыть необязательные поля
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className='h-4 w-4' />
+                        Заполнить необязательные поля
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {/* Необязательные разделы */}
+                {showOptional && (
+                  <>
+                    {/* Глава 5: Водительское удостоверение */}
+                    <div id='chapter-driver-license' className='relative flex flex-col gap-4'>
+                      <ChapterHeader
+                        number={5}
+                        title='Водительское удостоверение'
+                        status={getChapterStatus('driver-license')}
+                      />
+                      <div className='relative ml-12'>
+                        <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
+                        <DriverLicenseSection />
+                      </div>
+                    </div>
+
+                    {/* Глава 6: Личная информация */}
+                    <div id='chapter-personal-info' className='relative flex flex-col gap-4'>
+                      <ChapterHeader
+                        number={6}
+                        title='Личная информация'
+                        status={getChapterStatus('personal-info')}
+                      />
+                      <div className='relative ml-12'>
+                        <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
+                        <PersonalInfoSection />
+                      </div>
+                    </div>
+
+                    {/* Глава 7: Паспортные данные */}
+                    <div id='chapter-passport-data' className='relative flex flex-col gap-4'>
+                      <ChapterHeader
+                        number={7}
+                        title='Паспортные данные'
+                        status={getChapterStatus('passport-data')}
+                      />
+                      <div className='relative ml-12'>
+                        <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
+                        <PassportDataSection />
+                      </div>
+                    </div>
+
+                    {/* Глава 8: Дополнительная информация */}
+                    <div id='chapter-additional' className='relative flex flex-col gap-4'>
+                      <ChapterHeader
+                        number={8}
+                        title='Дополнительная информация'
+                        status={getChapterStatus('additional')}
+                      />
+                      <div className='relative ml-12'>
+                        <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
+                        <ProfileExtrasSection />
+                      </div>
+                    </div>
+
+                    {/* Глава 9: Опыт работы */}
+                    <div id='chapter-work-experience' className='relative flex flex-col gap-4'>
+                      <ChapterHeader
+                        number={9}
+                        title='Опыт работы'
+                        status={getChapterStatus('work-experience')}
+                      />
+                      <div className='relative ml-12'>
+                        <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
+                        <WorkExperienceSection />
+                      </div>
+                    </div>
+
+                    {/* Глава 10: Образование */}
+                    <div id='chapter-education' className='relative flex flex-col gap-4'>
+                      <ChapterHeader
+                        number={10}
+                        title='Образование'
+                        status={getChapterStatus('education')}
+                      />
+                      <div className='relative ml-12'>
+                        <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
+                        <EducationSection />
+                      </div>
+                    </div>
+                  </>
+                )}
+
                 <div className='flex justify-end space-x-4 pt-6'>
                   <Button
                     type='button'
@@ -148,7 +226,7 @@ export function DriverFormView({
             </CardContent>
           </Card>
         </div>
-        <div className='w-80 flex-shrink-0  flex flex-col h-full'>
+        <div className='w-80 flex-shrink-0 flex flex-col h-full'>
           <FormSidebar
             title='Создание водителя'
             chapters={DRIVER_FORM_CHAPTERS.CREATE}

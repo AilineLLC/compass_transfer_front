@@ -58,6 +58,7 @@ interface LocationFilters {
   isActive?: boolean;
   popular1?: boolean;
   popular2?: boolean;
+  isLandingOnly?: boolean;
 
   // Полнотекстовый поиск
   'FTS.Plain'?: string;
@@ -68,10 +69,18 @@ interface LocationFilters {
   sortOrder?: SortOrder;
 }
 
+interface LocationAdvicePayload {
+  fullName: string;
+  specialization: string | null;
+  image: string | null;
+  content: string;
+}
+
 // DTO для создания локации
 interface CreateLocationDTO {
   type: LocationType;
   name: string;
+  description?: string | null;
   address: string;
   district?: string | null;
   city: string;
@@ -82,6 +91,13 @@ interface CreateLocationDTO {
   isActive: boolean;
   popular1?: boolean;
   popular2?: boolean;
+  isLandingOnly?: boolean | null;
+  isLandingPagePinned?: boolean | null;
+  images?: string[];
+  poi?: { name: string; image: string; type: string }[];
+  tags?: string[];
+  advice?: LocationAdvicePayload | null;
+  polyPriceCoefficient?: number[] | null;
   group?: string | null;
 }
 
@@ -89,6 +105,7 @@ interface CreateLocationDTO {
 interface UpdateLocationDTO {
   type?: LocationType;
   name?: string;
+  description?: string | null;
   address?: string;
   district?: string | null;
   city?: string;
@@ -99,6 +116,14 @@ interface UpdateLocationDTO {
   isActive?: boolean;
   popular1?: boolean;
   popular2?: boolean;
+  isLandingOnly?: boolean | null;
+  isLandingPagePinned?: boolean;
+  images?: string[];
+  poi?: { name: string; image: string; type: string }[];
+  tags?: string[];
+  advice?: LocationAdvicePayload | null;
+  polyPriceCoefficient?: number[] | null;
+  group?: string | null;
 }
 
 // DTO для отправки текущих координат водителя
@@ -121,7 +146,9 @@ export const locationsApi = {
 
   // Получение локации по ID
   getLocationById: async (id: string): Promise<LocationDTO> => {
-    const result = await apiGet<LocationDTO>(`/Location/${id}`);
+    const result = await apiGet<LocationDTO>(`/Location/${id}`, {
+      params: { Includes: ['Profile'] },
+    });
 
     if (result.error) {
       throw new Error(result.error.message);
@@ -132,10 +159,7 @@ export const locationsApi = {
 
   // Создание локации
   createLocation: async (data: CreateLocationDTO): Promise<LocationDTO> => {
-    // group — Guid? на сервере: пустая строка не конвертируется в Guid,
-    // поэтому "" / undefined / null приводим к null, а не передаём как есть
-    const body = { ...data, group: data.group || null };
-    const result = await apiPost<LocationDTO, typeof body>('/Location', body);
+    const result = await apiPost<LocationDTO, CreateLocationDTO>('/Location', data);
 
     if (result.error) {
       throw new Error(result.error.message);
@@ -146,9 +170,7 @@ export const locationsApi = {
 
   // Обновление локации
   updateLocation: async (id: string, data: UpdateLocationDTO): Promise<LocationDTO> => {
-    // group — Guid? на сервере: пустую строку приводим к null
-    const body = { ...data, group: data.group || null };
-    const result = await apiPut<LocationDTO, typeof body>(`/Location/${id}`, body);
+    const result = await apiPut<LocationDTO, UpdateLocationDTO>(`/Location/${id}`, data);
 
     if (result.error) {
       throw new Error(result.error.message);

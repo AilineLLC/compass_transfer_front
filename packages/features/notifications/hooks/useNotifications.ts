@@ -12,42 +12,23 @@ export enum NotificationCategory {
   WARNING = 'WARNING'
 }
 
-// Маппинг типов уведомлений к категориям
 const NOTIFICATION_TYPE_TO_CATEGORY: Record<NotificationType, NotificationCategory> = {
-  // О заказе
   [NotificationType.OrderCreated]: NotificationCategory.ORDER,
   [NotificationType.OrderUpdated]: NotificationCategory.ORDER,
-  [NotificationType.OrderConfirmed]: NotificationCategory.ORDER,
   [NotificationType.OrderCancelled]: NotificationCategory.ORDER,
   [NotificationType.OrderCompleted]: NotificationCategory.ORDER,
   [NotificationType.RideRequest]: NotificationCategory.ORDER,
   [NotificationType.RideAccepted]: NotificationCategory.ORDER,
-  [NotificationType.RideRejected]: NotificationCategory.ORDER,
   [NotificationType.RideStarted]: NotificationCategory.ORDER,
   [NotificationType.RideCompleted]: NotificationCategory.ORDER,
   [NotificationType.RideCancelled]: NotificationCategory.ORDER,
   [NotificationType.RideUpdate]: NotificationCategory.ORDER,
+  [NotificationType.CancelRideRequest]: NotificationCategory.ORDER,
   [NotificationType.DriverHeading]: NotificationCategory.ORDER,
   [NotificationType.DriverArrived]: NotificationCategory.ORDER,
   [NotificationType.DriverAssigned]: NotificationCategory.ORDER,
   [NotificationType.DriverCancelled]: NotificationCategory.ORDER,
-  [NotificationType.DriverNearby]: NotificationCategory.ORDER,
-  
-  // Важная информация
-  [NotificationType.System]: NotificationCategory.IMPORTANT,
-  [NotificationType.SystemMessage]: NotificationCategory.IMPORTANT,
-  [NotificationType.Maintenance]: NotificationCategory.IMPORTANT,
-  [NotificationType.Verification]: NotificationCategory.IMPORTANT,
-  [NotificationType.Chat]: NotificationCategory.IMPORTANT,
-  
-  // Предупреждения
-  [NotificationType.Payment]: NotificationCategory.WARNING,
   [NotificationType.PaymentReceived]: NotificationCategory.WARNING,
-  [NotificationType.PaymentFailed]: NotificationCategory.WARNING,
-  [NotificationType.PaymentRefunded]: NotificationCategory.WARNING,
-  [NotificationType.Promo]: NotificationCategory.WARNING,
-  [NotificationType.PromoOffer]: NotificationCategory.WARNING,
-  [NotificationType.Unknown]: NotificationCategory.WARNING,
 };
 
 export interface UseNotificationsResult {
@@ -67,6 +48,7 @@ export interface UseNotificationsResult {
     refresh: (category?: NotificationCategory) => Promise<void>;
     markAsRead: (id: string) => Promise<void>;
     deleteNotification: (id: string) => Promise<void>;
+    addOptimisticNotification: (notification: GetNotificationDTO) => void;
   };
 }
 
@@ -86,9 +68,13 @@ export const getNotificationCategory = (type: NotificationType): NotificationCat
  * Хук для работы с уведомлениями
  * Использует notification-service для API вызовов
  */
+const NULL_UUID = '00000000-0000-0000-0000-000000000000';
+
 export function useNotifications(pageSize: number = 20): UseNotificationsResult {
-  // Состояние
-  const [notifications, setNotifications] = useState<GetNotificationDTO[]>([]);
+  // WS-only уведомления (не сохранённые в БД, id = null UUID)
+  const [wsNotifications, setWsNotifications] = useState<GetNotificationDTO[]>([]);
+  // Серверные уведомления
+  const [serverNotifications, setServerNotifications] = useState<GetNotificationDTO[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -129,9 +115,9 @@ export function useNotifications(pageSize: number = 20): UseNotificationsResult 
         const newNotifications = result.data || [];
 
         if (append) {
-          setNotifications(prev => [...prev, ...newNotifications]);
+          setServerNotifications(prev => [...prev, ...newNotifications]);
         } else {
-          setNotifications(newNotifications);
+          setServerNotifications(newNotifications);
         }
 
         setTotalCount(result.totalCount || 0);
@@ -174,28 +160,49 @@ export function useNotifications(pageSize: number = 20): UseNotificationsResult 
   // Отметить как прочитанное
   const markAsRead = useCallback(async (id: string) => {
     try {
+      // WS-only уведомления помечаем только локально
+      if (id.startsWith('ws-')) {
+        setWsNotifications(prev =>
+          prev.map(n => n.id === id ? { ...n, isRead: true } : n),
+        );
+        return;
+      }
       await notificationsApi.markAsRead([id]);
-
-      // Обновляем локальное состояние
-      setNotifications(prev =>
-        prev.map(notification =>
-          notification.id === id ? { ...notification, isRead: true } : notification,
-        ),
+      setServerNotifications(prev =>
+        prev.map(n => n.id === id ? { ...n, isRead: true } : n),
       );
-
     } catch (err) {
       logger.error('❌ useNotifications.markAsRead ошибка:', err);
       throw err;
     }
   }, []);
 
+  // Оптимистичное добавление уведомления (из WS, до API sync)
+  const addOptimisticNotification = useCallback((notification: GetNotificationDTO) => {
+    if (notification.id === NULL_UUID || !notification.id) {
+      // WS-only: генерируем уникальный временный ID
+      const tempId = `ws-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      setWsNotifications(prev => [{ ...notification, id: tempId, isRead: false }, ...prev]);
+      setTotalCount(prev => prev + 1);
+      return;
+    }
+    setServerNotifications(prev => {
+      if (prev.some(n => n.id === notification.id)) return prev;
+      return [notification, ...prev];
+    });
+    setTotalCount(prev => prev + 1);
+  }, []);
+
   // Удалить уведомление
   const deleteNotification = useCallback(async (id: string) => {
     try {
+      if (id.startsWith('ws-')) {
+        setWsNotifications(prev => prev.filter(n => n.id !== id));
+        setTotalCount(prev => Math.max(0, prev - 1));
+        return;
+      }
       await notificationsApi.deleteNotification(id);
-
-      // Обновляем локальное состояние
-      setNotifications(prev => prev.filter(notification => notification.id !== id));
+      setServerNotifications(prev => prev.filter(notification => notification.id !== id));
 
       logger.info('🗑️ useNotifications.deleteNotification успешно:', id);
     } catch (err) {
@@ -204,31 +211,38 @@ export function useNotifications(pageSize: number = 20): UseNotificationsResult 
     }
   }, []);
 
-  // Подсчет непрочитанных
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  // Объединяем WS-only и серверные (WS-only сверху, они новее)
+  const notifications = useMemo(
+    () => [...wsNotifications, ...serverNotifications],
+    [wsNotifications, serverNotifications],
+  );
 
-  // Подсчет по категориям (для всех уведомлений, не только текущих)
-  const categoryCounts: Record<NotificationCategory, number> = {
-    [NotificationCategory.ORDER]: 0,
-    [NotificationCategory.IMPORTANT]: 0,
-    [NotificationCategory.WARNING]: 0,
-  };
+  // Bug fix #7: memoize derived counts — avoid recomputing on every render
+  const { unreadCount, categoryCounts, unreadCategoryCounts } = useMemo(() => {
+    const cats: Record<NotificationCategory, number> = {
+      [NotificationCategory.ORDER]: 0,
+      [NotificationCategory.IMPORTANT]: 0,
+      [NotificationCategory.WARNING]: 0,
+    };
+    const unreadCats: Record<NotificationCategory, number> = {
+      [NotificationCategory.ORDER]: 0,
+      [NotificationCategory.IMPORTANT]: 0,
+      [NotificationCategory.WARNING]: 0,
+    };
+    let unread = 0;
 
-  const unreadCategoryCounts: Record<NotificationCategory, number> = {
-    [NotificationCategory.ORDER]: 0,
-    [NotificationCategory.IMPORTANT]: 0,
-    [NotificationCategory.WARNING]: 0,
-  };
+    notifications.forEach(notification => {
+      const category = getNotificationCategory(notification.type);
 
-  // Подсчитываем только для текущих загруженных уведомлений
-  notifications.forEach(notification => {
-    const category = getNotificationCategory(notification.type);
+      cats[category]++;
+      if (!notification.isRead) {
+        unreadCats[category]++;
+        unread++;
+      }
+    });
 
-    categoryCounts[category]++;
-    if (!notification.isRead) {
-      unreadCategoryCounts[category]++;
-    }
-  });
+    return { unreadCount: unread, categoryCounts: cats, unreadCategoryCounts: unreadCats };
+  }, [notifications]);
 
 
   const actions = useMemo(() => ({
@@ -237,7 +251,8 @@ export function useNotifications(pageSize: number = 20): UseNotificationsResult 
     refresh,
     markAsRead,
     deleteNotification,
-  }), [loadNotifications, loadMore, refresh, markAsRead, deleteNotification]);
+    addOptimisticNotification,
+  }), [loadNotifications, loadMore, refresh, markAsRead, deleteNotification, addOptimisticNotification]);
 
   return {
     notifications,

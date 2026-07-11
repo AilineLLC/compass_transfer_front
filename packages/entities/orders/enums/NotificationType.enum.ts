@@ -1,69 +1,24 @@
 /**
- * `OrderCreated` = Заказ создан<br>`OrderUpdated` = Заказ изменён<br>`OrderConfirmed` = Заказ подтверждён<br>`OrderCancelled` = Заказ отменен<br>`OrderCompleted` = Заказ завершен<br>`RideRequest` = Запрос на поездку<br>`RideAccepted` = Поездка принята<br>`RideRejected` = Поездка отклонена<br>`RideStarted` = Поездка началась<br>`RideCompleted` = Поездка завершена<br>`RideCancelled` = Поездка отменена<br>`RideUpdate` = Обновление информации о поездке<br>`Payment` = Платеж<br>`PaymentReceived` = Платеж получен<br>`PaymentFailed` = Ошибка платежа<br>`PaymentRefunded` = Платеж возвращен<br>`DriverHeading` = Водитель в пути<br>`DriverArrived` = Водитель прибыл<br>`DriverAssigned` = Водитель назначен<br>`DriverCancelled` = Водитель отменил<br>`DriverNearby` = Водитель рядом<br>`System` = Системное уведомление<br>`SystemMessage` = Системное сообщение<br>`Maintenance` = Техническое обслуживание<br>`Promo` = Промо-акция<br>`PromoOffer` = Промо-предложение<br>`Verification` = Верификация<br>`Chat` = Сообщение в чате
+ * `OrderCreated` = Заказ создан<br>`OrderUpdated` = Заказ изменён<br>`OrderCancelled` = Заказ отменен<br>`OrderCompleted` = Заказ завершен<br>`RideRequest` = Запрос на поездку<br>`RideAccepted` = Поездка принята<br>`RideStarted` = Поездка началась<br>`RideCompleted` = Поездка завершена<br>`RideCancelled` = Поездка отменена<br>`RideUpdate` = Обновление информации о поездке<br>`CancelRideRequest` = Отмена запроса на поездку<br>`PaymentReceived` = Платеж получен<br>`DriverHeading` = Водитель в пути<br>`DriverArrived` = Водитель прибыл<br>`DriverAssigned` = Водитель назначен<br>`DriverCancelled` = Водитель отменил
  * @enum
  */
 export enum NotificationType {
-  Unknown = 'Unknown',
   OrderCreated = 'OrderCreated',
   OrderUpdated = 'OrderUpdated',
-  OrderConfirmed = 'OrderConfirmed',
   OrderCancelled = 'OrderCancelled',
   OrderCompleted = 'OrderCompleted',
   RideRequest = 'RideRequest',
   RideAccepted = 'RideAccepted',
-  RideRejected = 'RideRejected',
   RideStarted = 'RideStarted',
   RideCompleted = 'RideCompleted',
   RideCancelled = 'RideCancelled',
   RideUpdate = 'RideUpdate',
-  Payment = 'Payment',
+  CancelRideRequest = 'CancelRideRequest',
   PaymentReceived = 'PaymentReceived',
-  PaymentFailed = 'PaymentFailed',
-  PaymentRefunded = 'PaymentRefunded',
   DriverHeading = 'DriverHeading',
   DriverArrived = 'DriverArrived',
   DriverAssigned = 'DriverAssigned',
   DriverCancelled = 'DriverCancelled',
-  DriverNearby = 'DriverNearby',
-  System = 'System',
-  SystemMessage = 'SystemMessage',
-  Maintenance = 'Maintenance',
-  Promo = 'Promo',
-  PromoOffer = 'PromoOffer',
-  Verification = 'Verification',
-  Chat = 'Chat',
 }
-/**
- * Массив всех значений NotificationType
- */
-export const NotificationTypeValues = [
-  NotificationType.Unknown,
-  NotificationType.OrderCreated,
-  NotificationType.OrderUpdated,
-  NotificationType.OrderConfirmed,
-  NotificationType.OrderCancelled,
-  NotificationType.OrderCompleted,
-  NotificationType.RideRequest,
-  NotificationType.RideAccepted,
-  NotificationType.RideRejected,
-  NotificationType.RideStarted,
-  NotificationType.RideCompleted,
-  NotificationType.RideCancelled,
-  NotificationType.RideUpdate,
-  NotificationType.Payment,
-  NotificationType.PaymentReceived,
-  NotificationType.PaymentFailed,
-  NotificationType.PaymentRefunded,
-  NotificationType.DriverHeading,
-  NotificationType.DriverArrived,
-  NotificationType.DriverAssigned,
-  NotificationType.DriverCancelled,
-  NotificationType.DriverNearby,
-  NotificationType.System,
-  NotificationType.SystemMessage,
-  NotificationType.Maintenance,
-  NotificationType.Promo,
-  NotificationType.PromoOffer,
-  NotificationType.Verification,
-  NotificationType.Chat,
-];
+
+export const NotificationTypeValues = Object.values(NotificationType);

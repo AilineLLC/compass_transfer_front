@@ -108,17 +108,17 @@ export function OrderStackList() {
                 <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-gray-600 truncate">
-                    {order.pickupLocation?.address || 'Адрес не указан'}
+                    {order.startLocation?.address || 'Адрес не указан'}
                   </p>
                 </div>
               </div>
-              
-              {order.dropoffLocation && (
+
+              {order.endLocation && (
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-600 truncate">
-                      {order.dropoffLocation.address}
+                      {order.endLocation.address}
                     </p>
                   </div>
                 </div>
@@ -126,24 +126,28 @@ export function OrderStackList() {
             </div>
 
             {/* Информация о пассажире */}
-            {order.passenger && (
-              <div className="flex items-center gap-2 mb-4 text-sm text-gray-600">
-                <ProfileIcon size={16} />
-                <span>{order.passenger.fullName}</span>
-                {order.passenger.phoneNumber && (
-                  <>
-                    <span className="text-xs">📞</span>
-                    <span>{order.passenger.phoneNumber}</span>
-                  </>
-                )}
-              </div>
-            )}
+            {order.passengers?.[0] && (() => {
+              const passenger = order.passengers[0];
+              const fullName = [passenger.firstName, passenger.lastName].filter(Boolean).join(' ');
+              return (
+                <div className="flex items-center gap-2 mb-4 text-sm text-gray-600">
+                  <ProfileIcon size={16} />
+                  {fullName && <span>{fullName}</span>}
+                  {passenger.phone && (
+                    <>
+                      <span className="text-xs">📞</span>
+                      <span>{passenger.phone}</span>
+                    </>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Стоимость */}
             <div className="flex justify-between items-center mb-4">
               <span className="text-sm text-gray-600">Стоимость:</span>
               <span className="text-lg font-bold text-blue-600">
-                {order.totalPrice} KGS
+                {order.initialPrice} KGS
               </span>
             </div>
 

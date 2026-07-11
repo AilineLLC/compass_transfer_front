@@ -19,8 +19,9 @@ import type {
   GetPartnerDTO,
   GetTerminalDTO,
   GetUserSelfProfileDTO,
+  GetUserSelfDTO,
 } from '@entities/users/interface';
-import { apiGet, apiPost, apiPut, apiDelete } from './client';
+import { apiGet, apiPost, apiPut, apiDelete, ApiRequestError } from './client';
 
 // Операторы поиска
 type SearchOperator =
@@ -87,7 +88,7 @@ export const usersApi = {
     const result = await apiPost<GetCustomerDTO, CreateCustomerDTO>('/User/Customer', data);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -98,7 +99,7 @@ export const usersApi = {
     const result = await apiPost<GetOperatorDTO, CreateOperatorDTO>('/User/Operator', data);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -109,7 +110,7 @@ export const usersApi = {
     const result = await apiPost<GetPartnerDTO, CreatePartnerDTO>('/User/Partner', data);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -120,7 +121,7 @@ export const usersApi = {
     const result = await apiPost<GetTerminalDTO, CreateTerminalDTO>('/User/Terminal', data);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -133,7 +134,7 @@ export const usersApi = {
     const result = await apiPost<GetDriverDTO, CreateDriverDTO>('/User/Driver', data);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -144,7 +145,7 @@ export const usersApi = {
     const result = await apiPost<GetAdminDTO, CreateAdminDTO>('/User/Admin', data);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -155,7 +156,7 @@ export const usersApi = {
     const result = await apiPut<GetAdminDTO, UpdateAdminDTO>(`/User/Admin/${uuid}`, data);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -166,7 +167,7 @@ export const usersApi = {
     const result = await apiPut<GetCustomerDTO, UpdateCustomerDTO>(`/User/Customer/${uuid}`, data);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -177,7 +178,7 @@ export const usersApi = {
     const result = await apiPut<GetDriverDTO, UpdateDriverDTO>(`/User/Driver/${uuid}`, data);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -188,7 +189,7 @@ export const usersApi = {
     const result = await apiPut<GetOperatorDTO, UpdateOperatorDTO>(`/User/Operator/${uuid}`, data);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -199,7 +200,7 @@ export const usersApi = {
     const result = await apiPut<GetPartnerDTO, UpdatePartnerDTO>(`/User/Partner/${uuid}`, data);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -210,7 +211,7 @@ export const usersApi = {
     const result = await apiPut<GetTerminalDTO, UpdateTerminalDTO>(`/User/Terminal/${uuid}`, data);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -221,7 +222,18 @@ export const usersApi = {
     const result = await apiGet<GetUserSelfProfileDTO>('/User/self/profile');
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
+    }
+
+    return result.data!;
+  },
+
+  // Получение базовых данных текущего пользователя (включая isMainSupportOperator)
+  getSelf: async (): Promise<GetUserSelfDTO> => {
+    const result = await apiGet<GetUserSelfDTO>('/User/self');
+
+    if (result.error) {
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -232,7 +244,7 @@ export const usersApi = {
     const result = await apiGet<GetAdminDTO>(`/User/Admin/${uuid}`);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -243,7 +255,7 @@ export const usersApi = {
     const result = await apiGet<GetCustomerDTO>(`/User/Customer/${uuid}`);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -254,7 +266,7 @@ export const usersApi = {
     const result = await apiGet<GetDriverDTO>(`/User/Driver/${uuid}`);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -265,7 +277,7 @@ export const usersApi = {
     const result = await apiGet<GetOperatorDTO>(`/User/Operator/${uuid}`);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -276,7 +288,7 @@ export const usersApi = {
     const result = await apiGet<GetPartnerDTO>(`/User/Partner/${uuid}`);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -287,7 +299,7 @@ export const usersApi = {
     const result = await apiGet<GetTerminalDTO>(`/User/Terminal/${uuid}`);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -331,7 +343,7 @@ export const usersApi = {
     const result = await apiGet<GetUserBasicDTO>(`/User/${uuid}`);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -342,7 +354,7 @@ export const usersApi = {
     const result = await apiGet<GetUserBasicDTO>(`/User/${uuid}/profile`);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -353,7 +365,7 @@ export const usersApi = {
     const result = await apiGet<UserApiResponse>('/User', { params });
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -364,7 +376,7 @@ export const usersApi = {
     const result = await apiPut<GetUserBasicDTO>(`/User/${id}`, data);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -375,7 +387,7 @@ export const usersApi = {
     const result = await apiDelete(`/User/${id}`);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
   },
 
@@ -406,7 +418,7 @@ export const usersApi = {
     const result = await apiGet<DriversApiResponse>('/User/Driver', { params });
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;

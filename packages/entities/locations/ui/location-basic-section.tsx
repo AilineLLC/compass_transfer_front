@@ -1,19 +1,21 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { cn } from '@shared/lib/utils';
 import { Input } from '@shared/ui/forms/input';
 import { Label } from '@shared/ui/forms/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/forms/select';
 import { locationTypeHelpers } from '../helpers/location-type-helpers';
-import { LocationGroupSelect } from './location-group-select';
 import type { LocationCreateFormData } from '../schemas/locationCreateSchema';
 import { LocationType } from '../enums';
+import { KYRGYZSTAN_REGIONS } from '@shared/constants/kyrgyzstan-regions';
 
 interface LocationBasicSectionProps {
   labels?: {
     name?: string;
     type?: string;
+    city?: string;
+    region?: string;
     group?: string;
   };
 }
@@ -25,16 +27,28 @@ export function LocationBasicSection({
     register,
     watch,
     setValue,
+    clearErrors,
     formState: { errors },
   } = useFormContext<LocationCreateFormData>();
 
   const formData = watch();
 
+  // Zod v4 treats null/undefined as "Invalid option" for z.enum().
+  // getSafeValue masks the invalid form value in the Select display, so we must
+  // also write the safe fallback back into the form whenever the stored value is invalid.
+  // clearErrors removes any stale type error that persisted because shouldValidate:false
+  // in setValue does not clear pre-existing errors.
+  useEffect(() => {
+    const rawType = formData.type as string;
+    if (!rawType || !locationTypeHelpers.isValid(rawType)) {
+      setValue('type', locationTypeHelpers.getDefault(), { shouldDirty: false, shouldValidate: false });
+    }
+    clearErrors('type');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.type]);
+
   return (
     <div className="space-y-6">
-      {/* Скрытое поле для регистрации в форме */}
-      <input type="hidden" {...register('type')} />
-
       {/* Название локации */}
       <div className="space-y-2">
         <Label htmlFor="name" className="text-sm font-medium">
@@ -54,25 +68,6 @@ export function LocationBasicSection({
         </p>
       </div>
 
-      {/* Описание */}
-      <div className="space-y-2">
-        <Label htmlFor="description" className="text-sm font-medium">
-          Описание
-        </Label>
-        <textarea
-          id="description"
-          {...register('description')}
-          placeholder="Введите описание локации (необязательно)"
-          className={cn(
-            "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:shadow-sm disabled:cursor-not-allowed disabled:opacity-50 no-ring resize-none"
-          )}
-          rows={3}
-        />
-        {errors.description && (
-          <p className="text-sm text-red-600">{errors.description.message}</p>
-        )}
-      </div>
-
       {/* Тип локации */}
       <div className="space-y-2">
         <Label className="text-sm font-medium">
@@ -84,7 +79,7 @@ export function LocationBasicSection({
             setValue('type', value as LocationType, { shouldValidate: true, shouldDirty: true });
           }}
         >
-          <SelectTrigger className="w-full">
+          <SelectTrigger className="w-full h-10">
             <SelectValue placeholder="Выберите тип локации" />
           </SelectTrigger>
           <SelectContent>
@@ -100,10 +95,48 @@ export function LocationBasicSection({
         )}
       </div>
 
-      {/* Группа локации */}
-      <div className="space-y-2">
-        <LocationGroupSelect label={labels.group || 'Группа локации'} />
+      {/* Город и Регион */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">
+            {labels.city || 'Город'}
+          </Label>
+          <Select
+            value={formData.city || ''}
+            onValueChange={(value: string) => {
+              setValue('city', value, { shouldValidate: true, shouldDirty: true });
+            }}
+          >
+            <SelectTrigger className="w-full h-10">
+              <SelectValue placeholder="Выберите город" />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(KYRGYZSTAN_REGIONS).map(([key, label]) => (
+                <SelectItem key={key} value={key}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {errors.city && (
+            <p className="text-sm text-red-600">{errors.city.message}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="region" className="text-sm font-medium">
+            {labels.region || 'Регион / Район'}
+          </Label>
+          <Input
+            id="region"
+            {...register('region')}
+            placeholder="Например: Ленинский район"
+            className="w-full"
+          />
+          {errors.region && (
+            <p className="text-sm text-red-600">{errors.region.message}</p>
+          )}
+        </div>
       </div>
+
     </div>
   );
 }

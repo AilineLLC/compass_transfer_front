@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut, apiDelete } from '@shared/api/client';
+import { apiGet, apiPost, apiPut, apiDelete, ApiRequestError } from '@shared/api/client';
 import type { GetRideDTO } from '@entities/rides/interface/GetRideDTO';
 import { PaymentMethodType } from '../enums';
 import type {
@@ -25,6 +25,9 @@ export interface CreateScheduledOrderRequest extends CreateScheduledOrderDTO {
 
   /** Комментарии к заказу */
   notes?: string | null;
+
+  /** Заметки операторов (не видны водителям и контрагентам) */
+  operatorNotes?: string | null;
 
   /** Метод оплаты */
   paymentMethodType?: PaymentMethodType | null;
@@ -61,6 +64,9 @@ export interface CreateInstantOrderRequest {
 
   /** Предварительная стоимость */
   initialPrice: number;
+
+  /** Примерное время завершения заказа (ISO строка) */
+  completionTimeEstimate: string;
 
   /** Пассажиры */
   passengers: Array<{
@@ -126,7 +132,7 @@ export class OrdersApi {
     const response = await apiPost<GetOrderDTO>('/Order/scheduled', data);
 
     if (response.error) {
-      throw new Error(response.error.message || 'Failed to create scheduled order');
+      throw new ApiRequestError(response.error);
     }
 
     if (!response.data) {
@@ -165,7 +171,7 @@ export class OrdersApi {
     );
 
     if (response.error) {
-      throw new Error(response.error.message || 'Failed to create instant order');
+      throw new ApiRequestError(response.error);
     }
 
     if (!response.data) {
@@ -188,7 +194,7 @@ export class OrdersApi {
     );
 
     if (response.error) {
-      throw new Error(response.error.message || 'Failed to create instant order by partner');
+      throw new ApiRequestError(response.error);
     }
 
     if (!response.data) {
@@ -206,7 +212,7 @@ export class OrdersApi {
     const response = await apiPut<GetOrderDTO, UpdateInstantOrderDTO>(`/Order/instant/${id}`, data);
 
     if (response.error) {
-      throw new Error(response.error.message || 'Failed to update instant order');
+      throw new ApiRequestError(response.error);
     }
 
     if (!response.data) {
@@ -230,7 +236,7 @@ export class OrdersApi {
     );
 
     if (response.error) {
-      throw new Error(response.error.message || 'Failed to update scheduled order');
+      throw new ApiRequestError(response.error);
     }
 
     if (!response.data) {
@@ -281,7 +287,7 @@ export class OrdersApi {
     const response = await apiPost<GetRideDTO>(`/Order/scheduled/${orderId}/ride`, data);
 
     if (response.error) {
-      throw new Error(response.error.message || 'Failed to create scheduled ride');
+      throw new ApiRequestError(response.error);
     }
 
     if (!response.data) {
@@ -340,6 +346,21 @@ export class OrdersApi {
   }
 
   /**
+   * Смена водителя для запланированного заказа
+   * POST /Order/scheduled/{uuid}/change-driver
+   */
+  static async changeDriver(
+    orderId: string,
+    data: CreateScheduledRideDTO,
+  ): Promise<void> {
+    const response = await apiPost<void>(`/Order/scheduled/${orderId}/change-driver`, data);
+
+    if (response.error) {
+      throw new Error(response.error.message || 'Failed to change driver');
+    }
+  }
+
+  /**
    * Отмена заказа
    * DELETE /Order/{id}
    */
@@ -348,6 +369,30 @@ export class OrdersApi {
 
     if (response.error) {
       throw new Error(response.error.message || 'Failed to cancel order');
+    }
+  }
+
+  /**
+   * Установить цветовую метку заказа
+   * PUT /Order/{id}/mark-color
+   */
+  static async markOrder(id: string, markColor: string | null): Promise<void> {
+    const response = await apiPut(`/Order/${id}/mark-color`, markColor);
+
+    if (response.error) {
+      throw new Error(response.error.message || 'Failed to mark order');
+    }
+  }
+
+  /**
+   * Отметить/снять выплату водителю
+   * PUT /Order/{uuid}/driver-payed-out
+   */
+  static async markDriverPayedOut(id: string, value: boolean): Promise<void> {
+    const response = await apiPut(`/Order/${id}/driver-payed-out`, value);
+
+    if (response.error) {
+      throw new Error(response.error.message || 'Failed to mark driver payed out');
     }
   }
 }

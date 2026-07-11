@@ -2,11 +2,13 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { AxiosError } from 'axios';
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { usersApi } from '@shared/api/users';
-import { logger } from '@shared/lib';
+import { filesApi } from '@shared/api/files';
+import { logger, applyServerErrors } from '@shared/lib';
+import type { PartnerDocumentItem } from '@entities/users/ui/form-sections/partner-documents-section';
 import type { VerificationStatus } from '@entities/users/enums';
 import type { PartnerProfile } from '@entities/users/interface/PartnerProfile';
 import type { UpdatePartnerDTO } from '@entities/users/interface/UpdatePartnerDTO';
@@ -40,6 +42,13 @@ export function usePartnerEditFormLogic({
   onSuccess: () => void;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [documentCount, setDocumentCount] = useState(0);
+  const documentItemsRef = useRef<PartnerDocumentItem[]>([]);
+
+  const onDocumentItemsChange = useCallback((items: PartnerDocumentItem[]) => {
+    documentItemsRef.current = items;
+    setDocumentCount(items.filter(i => i.kind !== 'pending' || !i.error).length);
+  }, []);
 
   const form = useForm<PartnerUpdateFormData>({
     resolver: zodResolver(partnerUpdateSchema),
@@ -68,11 +77,25 @@ export function usePartnerEditFormLogic({
     async (data: PartnerUpdateFormData) => {
       setIsSubmitting(true);
       try {
+        const documentIds = await Promise.all(
+          documentItemsRef.current
+            .filter(item => item.kind !== 'pending' || !item.error)
+            .map(item =>
+              item.kind === 'existing'
+                ? Promise.resolve(item.id)
+                : filesApi.uploadFile('PartnerDocument', item.file),
+            ),
+        );
+
         const apiData: UpdatePartnerDTO = {
           ...data,
           phoneNumber: data.phoneNumber || null,
           avatarUrl: data.avatarUrl || null,
           sale: data.sale,
+          profile: {
+            ...data.profile,
+            documents: documentIds.length > 0 ? documentIds : null,
+          },
         };
         const result = await usersApi.updatePartner(partnerId, apiData);
 
@@ -88,19 +111,7 @@ export function usePartnerEditFormLogic({
           const axiosError = error as AxiosError<ApiError>;
 
           if (axiosError.response?.data?.errors) {
-            const serverErrors = axiosError.response.data.errors;
-
-            Object.keys(serverErrors).forEach(field => {
-              const fieldKey = field as keyof PartnerUpdateFormData;
-
-              if (serverErrors[field] && serverErrors[field].length > 0) {
-                form.setError(fieldKey, {
-                  type: 'server',
-                  message: serverErrors[field][0],
-                });
-              }
-            });
-            toast.error('Исправьте ошибки в форме');
+            toast.error(applyServerErrors(axiosError.response.data.errors, form.setError));
           } else {
             toast.error(axiosError.response?.data?.detail || 'Ошибка обновления партнера');
           }
@@ -138,10 +149,14 @@ export function usePartnerEditFormLogic({
         // В форме редактирования нет полей безопасности
         return 'complete';
       }
+      if (chapterId === 'documents') {
+        if (documentCount > 0) return 'complete';
+        return 'pending';
+      }
 
       return 'pending';
     };
-  }, [formData, errors, isSubmitted]);
+  }, [formData, errors, isSubmitted, documentCount]);
 
   const getChapterErrors = useMemo(() => {
     return (chapterId: string): string[] => {
@@ -164,6 +179,9 @@ export function usePartnerEditFormLogic({
       }
       if (chapterId === 'security') {
         // В форме редактирования нет полей безопасности
+        return [];
+      }
+      if (chapterId === 'documents') {
         return [];
       }
 
@@ -205,5 +223,6 @@ export function usePartnerEditFormLogic({
     onUpdate,
     handleChapterClick,
     onBack,
+    onDocumentItemsChange,
   };
 }

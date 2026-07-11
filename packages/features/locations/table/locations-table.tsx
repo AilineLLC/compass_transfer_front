@@ -26,7 +26,6 @@ export function LocationsTable({
     nameFilter,
     addressFilter,
     districtFilter,
-    cityFilter,
     countryFilter,
     regionFilter,
     typeFilter,
@@ -45,11 +44,12 @@ export function LocationsTable({
     setNameFilter,
     setAddressFilter,
     setDistrictFilter,
-    setCityFilter,
     setCountryFilter,
     setRegionFilter,
     setIsActiveFilter,
     setPopular1Filter,
+    isLandingOnlyFilter,
+    setIsLandingOnlyFilter,
     setShowAdvancedFilters,
     handleNextPage,
     handlePrevPage,
@@ -99,8 +99,6 @@ export function LocationsTable({
         setAddressFilter={setAddressFilter}
         districtFilter={districtFilter}
         setDistrictFilter={setDistrictFilter}
-        cityFilter={cityFilter}
-        setCityFilter={setCityFilter}
         countryFilter={countryFilter}
         setCountryFilter={setCountryFilter}
         regionFilter={regionFilter}
@@ -112,6 +110,8 @@ export function LocationsTable({
         handleIsActiveFilterChange={handleIsActiveFilterChange}
         popular1Filter={popular1Filter}
         setPopular1Filter={setPopular1Filter}
+        isLandingOnlyFilter={isLandingOnlyFilter}
+        setIsLandingOnlyFilter={setIsLandingOnlyFilter}
         pageSize={pageSize}
         handlePageSizeChange={handlePageSizeChange}
         showAdvancedFilters={showAdvancedFilters}

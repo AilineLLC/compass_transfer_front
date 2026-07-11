@@ -1,15 +1,16 @@
 'use client';
 
-import { ArrowLeft, ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { ArrowLeft, Check, Banknote, CreditCard, ChevronDown, Car, CalendarDays, Users, Package, MapPin } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
+import { ApiRequestError } from '@shared/api/client';
 import { useOrderData } from '@shared/hooks/useOrderData';
 import { logger } from '@shared/lib/logger';
+import { customerOrderFormsApi } from '@shared/api/customer-order-forms';
 import { Button } from '@shared/ui/forms/button';
-import { Card, CardContent } from '@shared/ui/layout/card';
-import { SidebarHeader } from '@shared/ui/layout/sidebar';
 import { orderNumberToString } from '@shared/utils/orderNumberConverter';
+import type { RoutePoint } from '@shared/components/map/types';
 import type { GetLocationDTO } from '@entities/locations/interface';
 import {
   orderStatusLabels,
@@ -31,10 +32,18 @@ import {
   PassengersTab,
   MapTab,
   ServicesTab,
-  SummaryTab,
 } from '../../tabs';
 import { useSelfProfile } from '@entities/users/hooks/useSelfProfile';
 import { usersApi } from '@shared/api/users';
+import { locationsApi } from '@shared/api/locations';
+
+// Примерное время завершения: distanceMeters / (80 км/ч если >= 30 км, иначе 50 км/ч)
+function calcCompletionTime(startIso: string, distanceMeters: number): string {
+  const distanceKm = distanceMeters / 1000;
+  const speedKmh = distanceKm >= 30 ? 80 : 50;
+  const travelMs = (distanceKm / speedKmh) * 3600 * 1000;
+  return new Date(new Date(startIso).getTime() + travelMs).toISOString();
+}
 
 // Интерфейс для точки маршрута в форме заказа
 interface OrderRoutePoint {
@@ -52,6 +61,82 @@ interface OrderPageProps {
   id?: string;
   initialTariffId?: string;
   userRole?: 'admin' | 'operator' | 'partner' | 'driver';
+  fromFormId?: string;
+  initialStartLocationId?: string;
+  initialEndLocationId?: string;
+  initialServicesJson?: string;
+  initialPassengerName?: string;
+  initialPassengerPhone?: string;
+  initialScheduledTime?: string;
+}
+
+// Ray-casting point-in-polygon check.
+// poly: flat array [lat1, lng1, lat2, lng2, ...]
+function isPointInPolygon(lat: number, lng: number, poly: number[] | null | undefined): boolean {
+  if (!poly || poly.length < 6) return false;
+  const n = poly.length / 2;
+  let inside = false;
+  let j = n - 1;
+  for (let i = 0; i < n; i++) {
+    const latI = poly[i * 2];
+    const lngI = poly[i * 2 + 1];
+    const latJ = poly[j * 2];
+    const lngJ = poly[j * 2 + 1];
+    if ((lngI > lng) !== (lngJ > lng) && lat < ((latJ - latI) * (lng - lngI)) / (lngJ - lngI) + latI) {
+      inside = !inside;
+    }
+    j = i;
+  }
+  return inside;
+}
+
+type SegLocPoint = {
+  latitude?: number | null;
+  longitude?: number | null;
+  priceCoefficient?: number | null;
+  profile?: { polyPriceCoefficient?: number[] | null } | null;
+} | null | undefined;
+
+// Рассчитывает итоговую km-стоимость с учётом коэффициентов точек маршрута.
+// Коэффициент пункта назначения применяется только если Точка А (источник сегмента)
+// НЕ входит в polyPriceCoefficient-зону пункта назначения. Сравнение областей не используется.
+function calcKmPrice(
+  routeDistance: number,
+  routeLegs: { distance: number }[],
+  routePoints: { type: string; location: SegLocPoint }[],
+  perKmPrice: number,
+): number {
+  if (routeDistance <= 0) return 0;
+
+  const getCoeff = (src: SegLocPoint, dst: SegLocPoint): number => {
+    const poly = dst?.profile?.polyPriceCoefficient;
+    const srcLat = src?.latitude ?? null;
+    const srcLng = src?.longitude ?? null;
+    if (srcLat !== null && srcLng !== null && poly?.length) {
+      if (isPointInPolygon(srcLat, srcLng, poly)) return 1;
+    }
+    return dst?.priceCoefficient ?? 1;
+  };
+
+  const orderedPoints = [
+    routePoints.find(p => p.type === 'start'),
+    ...routePoints.filter(p => p.type === 'intermediate'),
+    routePoints.find(p => p.type === 'end'),
+  ].filter(Boolean) as { location: SegLocPoint }[];
+
+  if (routeLegs.length > 0 && routeLegs.length === orderedPoints.length - 1) {
+    // Мультистоп: Σ(km_i × coeff_i)
+    return routeLegs.reduce((sum, leg, i) => {
+      const coeff = getCoeff(orderedPoints[i]?.location, orderedPoints[i + 1]?.location);
+      return sum + (leg.distance / 1000) * coeff * perKmPrice;
+    }, 0);
+  }
+
+  // Fallback: весь маршрут × коэффициент конечной локации (если Точка А не в зоне отключения)
+  const startLoc = routePoints.find(p => p.type === 'start')?.location;
+  const endLoc = routePoints.find(p => p.type === 'end')?.location;
+  const coeff = getCoeff(startLoc, endLoc);
+  return (routeDistance / 1000) * coeff * perKmPrice;
 }
 
 export function ScheduledOrderPage({
@@ -59,10 +144,15 @@ export function ScheduledOrderPage({
   id,
   initialTariffId,
   userRole = 'operator',
+  fromFormId,
+  initialStartLocationId,
+  initialEndLocationId,
+  initialServicesJson,
+  initialPassengerName,
+  initialPassengerPhone,
+  initialScheduledTime,
 }: OrderPageProps) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('pricing');
-  const [visitedTabs, setVisitedTabs] = useState<Set<string>>(new Set(['pricing'])); // Отслеживаем посещенные табы
 
   // Определяем, находимся ли мы в режиме редактирования
   const isEditMode = mode === 'edit' && !!id;
@@ -87,147 +177,6 @@ export function ScheduledOrderPage({
     : userRole === 'partner' && selfProfile?.role === 'Partner'
       ? (selfProfile as any).sale
       : 0;
-
-  // Функция для проверки валидности таба
-  const isTabValid = (tabId: string): boolean => {
-    switch (tabId) {
-      case 'pricing':
-        return !!selectedTariff;
-      case 'schedule':
-        // Проверяем что заполнены дата и время И время валидно (не в прошлом)
-        const scheduledTime = methods.getValues('scheduledTime');
-
-        return (
-          !!scheduledTime &&
-          typeof scheduledTime === 'string' &&
-          scheduledTime.trim() !== '' &&
-          scheduleValid
-        );
-      case 'passengers':
-        // Проверяем что есть хотя бы один пассажир
-        const passengers = methods.getValues('passengers');
-
-        return Array.isArray(passengers) && passengers.length > 0;
-      case 'map':
-        // Проверяем что выбраны точки маршрута
-        const startLocation = methods.getValues('startLocationId');
-        const endLocation = methods.getValues('endLocationId');
-
-        // Если маршрут загружается, блокируем переход
-        if (routeLoading) {
-          return false;
-        }
-
-        // Должны быть выбраны точки (расстояние не обязательно - может быть ошибка API)
-        return !!startLocation && !!endLocation;
-      case 'services':
-        return true; // Услуги опциональны
-      case 'summary':
-        return true; // Сводка всегда доступна
-      default:
-        return false;
-    }
-  };
-
-  // Функция для перехода к следующему табу
-  const goToNextTab = () => {
-    // Специальная обработка для таба map - показываем toast если нет расстояния
-    if (activeTab === 'map' && (!routeDistance || routeDistance === 0)) {
-      toast.error('Не удалось рассчитать расстояние', {
-        description: 'API роутинга недоступен. На следующем шаге потребуется ввести цену вручную.',
-        duration: 5000,
-      });
-    }
-
-    // Проверяем валидность текущего таба перед переходом
-    if (!isTabValid(activeTab)) {
-      // Показываем специфичные сообщения для каждого таба
-      switch (activeTab) {
-        case 'pricing':
-          toast.error('Выберите тариф', {
-            description: 'Для продолжения необходимо выбрать тариф',
-          });
-          break;
-        case 'passengers':
-          toast.error('Добавьте пассажиров', {
-            description: 'Для продолжения необходимо добавить хотя бы одного пассажира',
-          });
-          break;
-        case 'schedule':
-          if (!scheduleValid) {
-            toast.error('Время в прошлом', {
-              description: 'Выберите время минимум через 5 минут от текущего времени',
-            });
-          } else {
-            toast.error('Заполните расписание', {
-              description: 'Для продолжения необходимо указать дату и время поездки',
-            });
-          }
-          break;
-        case 'map':
-          if (routeLoading) {
-            toast.error('Маршрут загружается', {
-              description: 'Дождитесь завершения расчета маршрута',
-            });
-          } else {
-            toast.error('Постройте маршрут', {
-              description: 'Для продолжения необходимо выбрать точки отправления и назначения',
-            });
-          }
-          break;
-        case 'services':
-          // Услуги опциональны, не показываем ошибку
-          break;
-        default:
-          toast.error('Заполните обязательные поля', {
-            description: 'Для продолжения необходимо заполнить все обязательные поля',
-          });
-      }
-
-      return;
-    }
-
-    const currentIndex = tabs.findIndex(tab => tab.id === activeTab);
-
-    if (currentIndex < tabs.length - 1) {
-      const nextTab = tabs[currentIndex + 1];
-
-      setActiveTab(nextTab.id);
-      setVisitedTabs(prev => new Set([...prev, nextTab.id]));
-    }
-  };
-
-  // Функция для перехода к предыдущему табу
-  const goToPreviousTab = () => {
-    const currentIndex = tabs.findIndex(tab => tab.id === activeTab);
-
-    if (currentIndex > 0) {
-      const previousTab = tabs[currentIndex - 1];
-
-      setActiveTab(previousTab.id);
-      // Не добавляем в visitedTabs при возврате назад
-    }
-  };
-
-  // Функция для перехода к конкретному табу
-  const goToTab = (tabId: string) => {
-    setActiveTab(tabId);
-    setVisitedTabs(prev => new Set([...prev, tabId]));
-  };
-
-  // Проверяем можно ли перейти к следующему табу
-  const canGoNext = () => {
-    const currentIndex = tabs.findIndex(tab => tab.id === activeTab);
-
-    return currentIndex < tabs.length - 1 && isTabValid(activeTab);
-  };
-
-  // Проверяем можно ли перейти к предыдущему табу
-  const canGoPrevious = () => {
-    const currentIndex = tabs.findIndex(tab => tab.id === activeTab);
-
-    return currentIndex > 0;
-  };
 
   // Загружаем реальные данные
   const {
@@ -289,9 +238,10 @@ export function ScheduledOrderPage({
     { id: '2', location: null, type: 'end', label: 'Куда' },
   ]);
 
-  // Состояние расстояния маршрута (в метрах)
+  // Состояние расстояния маршрута (в метрах) и сегментов
   const [routeDistance, setRouteDistance] = useState<number>(0);
-  const [routeLoading, setRouteLoading] = useState<boolean>(false);
+  const [routeLegs, setRouteLegs] = useState<{ distance: number }[]>([]);
+  const [_routeLoading, setRouteLoading] = useState<boolean>(false);
   // Состояние валидности времени в schedule-tab
   const [scheduleValid, setScheduleValid] = useState<boolean>(true);
 
@@ -304,9 +254,9 @@ export function ScheduledOrderPage({
     userRole === 'partner' ? PaymentMethodType.Card : PaymentMethodType.Cash,
   );
   const [driverPrice, setDriverPrice] = useState<string>('');
+  const [operatorNotes, setOperatorNotes] = useState<string>('');
 
-  // Состояние для включения доп.точек в стоимость
-  const [includeIntermediateInPrice, setIncludeIntermediateInPrice] = useState<boolean>(true);
+  const [includeIntermediateInPrice] = useState<boolean>(true);
 
   // Функция для обработки изменения кастомной цены
   const handleCustomPriceChange = (value: string) => {
@@ -324,10 +274,20 @@ export function ScheduledOrderPage({
 
   // Состояние для статуса заказа (для редактирования)
   const [orderStatus, setOrderStatus] = useState<OrderStatus>(OrderStatus.Pending);
-  const [originalOrderStatus, setOriginalOrderStatus] = useState<OrderStatus>(OrderStatus.Pending);
+  const [_originalOrderStatus, setOriginalOrderStatus] = useState<OrderStatus>(OrderStatus.Pending);
   const [orderSubStatus, setOrderSubStatus] = useState<OrderSubStatus>(
     OrderSubStatus.SearchingDriver,
   );
+
+  const [openSections, setOpenSections] = useState<Set<string>>(() => new Set(['pricing']));
+  const toggleSection = (id: string) => {
+    setOpenSections(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const methods = useMemo(
     () => ({
@@ -345,48 +305,19 @@ export function ScheduledOrderPage({
     [formData],
   );
 
-  const routeLocations = useMemo(
-    () => [
-      { id: '1', name: 'Аэропорт Манас', address: 'Аэропорт Манас, Бишкек' },
-      { id: '2', name: 'Центр города', address: 'пр. Чуй, Бишкек' },
-    ],
-    [],
-  );
-
-  // Создаем объект routeState для совместимости с существующими компонентами
-  const routeState = useMemo(() => {
-    // Находим начальную, конечную и промежуточные точки из маршрутных точек
-    const startPoint = routePoints.find(p => p.type === 'start');
-    const endPoint = routePoints.find(p => p.type === 'end');
-    const intermediatePoints = routePoints
-      .filter(p => p.type === 'intermediate' && p.location)
-      .map(p => p.location as GetLocationDTO);
-
-    return {
-      routeLocations: routeLocations || [],
-      flatLocations: routeLocations || [],
-      routePoints: routePoints, // Используем реальные точки маршрута
-
-      // Добавляем правильные объекты локаций для передачи в RouteInfoCard
-      startLocation: startPoint?.location || null,
-      endLocation: endPoint?.location || null,
-      intermediatePoints: intermediatePoints,
-
-      addLocationSmart: (_location: GetLocationDTO) => {
-        // Функция для добавления локации
-      },
-      selectLocationForPoint: (_location: GetLocationDTO, _pointIndex: number) => {
-        // Функция для выбора локации для точки
-      },
-      removeRoutePoint: (_index: number) => {
-        // Функция для удаления точки маршрута
-      },
-    };
-  }, [routeLocations, routePoints]);
 
   // Состояния формы заказа
   const [selectedTariff, setSelectedTariff] = useState<GetTariffDTO | null>(null);
-  const [selectedServices, setSelectedServices] = useState<GetOrderServiceDTO[]>([]);
+  const [selectedServices, setSelectedServices] = useState<GetOrderServiceDTO[]>(() => {
+    if (initialServicesJson) {
+      try {
+        return JSON.parse(initialServicesJson) as GetOrderServiceDTO[];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
   const [currentPrice, setCurrentPrice] = useState<number>(0);
 
   // Автоматический выбор тарифа при создании заказа
@@ -396,47 +327,87 @@ export function ScheduledOrderPage({
 
       if (foundTariff && !foundTariff.archived) {
         setSelectedTariff(foundTariff);
-        // Автоматически переключаемся на таб тарифов, чтобы показать выбранный тариф
-        setActiveTab('pricing');
-        setVisitedTabs(prev => new Set([...prev, 'pricing']));
       }
     }
   }, [mode, initialTariffId, tariffs, selectedTariff]);
 
+  // Предзаполнение локаций из заявки при создании — загружаем объекты локаций и заполняем routePoints
+  useEffect(() => {
+    if (mode !== 'create') return;
+    if (!initialStartLocationId && !initialEndLocationId) return;
+
+    if (initialStartLocationId) methods.setValue('startLocationId', initialStartLocationId);
+    if (initialEndLocationId) methods.setValue('endLocationId', initialEndLocationId);
+
+    let cancelled = false;
+    const fetchLocations = async () => {
+      const [startLoc, endLoc] = await Promise.all([
+        initialStartLocationId ? locationsApi.getLocationById(initialStartLocationId).catch(() => null) : null,
+        initialEndLocationId ? locationsApi.getLocationById(initialEndLocationId).catch(() => null) : null,
+      ]);
+      if (cancelled) return;
+      setRoutePoints(prev => prev.map(p => {
+        if (p.type === 'start' && startLoc) return { ...p, location: startLoc as unknown as GetLocationDTO };
+        if (p.type === 'end' && endLoc) return { ...p, location: endLoc as unknown as GetLocationDTO };
+        return p;
+      }));
+    };
+    fetchLocations();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, initialStartLocationId, initialEndLocationId]);
+
+  // Предзаполнение даты поездки из заявки при создании
+  useEffect(() => {
+    if (mode === 'create' && initialScheduledTime) {
+      methods.setValue('scheduledTime', initialScheduledTime);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, initialScheduledTime]);
+
+  // Предзаполнение пассажира из заявки при создании
+  useEffect(() => {
+    if (mode === 'create' && (initialPassengerName || initialPassengerPhone)) {
+      methods.setValue('passengers', [
+        {
+          id: `passenger-${Date.now()}`,
+          customerId: null,
+          firstName: initialPassengerName ?? '',
+          lastName: null,
+          phone: initialPassengerPhone ?? null,
+          isMainPassenger: true,
+        },
+      ]);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, initialPassengerName, initialPassengerPhone]);
+
   // Автоматический расчет цены при изменении тарифа, расстояния или услуг
   useEffect(() => {
     if (selectedTariff) {
-      // Итоговая цена = базовая цена за маршрут + стоимость услуг
-      // Используем централизованное округление для точности
-      const fullTotal =
-        selectedTariff.basePrice +
-        (routeDistance > 0
-          ? (Math.round((routeDistance / 1000) * 10) / 10) * selectedTariff.perKmPrice
-          : 0) +
-        selectedServices.reduce((total, service) => {
-          const serviceInfo = services.find(s => s.id === service.serviceId);
-          return total + (serviceInfo?.price || 0) * (service.quantity || 1);
-        }, 0);
+      const kmPrice = calcKmPrice(routeDistance, routeLegs, routePoints, selectedTariff.perKmPrice);
 
-      const finalDiscountedPrice = activeSale
-        ? Math.round(fullTotal * (1 - activeSale))
-        : Math.round(fullTotal);
+      const servicesTotal = selectedServices.reduce((total, service) => {
+        const serviceInfo = services.find(s => s.id === service.serviceId);
+        return total + (serviceInfo?.price || 0) * (service.quantity || 1);
+      }, 0);
 
-      // ВСЕГДА используем итоговую цену со скидкой (контрактная цена)
-      // для отображения в итоговом блоке и для сравнения с initialPrice из базы
-      setCurrentPrice(finalDiscountedPrice);
+      const discountMultiplier = activeSale ? (1 - activeSale) : 1;
+      const finalPrice = Math.round(
+        (selectedTariff.basePrice + kmPrice) * discountMultiplier + servicesTotal,
+      );
+
+      setCurrentPrice(finalPrice);
     } else {
-      // Если нет тарифа, цена = 0
       setCurrentPrice(0);
     }
   }, [
     selectedTariff,
     routeDistance,
+    routeLegs,
     selectedServices,
     services,
-    includeIntermediateInPrice,
     routePoints,
-    userRole,
     activeSale,
   ]);
 
@@ -495,11 +466,7 @@ export function ScheduledOrderPage({
     [methods],
   );
 
-  // Мемоизируем callback для MapTab
-  const mapTabRoutePointsChange = useMemo(
-    () => (activeTab === 'map' ? handleRoutePointsChange : undefined),
-    [activeTab, handleRoutePointsChange],
-  );
+  const mapTabRoutePointsChange = handleRoutePointsChange;
 
   // Функция для определения, нужно ли назначать водителя в режиме редактирования
   const shouldAssignDriverInEditMode = useCallback(() => {
@@ -525,9 +492,6 @@ export function ScheduledOrderPage({
     setSelectedServices(newServices);
   };
 
-  const handlePriceChange = (newPrice: number) => {
-    setCurrentPrice(newPrice);
-  };
 
   // Состояние для отслеживания, что данные уже загружены
   const [isOrderDataLoaded, setIsOrderDataLoaded] = useState(false);
@@ -579,6 +543,9 @@ export function ScheduledOrderPage({
         methods.setValue('airFlight', existingOrder.airFlight || '');
         methods.setValue('flyReis', existingOrder.flyReis || '');
         methods.setValue('notes', existingOrder.notes || '');
+        if (existingOrder.operatorNotes) {
+          setOperatorNotes(existingOrder.operatorNotes);
+        }
 
         // Локации маршрута (сервер может вернуть как объект startLocation, так и ID startLocationId)
         const startLocId = existingOrder.startLocation?.id || existingOrder.startLocationId;
@@ -724,6 +691,12 @@ export function ScheduledOrderPage({
         }))
       : undefined,
     onSuccess: _order => {
+      // Если заказ создан из заявки — отмечаем заявку как принятую
+      if (mode === 'create' && fromFormId) {
+        customerOrderFormsApi.updateStatus(fromFormId, 'Verified').catch(() => {
+          // Не блокируем основной флоу при ошибке обновления статуса заявки
+        });
+      }
       // Не переходим сразу к списку заказов, если нужно назначить водителя
       // Переход происходит после назначения водителя или если водитель не выбран
       if (!selectedDriver) {
@@ -734,10 +707,6 @@ export function ScheduledOrderPage({
       // Обработка ошибки создания/обновления заказа
     },
   });
-
-  // Унификация с instant-order-page (переменные не используются, но сохранены для совместимости)
-  const _updateOrder = submitOrder;
-  const _isUpdatingOrder = isSubmittingOrder;
 
   // Хук для назначения водителя на запланированный заказ
   const { assignDriver, isLoading: isAssigningDriver } = useScheduledRideSubmit({
@@ -757,10 +726,51 @@ export function ScheduledOrderPage({
   };
 
   const handleSave = async () => {
+    // Валидация обязательных полей
+    if (!selectedTariff) {
+      toast.error('Выберите тариф', {
+        description: 'Нажмите раздел «Тариф» и выберите класс автомобиля',
+      });
+      setOpenSections(prev => { const s = new Set(prev); s.add('pricing'); return s; });
+      return;
+    }
+
+    if (!formData.startLocationId || !formData.endLocationId) {
+      toast.error('Укажите маршрут', {
+        description: 'Выберите точку отправления и назначения на карте',
+      });
+      setOpenSections(prev => { const s = new Set(prev); s.add('map'); return s; });
+      return;
+    }
+
+    if (!scheduleValid || !formData.scheduledTime) {
+      toast.error('Укажите дату и время', {
+        description: 'Выберите дату и время поездки',
+      });
+      setOpenSections(prev => { const s = new Set(prev); s.add('schedule'); return s; });
+      return;
+    }
+
+    if (!passengersValid) {
+      toast.error('Добавьте пассажира', {
+        description: 'Необходимо добавить хотя бы одного пассажира',
+      });
+      setOpenSections(prev => { const s = new Set(prev); s.add('passengers'); return s; });
+      return;
+    }
+
+    if (!routeDistance || routeDistance === 0) {
+      toast.error('Маршрут не построен', {
+        description: 'Дождитесь построения маршрута для расчёта времени завершения',
+      });
+      setOpenSections(prev => { const s = new Set(prev); s.add('map'); return s; });
+      return;
+    }
+
     // Для admin/operator — проверяем что driverPrice заполнена
     if ((userRole === 'admin' || userRole === 'operator') && !driverPrice) {
       toast.error('Укажите сумму водителя', {
-        description: 'На вкладке "Итоги" заполните поле "Сумма водителя"',
+        description: 'Заполните поле "Сумма водителя" в правой панели',
       });
 
       return;
@@ -771,12 +781,22 @@ export function ScheduledOrderPage({
       const routePointsWithLocations = routePoints.filter(point => point.location);
 
       // Формируем данные для отправки согласно API
+      // В режиме редактирования используем данные существующего заказа как запасной вариант,
+      // если пользователь не посещал вкладку карты и routePoints не содержат объекты локаций
+      const startLoc = routePointsWithLocations[0]?.location ?? (isEditMode ? existingOrder?.startLocation : null);
+      const endLoc = routePointsWithLocations[routePointsWithLocations.length - 1]?.location ?? (isEditMode ? existingOrder?.endLocation : null);
+
+      // Для ID также используем startLocId/endLocId как запасной вариант
+      const startLocationId = startLoc?.id || (isEditMode ? existingOrder?.startLocationId : null) || null;
+      const endLocationId = endLoc?.id || (isEditMode ? existingOrder?.endLocationId : null) || null;
+
       const orderData = {
         tariffId: selectedTariff?.id || '',
         routeId: null,
-        startLocationId: routePointsWithLocations[0]?.location?.id || null,
-        endLocationId:
-          routePointsWithLocations[routePointsWithLocations.length - 1]?.location?.id || null,
+        startLocationId,
+        endLocationId,
+        startAddress: startLoc?.address || startLoc?.name || '',
+        endAddress: endLoc?.address || endLoc?.name || '',
         additionalStops: routePointsWithLocations.slice(1, -1).map(point => point.location!.id),
         services: selectedServices
           .filter(service => !!service.serviceId) // Фильтруем сервисы без ID
@@ -795,23 +815,15 @@ export function ScheduledOrderPage({
 
           // Иначе рассчитываем автоматически
           if (!selectedTariff) return 0;
-          const distance = routeDistance ? Math.round((routeDistance / 1000) * 10) / 10 : 0;
 
-          // Для initialPrice ВСЕГДА применяем скидку, если она есть (sale > 0)
-          // Так как это финальная цена сделки
-          const discountMultiplier = activeSale ? 1 - activeSale : 1;
-
-          const basePrice = (selectedTariff.basePrice || 0) * discountMultiplier;
-          const perKmPrice = (selectedTariff.perKmPrice || 0) * discountMultiplier;
-          const distancePrice = distance * perKmPrice;
+          const kmPrice = calcKmPrice(routeDistance, routeLegs, routePoints, selectedTariff.perKmPrice || 0);
           const servicesPrice = selectedServices.reduce((sum, sel) => {
             const svc = services.find(s => s.id === sel.serviceId);
-            const svcPrice = (svc?.price || 0) * discountMultiplier;
-
-            return sum + svcPrice * (sel.quantity || 1);
+            return sum + (svc?.price || 0) * (sel.quantity || 1);
           }, 0);
+          const discountMultiplier = activeSale ? 1 - activeSale : 1;
 
-          return Math.round(basePrice + distancePrice + servicesPrice);
+          return Math.round(((selectedTariff.basePrice || 0) + kmPrice) * discountMultiplier + servicesPrice);
         })(),
         scheduledTime: (() => {
           const dateValue = methods.getValues('scheduledTime');
@@ -824,6 +836,13 @@ export function ScheduledOrderPage({
           }
 
           return new Date().toISOString(); // Текущая дата в UTC
+        })(),
+        completionTimeEstimate: (() => {
+          const dateValue = methods.getValues('scheduledTime');
+          const startIso = (dateValue && typeof dateValue === 'string')
+            ? new Date(dateValue).toISOString()
+            : new Date().toISOString();
+          return calcCompletionTime(startIso, routeDistance);
         })(),
         passengers: (() => {
           const passengersData = methods.getValues('passengers');
@@ -863,6 +882,10 @@ export function ScheduledOrderPage({
 
           return value && typeof value === 'string' ? value : null;
         })(),
+        operatorNotes:
+          userRole === 'admin' || userRole === 'operator'
+            ? operatorNotes.trim() || null
+            : null,
         paymentMethodType: userRole === 'partner' ? PaymentMethodType.Card : paymentMethodType,
         driverPrice:
           (userRole === 'admin' || userRole === 'operator') && driverPrice
@@ -890,57 +913,50 @@ export function ScheduledOrderPage({
         const carId = selectedDriver!.activeCar?.id || selectedDriver!.activeCarId;
 
         if (!carId) {
-          throw new Error('У выбранного водителя нет активного автомобиля');
+          toast.error('У выбранного водителя нет активного автомобиля. Назначьте автомобиль и попробуйте снова.');
+          return;
+        }
+
+        const orderIdForDriver = isEditMode ? id : resultOrder?.id;
+
+        if (!orderIdForDriver) {
+          toast.error('Не удалось получить ID созданного заказа. Обновите страницу и попробуйте снова.');
+          return;
         }
 
         const rideData = {
           driverId: selectedDriver!.id,
-          carId: carId,
+          carId,
           waypoints: [],
         };
 
-        // Определяем ID заказа для назначения водителя
-        const orderIdForDriver = isEditMode ? id : resultOrder?.id;
-
-        if (orderIdForDriver) {
-          try {
-            // Назначаем водителя на заказ
-            await assignDriver(orderIdForDriver, rideData);
-          } catch (assignError) {
-            throw assignError;
-          }
-        } else {
-          throw new Error('Не удалось получить ID заказа для назначения водителя');
-        }
+        // useScheduledRideSubmit.onError всегда показывает toast при ошибке,
+        // поэтому ошибку из mutateAsync достаточно поймать и прервать выполнение
+        await assignDriver(orderIdForDriver, rideData);
       } else {
         // Водитель не изменился — ride не пересоздаём, просто переходим к списку заказов.
         // Toast об успешном сохранении уже показан в useScheduledOrderSubmit.
         router.push('/orders');
       }
     } catch (error) {
-      // Ошибка сохранения заказа обрабатывается в хуках, но логируем для отладки
       logger.error('Ошибка сохранения заказа:', error);
+      // Ошибки из мутаций (submitOrder, assignDriver) уже обработаны в их onError-колбэках.
+      // Сюда доходят только неожиданные ошибки, которые не являются ApiRequestError.
+      if (!(error instanceof ApiRequestError)) {
+        const message = error instanceof Error ? error.message : 'Произошла непредвиденная ошибка';
+        toast.error(message);
+      }
     }
   };
 
-  // routeState уже определен выше
-
-  // Создаем объект pricing для совместимости
-  const pricing = {
-    selectedServices,
-    currentPrice,
-    handleServicesChange,
-    handlePriceChange,
-  } as const;
-
-  const tabs = [
-    { id: 'pricing', label: 'Тарифы/Цены', component: TariffPricingTab },
-    { id: 'schedule', label: 'Календарь/Даты', component: ScheduleTab },
-    { id: 'passengers', label: 'Пассажиры', component: PassengersTab },
-    { id: 'map', label: 'Карта', component: MapTab },
-    { id: 'services', label: 'Доп. услуги', component: ServicesTab },
-    { id: 'summary', label: 'Итоги', component: SummaryTab },
-  ];
+  const passengersValid = (() => {
+    const passengers = formData.passengers as Array<{ phone?: string | null }>;
+    return (
+      Array.isArray(passengers) &&
+      passengers.length > 0 &&
+      passengers.every(p => p.phone && p.phone.trim().length > 0)
+    );
+  })();
 
   // Блокируем рендер до загрузки всех необходимых данных
   const isDataLoading = dataLoading || (isEditMode && isLoadingOrder);
@@ -972,333 +988,617 @@ export function ScheduledOrderPage({
   }
 
   return (
-    <div className='flex flex-col border rounded-2xl h-full overflow-hidden bg-white'>
-      {/* Header */}
-      <SidebarHeader className='sticky top-0 z-10 bg-gray-50 border-b flex items-start justify-between px-4 py-4 flex-row'>
-        <div className='flex items-center gap-4'>
-          <Button variant='ghost' size='sm' onClick={handleBack} className='gap-2'>
-            <ArrowLeft className='h-4 w-4' />
-            Назад
-          </Button>
+    <div className='flex flex-col h-full overflow-hidden bg-slate-50 rounded-2xl border border-slate-200'>
 
-          <div className='text-left'>
-            <h1 className='text-3xl font-bold tracking-tight text-left'>
-              {mode === 'create' ? 'Создать' : 'Редактировать'} запланированный заказ
+      {/* === Compact header === */}
+      <div className='flex items-center justify-between px-4 py-2.5 bg-white border-b border-slate-200 flex-shrink-0'>
+        <div className='flex items-center gap-3'>
+          <button
+            type='button'
+            onClick={handleBack}
+            className='w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-100 text-slate-500 transition-colors'
+          >
+            <ArrowLeft className='h-4 w-4' />
+          </button>
+          <div>
+            <div className='flex items-center gap-2'>
+              <h1 className='text-sm font-bold text-slate-900'>
+                {mode === 'create' ? 'Новый заказ' : 'Редактировать заказ'}
+              </h1>
               {mode === 'edit' && orderNumber && (
-                <span className='text-blue-600 ml-2'>#{orderNumber}</span>
+                <span className='text-xs font-bold text-blue-600'>#{orderNumber}</span>
               )}
-            </h1>
-            <p className='text-muted-foreground text-left'>
-              {mode === 'create'
-                ? 'Создание нового запланированного заказа'
-                : `Редактирование заказа ${id}`}
-            </p>
+              <span className='text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full font-medium'>
+                Запланированный
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Статус заказа справа (только для редактирования) */}
-        {mode === 'edit' && (
-          <div className='flex flex-col justify-end items-end'>
-            <div className='flex flex-row items-end gap-3'>
-              <div className='text-sm text-muted-foreground'>Статус заказа</div>
-            </div>
-
-            {/* Выбор нового статуса */}
-            <div className='flex flex-row items-end gap-3'>
-              <div className='flex flex-row gap-2'>
-                <div className='flex flex-row items-center gap-3 justify-center'>
-                  {orderStatus !== originalOrderStatus && (
-                    <div className='flex items-center gap-2 text-xs'>
-                      <span className='text-muted-foreground'>Изменить на:</span>
-                    </div>
-                  )}
-                  <select
-                    value={orderStatus}
-                    onChange={e => {
-                      setOrderStatus(e.target.value as OrderStatus);
-                    }}
-                    className='px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[220px]'
-                  >
-                    <option value={OrderStatus.Pending}>{orderStatusLabels.Pending}</option>
-                    <option value={OrderStatus.Scheduled}>{orderStatusLabels.Scheduled}</option>
-                    <option value={OrderStatus.InProgress}>{orderStatusLabels.InProgress}</option>
-                    <option value={OrderStatus.Completed}>{orderStatusLabels.Completed}</option>
-                    <option value={OrderStatus.Cancelled}>{orderStatusLabels.Cancelled}</option>
-                    <option value={OrderStatus.Expired}>{orderStatusLabels.Expired}</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Выбор подстатуса */}
-            <div className='flex flex-row items-end gap-3 mt-4'>
-              <div className='flex flex-row gap-2'>
-                <div className='flex flex-row items-center gap-3 justify-center'>
-                  <div className='text-sm text-muted-foreground'>Подстатус заказа</div>
-                  <select
-                    value={orderSubStatus}
-                    onChange={e => {
-                      setOrderSubStatus(e.target.value as OrderSubStatus);
-                    }}
-                    className='px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[220px]'
-                  >
-                    {OrderSubStatusValues.map(status => (
-                      <option key={status} value={status}>
-                        {orderSubStatusLabels[status]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
+        <div className='flex items-center gap-3'>
+          {/* Progress bar */}
+          <div className='flex items-center gap-1'>
+            {[
+              !!selectedTariff,
+              !!(formData.startLocationId && formData.endLocationId),
+              !!(scheduleValid && formData.scheduledTime),
+              passengersValid,
+            ].map((done, i) => (
+              <div
+                key={i}
+                className={`h-1 w-6 rounded-full transition-colors ${done ? 'bg-emerald-400' : 'bg-slate-200'}`}
+              />
+            ))}
           </div>
-        )}
-      </SidebarHeader>
 
-      <div className='flex flex-col overflow-y-auto pl-4 pr-2 h-full'>
-        {/* Tabs */}
-        <Card className='flex-1 h-full'>
-          <CardContent className='px-0'>
-            <div className='w-full h-full'>
-              <>
-                {(() => {
-                  const activeTabData = tabs.find(tab => tab.id === activeTab);
-
-                  if (!activeTabData) return null;
-
-                  const TabComponent = activeTabData.component;
-
-                  const TabComponentAny = TabComponent as React.ComponentType<
-                    Record<string, unknown>
-                  >;
-
-                  return (
-                    <TabComponentAny
-                      {...({} as Record<string, unknown>)}
-                      // Данные
-                      tariffs={tariffs}
-                      services={services}
-                      _services={services}
-                      sale={activeSale || 0}
-                      users={users}
-                      // Информация о водителе
-                      _selectedDriver={selectedDriver}
-                      _onTabChange={undefined}
-                      _getDriverById={getDriverById}
-                      _updateDriverCache={updateDriverCache}
-                      _orderStatus={orderStatus}
-                      _setOrderStatus={setOrderStatus}
-                      // Состояние маршрута
-                      routeState={routeState}
-                      routeLocations={routeLocations}
-                      routeDistance={routeDistance}
-                      // Ценообразование
-                      pricing={pricing}
-                      selectedServices={selectedServices}
-                      currentPrice={currentPrice}
-                      // Пассажиры
-                      passengers={methods.getValues('passengers') as never[]}
-                      handlePassengersChange={handlePassengersChange}
-                      userRole={userRole}
-                      // Тариф
-                      selectedTariff={selectedTariff as unknown as GetTariffDTO}
-                      setSelectedTariff={setSelectedTariff}
-                      onRefreshTariffs={refetchTariffs}
-                      isRefreshingTariffs={isRefreshingTariffs}
-                      initialTariffId={initialTariffId}
-                      // Обработчики
-                      handleServicesChange={handleServicesChange}
-                      handlePriceChange={handlePriceChange}
-                      // Форма (только для ScheduleTab)
-                      onScheduleChange={
-                        activeTab === 'schedule'
-                          ? (scheduledTime: string) =>
-                              methods.setValue('scheduledTime', scheduledTime)
-                          : undefined
-                      }
-                      onValidityChange={activeTab === 'schedule' ? setScheduleValid : undefined}
-                      initialScheduledTime={
-                        activeTab === 'schedule'
-                          ? (methods.getValues('scheduledTime') as string)
-                          : undefined
-                      }
-                      // Обработчики для MapTab
-                      onRoutePointsChange={mapTabRoutePointsChange}
-                      // Состояние водителя для MapTab
-                      selectedDriver={selectedDriver as unknown as GetDriverDTO}
-                      setSelectedDriver={setSelectedDriver as unknown as (driver: unknown) => void}
-                      dynamicMapCenter={dynamicMapCenter}
-                      setDynamicMapCenter={setDynamicMapCenter}
-                      openDriverPopupId={openDriverPopupId}
-                      setOpenDriverPopupId={setOpenDriverPopupId}
-                      // Состояние маршрута для MapTab
-                      routePoints={routePoints}
-                      setRoutePoints={setRoutePoints}
-                      onRouteDistanceChange={setRouteDistance}
-                      onRouteLoadingChange={setRouteLoading}
-                      // Данные локаций заказа для MapTab
-                      startLocationId={
-                        (isEditMode
-                          ? existingOrder?.startLocation?.id || existingOrder?.startLocationId
-                          : undefined) ||
-                        (methods.getValues('startLocationId') as string) ||
-                        ''
-                      }
-                      endLocationId={
-                        (isEditMode
-                          ? existingOrder?.endLocation?.id || existingOrder?.endLocationId
-                          : undefined) ||
-                        (methods.getValues('endLocationId') as string) ||
-                        ''
-                      }
-                      additionalStops={
-                        isEditMode && existingOrder?.additionalStops
-                          ? existingOrder.additionalStops
-                          : (methods.getValues('additionalStops') as string[]) || []
-                      }
-                      rides={existingOrder?.rides} // Передаем rides для режима редактирования
-                      orderStatus={existingOrder?.status} // Передаем статус для проверки удаления ride
-                      methods={methods}
-                      // Кастомная цена
-                      useCustomPrice={useCustomPrice}
-                      setUseCustomPrice={setUseCustomPrice}
-                      _customPrice={customPrice}
-                      setCustomPrice={setCustomPrice}
-                      _handleCustomPriceChange={handleCustomPriceChange}
-                      _toggleCustomPrice={toggleCustomPrice}
-                      // Метод оплаты и сумма водителя
-                      paymentMethodType={paymentMethodType}
-                      setPaymentMethodType={setPaymentMethodType}
-                      driverPrice={driverPrice}
-                      setDriverPrice={setDriverPrice}
-                      // Управление доп.точками в стоимости
-                      includeIntermediateInPrice={includeIntermediateInPrice}
-                      onIncludeIntermediateChange={setIncludeIntermediateInPrice}
-                      // Данные маршрута для SummaryTab
-                      // Не передаем routeState дважды, так как он уже передан выше
-                      _routeLoading={routeLoading}
-                      // Мета
-                      mode={mode}
-                      orderId={id}
-                      // Переключение табов (только для SummaryTab)
-                      onTabChange={activeTab === 'summary' ? setActiveTab : undefined}
-                      // Функции для работы с водителями (для MapTab и SummaryTab)
-                      getDriverById={
-                        getDriverById as unknown as (id: string) => Record<string, unknown> | null
-                      }
-                      updateDriverCache={
-                        updateDriverCache as unknown as (
-                          id: string,
-                          data: Record<string, unknown>,
-                        ) => void
-                      }
-                    />
-                  );
-                })()}
-              </>
+          {mode === 'edit' && (
+            <div className='flex gap-1.5'>
+              <select
+                value={orderStatus}
+                onChange={e => setOrderStatus(e.target.value as OrderStatus)}
+                className='text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400 text-slate-700'
+              >
+                <option value={OrderStatus.Pending}>{orderStatusLabels.Pending}</option>
+                <option value={OrderStatus.Scheduled}>{orderStatusLabels.Scheduled}</option>
+                <option value={OrderStatus.InProgress}>{orderStatusLabels.InProgress}</option>
+                <option value={OrderStatus.Completed}>{orderStatusLabels.Completed}</option>
+                <option value={OrderStatus.Cancelled}>{orderStatusLabels.Cancelled}</option>
+                <option value={OrderStatus.Expired}>{orderStatusLabels.Expired}</option>
+              </select>
+              <select
+                value={orderSubStatus}
+                onChange={e => setOrderSubStatus(e.target.value as OrderSubStatus)}
+                className='text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400 text-slate-700'
+              >
+                {OrderSubStatusValues.map(status => (
+                  <option key={status} value={status}>
+                    {orderSubStatusLabels[status]}
+                  </option>
+                ))}
+              </select>
             </div>
-          </CardContent>
-        </Card>
+          )}
+        </div>
       </div>
 
-      {/* Табы и навигация внизу */}
-      <div className='border-t bg-gray-50 p-6 overflow-hidden overflow-x-auto'>
-        <div className='flex items-center justify-between'>
-          {/* Прогресс и табы слева */}
-          <div className='flex items-center gap-6'>
-            {/* Прогресс бар */}
-            <div className='flex items-center gap-3'>
-              {tabs.map((tab, index) => {
-                const isActive = activeTab === tab.id;
-                const isCompleted = visitedTabs.has(tab.id) && isTabValid(tab.id) && !isActive;
-                const isAccessible = index <= tabs.findIndex(t => t.id === activeTab);
+      {/* === Body === */}
+      <div className='flex flex-1 overflow-hidden min-h-0'>
 
-                return (
-                  <div key={tab.id} className='flex items-center'>
-                    {/* Кружок с номером или галочкой */}
-                    <button
-                      onClick={() => isAccessible && goToTab(tab.id)}
-                      disabled={!isAccessible}
-                      className={`relative flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all ${
-                        isActive
-                          ? 'bg-primary border-primary text-primary-foreground shadow-sm'
-                          : isCompleted
-                            ? 'bg-green-500 border-green-500 text-white'
-                            : isAccessible
-                              ? 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
-                              : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
-                      }`}
-                    >
-                      {isCompleted ? (
-                        <Check className='h-4 w-4' />
-                      ) : (
-                        <span className='text-xs font-medium'>{index + 1}</span>
-                      )}
-                    </button>
+        {/* Left: collapsible sections */}
+        <div className='flex-1 overflow-y-auto p-3 space-y-2'>
 
-                    {/* Линия между кружками */}
-                    {index < tabs.length - 1 && (
-                      <div
-                        className={`w-12 h-0.5 mx-2 transition-colors ${
-                          index < tabs.findIndex(t => t.id === activeTab)
-                            ? 'bg-green-500'
-                            : 'bg-gray-200'
-                        }`}
-                      />
+          {/* Section 1: Тариф */}
+          <div className={`rounded-xl bg-white border overflow-hidden shadow-sm transition-all ${
+            selectedTariff
+              ? 'border-l-[3px] border-l-emerald-400 border-slate-100'
+              : openSections.has('pricing')
+                ? 'border-blue-200'
+                : 'border-slate-100'
+          }`}>
+            <button
+              type='button'
+              onClick={() => toggleSection('pricing')}
+              className={`w-full flex items-center justify-between px-4 py-3 text-left transition-colors ${
+                openSections.has('pricing') ? 'border-b border-slate-100' : 'hover:bg-slate-50/80'
+              }`}
+            >
+              <div className='flex items-center gap-3'>
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
+                  selectedTariff
+                    ? 'bg-emerald-50 text-emerald-600'
+                    : openSections.has('pricing')
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'bg-slate-100 text-slate-400'
+                }`}>
+                  {selectedTariff ? <Check className='h-4 w-4' /> : <Car className='h-3.5 w-3.5' />}
+                </div>
+                <div>
+                  <div className='flex items-center gap-2 flex-wrap'>
+                    <span className='text-sm font-semibold text-slate-800'>Тариф</span>
+                    {selectedTariff && (
+                      <span className='text-xs text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded-md'>
+                        {selectedTariff.name}
+                      </span>
                     )}
                   </div>
-                );
-              })}
-            </div>
-
-            {/* Название текущего шага */}
-            <div className='ml-4'>
-              <p className='text-sm font-medium text-gray-900'>
-                Шаг {tabs.findIndex(t => t.id === activeTab) + 1} из {tabs.length}
-              </p>
-              <p className='text-xs text-gray-500'>{tabs.find(t => t.id === activeTab)?.label}</p>
-            </div>
-          </div>
-
-          {/* Кнопки навигации справа */}
-          <div className='flex items-center gap-3'>
-            <Button
-              type='button'
-              variant='outline'
-              onClick={goToPreviousTab}
-              disabled={!canGoPrevious()}
-              className='flex items-center gap-2'
-            >
-              <ChevronLeft className='h-4 w-4' />
-              Назад
-            </Button>
-
-            {activeTab === 'summary' ? (
-              <Button
-                type='button'
-                onClick={handleSave}
-                className='flex items-center gap-2 bg-green-600 hover:bg-green-700'
-                disabled={isSubmittingOrder || _isUpdatingOrder || isAssigningDriver}
-              >
-                <Check className='h-4 w-4' />
-                {isAssigningDriver
-                  ? 'Назначение водителя...'
-                  : isEditMode
-                    ? 'Обновить заказ'
-                    : 'Создать заказ'}
-              </Button>
-            ) : (
-              <Button
-                type='button'
-                onClick={goToNextTab}
-                className={`flex items-center gap-2 ${!canGoNext() ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                Вперед
-                <ChevronRight className='h-4 w-4' />
-              </Button>
+                  {!openSections.has('pricing') && !selectedTariff && (
+                    <p className='text-xs text-slate-400 mt-0.5'>Выберите класс автомобиля</p>
+                  )}
+                </div>
+              </div>
+              <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 flex-shrink-0 ${
+                openSections.has('pricing') ? 'rotate-180' : ''
+              }`} />
+            </button>
+            {openSections.has('pricing') && (
+              <div className='px-4 pt-3 pb-4'>
+                <TariffPricingTab
+                  tariffs={tariffs}
+                  selectedTariff={selectedTariff}
+                  setSelectedTariff={setSelectedTariff}
+                  onRefreshTariffs={refetchTariffs}
+                  isRefreshingTariffs={isRefreshingTariffs}
+                  userRole={userRole}
+                  initialTariffId={initialTariffId}
+                />
+              </div>
             )}
           </div>
+
+          {/* Section 2: Маршрут — always mounted to avoid map re-init */}
+          <div className={`rounded-xl bg-white border overflow-hidden shadow-sm transition-all ${
+            (formData.startLocationId && formData.endLocationId)
+              ? 'border-l-[3px] border-l-emerald-400 border-slate-100'
+              : openSections.has('map')
+                ? 'border-blue-200'
+                : 'border-slate-100'
+          }`}>
+            <button
+              type='button'
+              onClick={() => toggleSection('map')}
+              className={`w-full flex items-center justify-between px-4 py-3 text-left transition-colors ${
+                openSections.has('map') ? 'border-b border-slate-100' : 'hover:bg-slate-50/80'
+              }`}
+            >
+              <div className='flex items-center gap-3'>
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
+                  (formData.startLocationId && formData.endLocationId)
+                    ? 'bg-emerald-50 text-emerald-600'
+                    : openSections.has('map')
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'bg-slate-100 text-slate-400'
+                }`}>
+                  {(formData.startLocationId && formData.endLocationId)
+                    ? <Check className='h-4 w-4' />
+                    : <MapPin className='h-3.5 w-3.5' />}
+                </div>
+                <div>
+                  <div className='flex items-center gap-2 flex-wrap'>
+                    <span className='text-sm font-semibold text-slate-800'>Маршрут</span>
+                    {routeDistance > 0 && (
+                      <span className='text-xs text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded-md'>
+                        {Math.round(routeDistance / 100) / 10} км
+                      </span>
+                    )}
+                  </div>
+                  {!openSections.has('map') && !(formData.startLocationId && formData.endLocationId) && (
+                    <p className='text-xs text-slate-400 mt-0.5'>Укажите откуда и куда</p>
+                  )}
+                </div>
+              </div>
+              <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 flex-shrink-0 ${
+                openSections.has('map') ? 'rotate-180' : ''
+              }`} />
+            </button>
+            <div style={{ display: openSections.has('map') ? 'block' : 'none', height: '580px' }}>
+              <MapTab
+                startLocationId={
+                  (isEditMode ? existingOrder?.startLocation?.id || existingOrder?.startLocationId : undefined) ||
+                  formData.startLocationId || ''
+                }
+                endLocationId={
+                  (isEditMode ? existingOrder?.endLocation?.id || existingOrder?.endLocationId : undefined) ||
+                  formData.endLocationId || ''
+                }
+                additionalStops={
+                  isEditMode && existingOrder?.additionalStops
+                    ? existingOrder.additionalStops
+                    : formData.additionalStops || []
+                }
+                mode={mode}
+                rides={existingOrder?.rides}
+                routePoints={routePoints as unknown as RoutePoint[]}
+                setRoutePoints={setRoutePoints as unknown as (points: RoutePoint[]) => void}
+                selectedDriver={selectedDriver as unknown as GetDriverDTO}
+                setSelectedDriver={setSelectedDriver as unknown as (driver: unknown) => void}
+                dynamicMapCenter={dynamicMapCenter}
+                setDynamicMapCenter={setDynamicMapCenter}
+                openDriverPopupId={openDriverPopupId}
+                setOpenDriverPopupId={setOpenDriverPopupId}
+                onRoutePointsChange={mapTabRoutePointsChange as never}
+                onRouteDistanceChange={setRouteDistance}
+                onRouteLegsChange={setRouteLegs}
+                onRouteLoadingChange={setRouteLoading}
+                selectedTariff={selectedTariff as unknown as GetTariffDTO}
+                scheduledTime={(formData.scheduledTime as string) || existingOrder?.scheduledTime}
+                completionTimeEstimate={existingOrder?.completionTimeEstimate}
+                requestedCarId={existingOrder?.requestedCar}
+                userRole={userRole}
+              />
+            </div>
+          </div>
+
+          {/* Section 3: Дата и время */}
+          <div className={`rounded-xl bg-white border overflow-hidden shadow-sm transition-all ${
+            (scheduleValid && formData.scheduledTime)
+              ? 'border-l-[3px] border-l-emerald-400 border-slate-100'
+              : openSections.has('schedule')
+                ? 'border-blue-200'
+                : 'border-slate-100'
+          }`}>
+            <button
+              type='button'
+              onClick={() => toggleSection('schedule')}
+              className={`w-full flex items-center justify-between px-4 py-3 text-left transition-colors ${
+                openSections.has('schedule') ? 'border-b border-slate-100' : 'hover:bg-slate-50/80'
+              }`}
+            >
+              <div className='flex items-center gap-3'>
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
+                  (scheduleValid && formData.scheduledTime)
+                    ? 'bg-emerald-50 text-emerald-600'
+                    : openSections.has('schedule')
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'bg-slate-100 text-slate-400'
+                }`}>
+                  {(scheduleValid && formData.scheduledTime)
+                    ? <Check className='h-4 w-4' />
+                    : <CalendarDays className='h-3.5 w-3.5' />}
+                </div>
+                <div>
+                  <div className='flex items-center gap-2'>
+                    <span className='text-sm font-semibold text-slate-800'>Дата и время</span>
+                    {formData.scheduledTime && scheduleValid && (
+                      <span className='text-xs text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded-md'>
+                        {new Date(formData.scheduledTime as string).toLocaleString('ru-RU', {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
+                    )}
+                  </div>
+                  {!openSections.has('schedule') && !(scheduleValid && formData.scheduledTime) && (
+                    <p className='text-xs text-slate-400 mt-0.5'>Укажите дату и время поездки</p>
+                  )}
+                </div>
+              </div>
+              <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 flex-shrink-0 ${
+                openSections.has('schedule') ? 'rotate-180' : ''
+              }`} />
+            </button>
+            {openSections.has('schedule') && (
+              <div className='px-4 pt-3 pb-4'>
+                <ScheduleTab
+                  onScheduleChange={(scheduledTime: string) => {
+                    methods.setValue('scheduledTime', scheduledTime);
+                    if (isEditMode && orderStatus === OrderStatus.Expired) {
+                      setOrderStatus(OrderStatus.Pending);
+                    }
+                  }}
+                  onValidityChange={setScheduleValid}
+                  initialScheduledTime={formData.scheduledTime as string}
+                  methods={methods as never}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Section 4: Пассажиры */}
+          <div className={`rounded-xl bg-white border overflow-hidden shadow-sm transition-all ${
+            passengersValid
+              ? 'border-l-[3px] border-l-emerald-400 border-slate-100'
+              : openSections.has('passengers')
+                ? 'border-blue-200'
+                : 'border-slate-100'
+          }`}>
+            <button
+              type='button'
+              onClick={() => toggleSection('passengers')}
+              className={`w-full flex items-center justify-between px-4 py-3 text-left transition-colors ${
+                openSections.has('passengers') ? 'border-b border-slate-100' : 'hover:bg-slate-50/80'
+              }`}
+            >
+              <div className='flex items-center gap-3'>
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
+                  passengersValid
+                    ? 'bg-emerald-50 text-emerald-600'
+                    : openSections.has('passengers')
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'bg-slate-100 text-slate-400'
+                }`}>
+                  {passengersValid ? <Check className='h-4 w-4' /> : <Users className='h-3.5 w-3.5' />}
+                </div>
+                <div>
+                  <div className='flex items-center gap-2'>
+                    <span className='text-sm font-semibold text-slate-800'>Пассажиры</span>
+                    {formData.passengers.length > 0 && (
+                      <span className='text-xs text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded-md'>
+                        {formData.passengers.length} чел.
+                      </span>
+                    )}
+                  </div>
+                  {!openSections.has('passengers') && !passengersValid && (
+                    <p className='text-xs text-slate-400 mt-0.5'>Добавьте хотя бы одного пассажира</p>
+                  )}
+                </div>
+              </div>
+              <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 flex-shrink-0 ${
+                openSections.has('passengers') ? 'rotate-180' : ''
+              }`} />
+            </button>
+            {openSections.has('passengers') && (
+              <div className='px-4 pt-3 pb-4'>
+                <PassengersTab
+                  users={users}
+                  passengers={formData.passengers as never[]}
+                  handlePassengersChange={handlePassengersChange as never}
+                  selectedTariff={selectedTariff as unknown as GetTariffDTO}
+                  userRole={userRole}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Section 5: Доп. услуги */}
+          <div className={`rounded-xl bg-white border overflow-hidden shadow-sm transition-all ${
+            selectedServices.length > 0
+              ? 'border-l-[3px] border-l-emerald-400 border-slate-100'
+              : openSections.has('services')
+                ? 'border-blue-200'
+                : 'border-slate-100'
+          }`}>
+            <button
+              type='button'
+              onClick={() => toggleSection('services')}
+              className={`w-full flex items-center justify-between px-4 py-3 text-left transition-colors ${
+                openSections.has('services') ? 'border-b border-slate-100' : 'hover:bg-slate-50/80'
+              }`}
+            >
+              <div className='flex items-center gap-3'>
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
+                  selectedServices.length > 0
+                    ? 'bg-emerald-50 text-emerald-600'
+                    : openSections.has('services')
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'bg-slate-100 text-slate-400'
+                }`}>
+                  {selectedServices.length > 0 ? <Check className='h-4 w-4' /> : <Package className='h-3.5 w-3.5' />}
+                </div>
+                <div>
+                  <div className='flex items-center gap-2'>
+                    <span className='text-sm font-semibold text-slate-800'>Доп. услуги</span>
+                    <span className='text-xs text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md font-medium'>
+                      необязательно
+                    </span>
+                    {selectedServices.length > 0 && (
+                      <span className='text-xs text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded-md'>
+                        {selectedServices.length} выбрано
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 flex-shrink-0 ${
+                openSections.has('services') ? 'rotate-180' : ''
+              }`} />
+            </button>
+            {openSections.has('services') && (
+              <div className='px-4 pt-3 pb-4'>
+                <ServicesTab
+                  services={services}
+                  selectedServices={selectedServices}
+                  handleServicesChange={handleServicesChange}
+                />
+              </div>
+            )}
+          </div>
+
         </div>
+
+        {/* Right: sidebar */}
+        <div className='w-80 border-l border-slate-200 bg-white flex flex-col flex-shrink-0'>
+          <div className='flex-1 overflow-y-auto p-4 space-y-4'>
+
+            {/* Price summary */}
+            <div className='rounded-xl bg-slate-50 border border-slate-100 p-4'>
+              <p className='text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3'>Стоимость</p>
+              {selectedTariff ? (
+                <div className='space-y-2'>
+                  <div className='flex justify-between items-center text-xs'>
+                    <span className='text-slate-500'>Базовая ({selectedTariff.name})</span>
+                    <span className='font-medium text-slate-700'>{selectedTariff.basePrice} сом</span>
+                  </div>
+                  {routeDistance > 0 && (
+                    <div className='flex justify-between items-center text-xs'>
+                      <span className='text-slate-500'>
+                        {Math.round(routeDistance / 100) / 10} км × {selectedTariff.perKmPrice}
+                      </span>
+                      <span className='font-medium text-slate-700'>
+                        {Math.round(calcKmPrice(routeDistance, routeLegs, routePoints, selectedTariff.perKmPrice))} сом
+                      </span>
+                    </div>
+                  )}
+                  {selectedServices.map(s => {
+                    const svc = services.find(sv => sv.id === s.serviceId);
+                    return svc ? (
+                      <div key={s.serviceId} className='flex justify-between items-center text-xs'>
+                        <span className='text-slate-500'>{svc.name} ×{s.quantity || 1}</span>
+                        <span className='font-medium text-slate-700'>{svc.price * (s.quantity || 1)} сом</span>
+                      </div>
+                    ) : null;
+                  })}
+                  {activeSale && activeSale > 0 && (
+                    <div className='flex justify-between items-center text-xs text-emerald-600'>
+                      <span>Скидка {Math.round(activeSale * 100)}%</span>
+                      <span>−{Math.round((currentPrice / (1 - activeSale)) * activeSale)} сом</span>
+                    </div>
+                  )}
+                  <div className='border-t border-slate-200 mt-1 pt-2.5 flex justify-between items-baseline'>
+                    <span className='text-sm font-semibold text-slate-800'>Итого</span>
+                    <div className='text-right'>
+                      <span className='text-xl font-bold text-slate-900'>
+                        {useCustomPrice && customPrice ? (parseFloat(customPrice) || 0) : currentPrice}
+                      </span>
+                      <span className='text-sm text-slate-400 ml-1'>сом</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className='py-4 text-center'>
+                  <Car className='h-7 w-7 text-slate-200 mx-auto mb-2' />
+                  <p className='text-xs text-slate-400'>Выберите тариф для расчёта</p>
+                </div>
+              )}
+            </div>
+
+            {/* Payment method */}
+            {userRole !== 'partner' && (
+              <div>
+                <p className='text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2'>Оплата</p>
+                <div className='grid grid-cols-2 gap-1.5'>
+                  <button
+                    type='button'
+                    onClick={() => setPaymentMethodType(PaymentMethodType.Cash)}
+                    className={`flex items-center justify-center gap-1.5 py-2 rounded-lg border text-xs font-medium transition-all ${
+                      paymentMethodType === PaymentMethodType.Cash
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
+                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                    }`}
+                  >
+                    <Banknote className='h-3.5 w-3.5' />
+                    Наличные
+                  </button>
+                  <button
+                    type='button'
+                    onClick={() => setPaymentMethodType(PaymentMethodType.Card)}
+                    className={`flex items-center justify-center gap-1.5 py-2 rounded-lg border text-xs font-medium transition-all ${
+                      paymentMethodType === PaymentMethodType.Card
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
+                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                    }`}
+                  >
+                    <CreditCard className='h-3.5 w-3.5' />
+                    Карта
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Driver section */}
+            {(userRole === 'admin' || userRole === 'operator') && (
+              <div>
+                <p className='text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2'>Водитель</p>
+                <div className='space-y-2.5'>
+                  <div>
+                    <label className='text-xs text-slate-600 mb-1 block'>
+                      Сумма водителя <span className='text-red-500'>*</span>
+                    </label>
+                    <div className='relative'>
+                      <input
+                        type='number'
+                        placeholder='0'
+                        value={driverPrice}
+                        onChange={e => setDriverPrice(e.target.value)}
+                        className='w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10'
+                      />
+                      <span className='absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400'>сом</span>
+                    </div>
+                  </div>
+                  <label className='flex items-center gap-2 cursor-pointer'>
+                    <input
+                      type='checkbox'
+                      checked={useCustomPrice}
+                      onChange={toggleCustomPrice}
+                      className='rounded text-blue-600'
+                    />
+                    <span className='text-xs text-slate-600'>Задать цену вручную</span>
+                  </label>
+                  {useCustomPrice && (
+                    <div className='relative'>
+                      <input
+                        type='number'
+                        placeholder='0'
+                        value={customPrice}
+                        onChange={e => handleCustomPriceChange(e.target.value)}
+                        className='w-full px-3 py-2 text-sm border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10 bg-blue-50'
+                      />
+                      <span className='absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400'>сом</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Operator notes */}
+            {(userRole === 'admin' || userRole === 'operator') && (
+              <div>
+                <p className='text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2'>Заметки оператора</p>
+                <textarea
+                  placeholder='Внутренние заметки...'
+                  value={operatorNotes}
+                  onChange={e => setOperatorNotes(e.target.value)}
+                  rows={3}
+                  className='w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none'
+                />
+              </div>
+            )}
+
+            {/* Readiness checklist */}
+            <div>
+              <p className='text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2'>Готовность</p>
+              <div className='space-y-1.5'>
+                {[
+                  { label: 'Тариф выбран', done: !!selectedTariff, required: true, section: 'pricing' },
+                  { label: 'Маршрут задан', done: !!(formData.startLocationId && formData.endLocationId), required: true, section: 'map' },
+                  { label: 'Дата и время', done: !!(scheduleValid && formData.scheduledTime), required: true, section: 'schedule' },
+                  { label: 'Пассажиры', done: passengersValid, required: true, section: 'passengers' },
+                  ...(userRole === 'admin' || userRole === 'operator'
+                    ? [{ label: 'Сумма водителя', done: !!driverPrice, required: true, section: '' }]
+                    : []),
+                ].map(({ label, done, required, section }) => (
+                  <div
+                    key={label}
+                    className={`flex items-center gap-2 ${section ? 'cursor-pointer' : ''}`}
+                    onClick={() => section && toggleSection(section)}
+                  >
+                    <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
+                      done ? 'bg-emerald-500' : required ? 'bg-red-100' : 'bg-slate-200'
+                    }`}>
+                      {done
+                        ? <Check className='h-2.5 w-2.5 text-white' />
+                        : required && <span className='text-red-500 text-[9px] font-bold leading-none'>!</span>
+                      }
+                    </div>
+                    <span className={`text-xs ${done ? 'text-slate-700' : required ? 'text-red-500' : 'text-slate-400'}`}>
+                      {label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+          </div>
+
+          {/* Submit button */}
+          <div className='p-4 border-t border-slate-100 flex-shrink-0'>
+            <Button
+              type='button'
+              onClick={handleSave}
+              disabled={isSubmittingOrder || isAssigningDriver}
+              className='w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-xl shadow-sm disabled:opacity-60'
+            >
+              {isAssigningDriver ? (
+                <span className='flex items-center gap-2'>
+                  <div className='w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin' />
+                  Назначение водителя...
+                </span>
+              ) : isSubmittingOrder ? (
+                <span className='flex items-center gap-2'>
+                  <div className='w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin' />
+                  {isEditMode ? 'Обновление...' : 'Создание...'}
+                </span>
+              ) : (
+                <span className='flex items-center gap-2'>
+                  <Check className='h-4 w-4' />
+                  {isEditMode ? 'Сохранить изменения' : 'Создать заказ'}
+                </span>
+              )}
+            </Button>
+          </div>
+        </div>
+
       </div>
     </div>
   );

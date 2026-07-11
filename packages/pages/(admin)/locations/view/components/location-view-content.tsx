@@ -1,8 +1,10 @@
-import { MapPin, Map, Star } from 'lucide-react';
+import { MapPin, Map, Star, Images } from 'lucide-react';
 import { Badge } from '@shared/ui/data-display/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/layout';
 import { Separator } from '@shared/ui/layout/separator';
 import type { LocationDTO } from '@entities/locations/interface';
+import { AuditEntityType } from '@entities/audit';
+import { AuditSection } from '@features/audit';
 
 interface LocationViewContentProps {
   location: LocationDTO;
@@ -108,6 +110,36 @@ export function LocationViewContent({ location }: LocationViewContentProps) {
           </div>
         </CardContent>
       </Card>
+      {/* Картинки */}
+      {location.images && location.images.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className='flex items-center gap-2'>
+              <Images className='h-5 w-5' />
+              Картинки локации
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3'>
+              {location.images.map((img, index) => (
+                <div key={img.id} className='relative rounded-lg overflow-hidden border bg-gray-100'>
+                  <span className='absolute top-1 left-1 z-10 bg-black/50 text-white text-xs rounded px-1.5 py-0.5'>
+                    {index + 1}
+                  </span>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`${process.env.NEXT_PUBLIC_UPLOADS_URL}/Uploads/${img.path}`}
+                    alt={`Картинка ${index + 1}`}
+                    className='w-full aspect-square object-cover'
+                  />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <AuditSection entityType={AuditEntityType.Location} entityId={location.id} />
     </div>
   );
 }

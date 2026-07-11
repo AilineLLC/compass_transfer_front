@@ -33,7 +33,7 @@ export function TerminalLoginForm({ className, ...props }: TerminalLoginFormProp
       if (!result.error) {
         // Успешный вход - перенаправляем на главную терминала
         toast.success('Успешный вход в терминал');
-        window.location.href = '/';
+        window.location.href = (process.env.NEXT_PUBLIC_BASE_PATH || '') + '/';
       } else if (result.error) {
         // Показываем toast для разных типов ошибок
         switch (result.error.type) {

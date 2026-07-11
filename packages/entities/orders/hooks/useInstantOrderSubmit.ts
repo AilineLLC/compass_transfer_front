@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from '@shared/lib/conditional-toast';
+import { toast } from 'sonner';
+import { ApiRequestError } from '@shared/api/client';
 import { OrdersApi, type CreateInstantOrderRequest, type CreateInstantOrderByPartnerRequest } from '../api/orders';
 import { OrderStatus, PaymentMethodType } from '../enums';
 import type { GetOrderDTO, UpdateInstantOrderDTO } from '../interface';
@@ -23,7 +24,8 @@ function convertToUpdateData(data: CreateInstantOrderRequest | CreateInstantOrde
     routeId: data.routeId || null,
     services: data.services || [],
     initialPrice: data.initialPrice,
-    status: OrderStatus.Pending, // По умолчанию статус Pending при обновлении
+    completionTimeEstimate: (data as CreateInstantOrderRequest).completionTimeEstimate || new Date().toISOString(),
+    status: OrderStatus.Pending,
     paymentMethodType: (data as CreateInstantOrderRequest).paymentMethodType ?? PaymentMethodType.Cash,
     driverPrice: (data as CreateInstantOrderRequest).driverPrice ?? null,
   };
@@ -147,8 +149,12 @@ export function useInstantOrderSubmit(
       onSuccess?.(data);
     },
     onError: (error: Error) => {
-      toast.error(
-        `❌ Ошибка ${orderId ? 'обновления' : 'создания'} заказа`);
+      if (error instanceof ApiRequestError && error.apiError.errors) {
+        const allMessages = Object.values(error.apiError.errors).flat();
+        allMessages.forEach(msg => toast.error(msg));
+      } else {
+        toast.error(`❌ Ошибка ${orderId ? 'обновления' : 'создания'} заказа: ${error.message}`);
+      }
       onError?.(error);
     },
     onSettled,

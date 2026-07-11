@@ -9,5 +9,7 @@ export interface UpdateOperatorDTO {
   fullName: string;
   avatarUrl?: string | null;
   isActive: boolean;
+  /** true только у одного оператора — того, кто ведёт чат с водителями */
+  isMainSupportOperator: boolean;
   profile: OperatorProfile;
 }

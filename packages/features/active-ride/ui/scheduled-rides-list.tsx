@@ -195,8 +195,17 @@ export function ScheduledRidesList() {
       address?.toLowerCase().includes('manas');
   };
 
+  const hasActiveOrder = scheduledRides.data.some(ride =>
+    ['Accepted', 'Arrived', 'InProgress'].includes(ride.status)
+  );
+
   return (
     <div className="space-y-4">
+      {hasActiveOrder && (
+        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+          У вас есть активный заказ. Завершите его, чтобы принять следующий.
+        </div>
+      )}
       {scheduledRides.data.map((ride) => {
         const isOpening = openingOrderId === ride.orderId;
         const isPastOrder = ['Completed', 'Cancelled', 'Expired'].includes(ride.orderStatus) ||
@@ -263,7 +272,8 @@ export function ScheduledRidesList() {
                 <Button
                   onClick={(e) => handleAcceptRide(e, ride.id)}
                   className="flex-1 flex items-center justify-center gap-2"
-                  disabled={isUpdating}
+                  disabled={isUpdating || hasActiveOrder}
+                  title={hasActiveOrder ? 'Завершите текущий заказ' : undefined}
                 >
                   <CheckCircle className="w-4 h-4" />
                   Принять

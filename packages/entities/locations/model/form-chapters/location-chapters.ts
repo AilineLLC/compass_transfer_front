@@ -1,14 +1,11 @@
 import type { FormChapter } from '@shared/ui/layout/form-sidebar';
 
-/**
- * Главы формы для локаций
- */
 export const LOCATION_FORM_CHAPTERS = {
   CREATE: [
     {
       id: 'basic',
       title: 'Основная информация',
-      description: 'Название, описание, тип и адрес локации',
+      description: 'Название, тип и группа локации',
     },
     {
       id: 'map',
@@ -16,9 +13,14 @@ export const LOCATION_FORM_CHAPTERS = {
       description: 'Выберите точное местоположение на карте',
     },
     {
-      id: 'coordinates',
-      title: 'Настройки локации',
-      description: 'Параметры активности и популярности локации',
+      id: 'settings',
+      title: 'Настройки',
+      description: 'Активность, видимость на лендинге',
+    },
+    {
+      id: 'profile',
+      title: 'Профиль локации',
+      description: 'Описание, фотографии, POI, теги, совет',
     },
   ] as FormChapter[],
 
@@ -26,7 +28,7 @@ export const LOCATION_FORM_CHAPTERS = {
     {
       id: 'basic',
       title: 'Основная информация',
-      description: 'Название, описание, тип и адрес локации',
+      description: 'Название, тип и группа локации',
     },
     {
       id: 'map',
@@ -34,9 +36,14 @@ export const LOCATION_FORM_CHAPTERS = {
       description: 'Выберите точное местоположение на карте',
     },
     {
-      id: 'coordinates',
-      title: 'Настройки локации',
-      description: 'Параметры активности и популярности локации',
+      id: 'settings',
+      title: 'Настройки',
+      description: 'Активность, видимость на лендинге',
+    },
+    {
+      id: 'profile',
+      title: 'Профиль локации',
+      description: 'Описание, фотографии, POI, теги, совет',
     },
   ] as FormChapter[],
 };

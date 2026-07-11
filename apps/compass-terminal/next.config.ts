@@ -8,9 +8,21 @@ function normalizeApiOrigin(raw?: string) {
   return trimmed.replace(/\/api$/i, '');
 }
 
+function toHostname(raw?: string) {
+  if (!raw) return undefined;
+  try {
+    return new URL(raw.trim()).hostname;
+  } catch {
+    return undefined;
+  }
+}
+
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || '';
+
 const API_ORIGIN =
   normalizeApiOrigin(process.env.API_ORIGIN) ??
   normalizeApiOrigin(process.env.NEXT_PUBLIC_API_URL);
+const UPLOADS_HOSTNAME = toHostname(process.env.NEXT_PUBLIC_UPLOADS_URL);
 const securityHeaders = [
   {
     key: 'X-DNS-Prefetch-Control',
@@ -39,6 +51,8 @@ const securityHeaders = [
 ];
 const nextConfig: NextConfig = {
   reactStrictMode: false,
+  basePath: BASE_PATH,
+  assetPrefix: BASE_PATH || undefined,
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -46,12 +60,20 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
+    unoptimized: process.env.NEXT_PUBLIC_IMAGE_UNOPTIMIZED === 'true',
+    loaderFile: BASE_PATH ? './src/image-loader.ts' : undefined,
     formats: ['image/webp', 'image/avif'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     minimumCacheTTL: 60 * 60 * 24 * 365,
     dangerouslyAllowSVG: false,
     remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'compass.ailine.kg',
+        port: '',
+        pathname: '/**',
+      },
       {
         protocol: 'https',
         hostname: 'via.placeholder.com',
@@ -106,6 +128,9 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      ...(UPLOADS_HOSTNAME
+        ? [{ protocol: 'https' as const, hostname: UPLOADS_HOSTNAME, port: '', pathname: '/**' }]
+        : []),
     ],
   },
 
@@ -152,8 +177,12 @@ const nextConfig: NextConfig = {
   },
 
   async rewrites() {
-    if (!API_ORIGIN) return [];
-    return [{ source: '/api/:path*', destination: `${API_ORIGIN}/:path*` }];
+    if (!API_ORIGIN) return { beforeFiles: [], afterFiles: [], fallback: [] };
+    return {
+      beforeFiles: [],
+      afterFiles: [],
+      fallback: [{ source: '/api/:path*', destination: `${API_ORIGIN}/:path*` }],
+    };
   },
 
   experimental: {

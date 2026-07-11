@@ -1,7 +1,8 @@
 import { type NotificationType } from '@entities/notifications';
-import { apiGet, apiPost, apiPut, apiDelete } from './client';
+import { apiGet, apiPost, apiDelete } from './client';
 
-// Операторы поиска
+// ─── Вспомогательные типы ───────────────────────────────────────────────────
+
 type SearchOperator =
   | 'Equals'
   | 'NotEquals'
@@ -12,7 +13,6 @@ type SearchOperator =
   | 'IsEmpty'
   | 'IsNotEmpty';
 
-// Операторы сравнения для дат
 type DateOperator =
   | 'GreaterThan'
   | 'GreaterThanOrEqual'
@@ -20,14 +20,19 @@ type DateOperator =
   | 'LessThanOrEqual'
   | 'LessThan';
 
-// Поля для сортировки
 type SortOrder = 'Asc' | 'Desc';
 
-// Типы заказов
-type OrderType = 'Unknown' | 'Instant' | 'Scheduled' | 'Partner' | 'Shuttle' | 'Subscription';
+export type OrderType =
+  | 'Unknown'
+  | 'Instant'
+  | 'Scheduled'
+  | 'Partner'
+  | 'Shuttle'
+  | 'Subscription';
 
-// Интерфейс уведомления
-interface GetNotificationDTO {
+// ─── DTO ────────────────────────────────────────────────────────────────────
+
+export interface GetNotificationDTO {
   id: string;
   type: NotificationType;
   title: string;
@@ -37,19 +42,19 @@ interface GetNotificationDTO {
   isRead: boolean;
   orderType: OrderType;
   userId?: string;
+  data: unknown;
   createdAt?: string;
 }
 
-// Типы для API фильтров
-interface NotificationFilters {
-  // Пагинация (cursor-based)
+export interface NotificationFilters {
+  // Cursor-based пагинация
   first?: boolean;
   before?: string;
   after?: string;
   last?: boolean;
   size?: number;
 
-  // Поиск по полям
+  // Фильтры
   type?: NotificationType[];
   title?: string;
   titleOp?: SearchOperator;
@@ -71,7 +76,7 @@ interface NotificationFilters {
   sortOrder?: SortOrder;
 }
 
-interface NotificationApiResponse {
+export interface NotificationApiResponse {
   data: GetNotificationDTO[];
   totalCount: number;
   pageSize: number;
@@ -79,8 +84,7 @@ interface NotificationApiResponse {
   hasNext: boolean;
 }
 
-// DTO для создания уведомления
-interface CreateNotificationDTO {
+export interface CreateNotificationDTO {
   type: NotificationType;
   title: string;
   content?: string | null;
@@ -88,99 +92,114 @@ interface CreateNotificationDTO {
   rideId?: string | null;
   orderType?: OrderType;
   userId?: string;
+  data?: unknown;
 }
 
-// DTO для обновления уведомления
-interface UpdateNotificationDTO {
-  type?: NotificationType;
-  title?: string;
+export interface BroadcastToUserDTO {
+  type: NotificationType;
+  title: string;
   content?: string | null;
-  orderId?: string | null;
-  rideId?: string | null;
-  orderType?: OrderType;
-  isRead?: boolean;
+  data?: unknown;
 }
+
+export interface BroadcastToUsersDTO extends BroadcastToUserDTO {
+  userIds: string[];
+}
+
+/** Схема поля data для конкретного типа уведомления (из /Notification/.doc/{type}) */
+export interface NotificationDocDTO {
+  type: NotificationType;
+  description: string;
+  dataSchema: Record<string, unknown>;
+  example?: unknown;
+}
+
+// ─── API ────────────────────────────────────────────────────────────────────
 
 export const notificationsApi = {
-  // Получение списка уведомлений
+  // GET /Notification — все уведомления (admin)
   getNotifications: async (params?: NotificationFilters): Promise<NotificationApiResponse> => {
     const result = await apiGet<NotificationApiResponse>('/Notification', { params });
 
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
+    if (result.error) throw new Error(result.error.message);
 
     return result.data!;
   },
 
-  // Получение моих уведомлений
-  getMyNotifications: async (params?: NotificationFilters): Promise<NotificationApiResponse> => {
-    const result = await apiGet<NotificationApiResponse>('/Notification/me', { params });
-
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
-
-    return result.data!;
-  },
-
-  // Получение уведомления по ID
-  getNotificationById: async (id: string): Promise<GetNotificationDTO> => {
-    const result = await apiGet<GetNotificationDTO>(`/Notification/${id}`);
-
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
-
-    return result.data!;
-  },
-
-  // Создание уведомления
+  // POST /Notification — создать уведомление
   createNotification: async (data: CreateNotificationDTO): Promise<GetNotificationDTO> => {
     const result = await apiPost<GetNotificationDTO, CreateNotificationDTO>('/Notification', data);
 
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
+    if (result.error) throw new Error(result.error.message);
 
     return result.data!;
   },
 
-  // Обновление уведомления
-  updateNotification: async (id: string, data: UpdateNotificationDTO): Promise<GetNotificationDTO> => {
-    const result = await apiPut<GetNotificationDTO, UpdateNotificationDTO>(`/Notification/${id}`, data);
+  // GET /Notification/me — мои уведомления
+  getMyNotifications: async (params?: NotificationFilters): Promise<NotificationApiResponse> => {
+    const result = await apiGet<NotificationApiResponse>('/Notification/me', { params });
 
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
+    if (result.error) throw new Error(result.error.message);
 
     return result.data!;
   },
 
-  // Удаление уведомления
+  // GET /Notification/{uuid}
+  getNotificationById: async (id: string): Promise<GetNotificationDTO> => {
+    const result = await apiGet<GetNotificationDTO>(`/Notification/${id}`);
+
+    if (result.error) throw new Error(result.error.message);
+
+    return result.data!;
+  },
+
+  // DELETE /Notification/{uuid}
   deleteNotification: async (id: string): Promise<void> => {
     const result = await apiDelete(`/Notification/${id}`);
 
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
+    if (result.error) throw new Error(result.error.message);
   },
 
-  // Отметить уведомления как прочитанные
+  // POST /Notification/read — отметить прочитанными (массив id)
   markAsRead: async (notificationIds: string[]): Promise<void> => {
     const result = await apiPost<void, string[]>('/Notification/read', notificationIds);
 
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
+    if (result.error) throw new Error(result.error.message);
   },
-};
 
-export type { 
-  NotificationFilters, 
-  NotificationApiResponse, 
-  GetNotificationDTO,
-  CreateNotificationDTO,
-  UpdateNotificationDTO,
-  OrderType
+  // GET /Notification/.doc/{type} — схема поля data для типа
+  getNotificationDoc: async (type: NotificationType): Promise<NotificationDocDTO> => {
+    const result = await apiGet<NotificationDocDTO>(`/Notification/.doc/${type}`);
+
+    if (result.error) throw new Error(result.error.message);
+
+    return result.data!;
+  },
+
+  // POST /Notification/broadcast/user/{uuid}
+  broadcastToUser: async (userId: string, data: BroadcastToUserDTO): Promise<void> => {
+    const result = await apiPost<void, BroadcastToUserDTO>(
+      `/Notification/broadcast/user/${userId}`,
+      data,
+    );
+
+    if (result.error) throw new Error(result.error.message);
+  },
+
+  // POST /Notification/broadcast/users
+  broadcastToUsers: async (data: BroadcastToUsersDTO): Promise<void> => {
+    const result = await apiPost<void, BroadcastToUsersDTO>('/Notification/broadcast/users', data);
+
+    if (result.error) throw new Error(result.error.message);
+  },
+
+  // POST /Notification/broadcast/role/{role}
+  broadcastToRole: async (role: string, data: BroadcastToUserDTO): Promise<void> => {
+    const result = await apiPost<void, BroadcastToUserDTO>(
+      `/Notification/broadcast/role/${role}`,
+      data,
+    );
+
+    if (result.error) throw new Error(result.error.message);
+  },
 };

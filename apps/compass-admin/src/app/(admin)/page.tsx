@@ -3,7 +3,6 @@ import { getUserFromCookie } from '@shared/lib/parse-cookie';
 import { Role } from '@entities/users/enums';
 import { AdminDashboard } from '@pages/(admin)/dashboard/admin';
 import { OperatorDashboard } from '@pages/(admin)/dashboard/operator';
-import { PartnerDashboard } from '@pages/(admin)/dashboard/partner';
 
 export default async function Page({ params }: { params: { status?: string } }) {
   // Получаем роль пользователя на сервере
@@ -23,7 +22,7 @@ export default async function Page({ params }: { params: { status?: string } }) 
       return <OperatorDashboard status={params.status} />;
 
     case Role.Partner:
-      return <PartnerDashboard userRole="partner" />;
+      redirect('/orders');
 
     case Role.Driver:
     case Role.Customer:

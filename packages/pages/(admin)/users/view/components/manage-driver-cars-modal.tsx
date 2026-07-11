@@ -49,9 +49,9 @@ const carColorLabels: Record<CarColor, string> = {
 
 
 
-export function ManageDriverCarsModal({ 
-  isOpen, 
-  onClose, 
+export function ManageDriverCarsModal({
+  isOpen,
+  onClose,
   driverId,
   driverName,
   onAssignCar,
@@ -65,16 +65,17 @@ export function ManageDriverCarsModal({
   const loadDriverCars = async () => {
     try {
       setLoading(true);
-      
+
       // Получаем все автомобили и фильтруем те, к которым назначен данный водитель
       const response = await carsApi.getCars({
-        pageSize: 100,
+        size: 100,
+        Includes: 'Drivers',
       });
-      
+
       const driverCars = response.data.filter(car =>
         car.drivers?.some(driver => driver.driverId === driverId)
       );
-      
+
       setCars(driverCars);
     } catch (error) {
       console.error('Ошибка загрузки автомобилей водителя:', error);

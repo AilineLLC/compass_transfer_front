@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Search,
   Filter,
@@ -11,7 +12,10 @@ import {
   Download,
   Check,
   RotateCw,
+  User,
 } from 'lucide-react';
+import { usersApi } from '@shared/api/users';
+import type { GetDriverDTO } from '@entities/users/interface';
 import { Badge } from '@shared/ui/data-display/badge';
 import { Button } from '@shared/ui/forms/button';
 import { Checkbox } from '@shared/ui/forms/checkbox';
@@ -55,6 +59,11 @@ interface ColumnVisibility {
 interface OrdersTableFiltersProps {
   searchTerm: string;
   setSearchTerm: (term: string) => void;
+  searchByPassengers: string;
+  setSearchByPassengers: (term: string) => void;
+  participantId?: string;
+  participantName?: string;
+  setParticipant: (id: string | undefined, name: string | undefined) => void;
   typeFilter: OrderType[];
   handleTypeFilterChange: (types: OrderType[]) => void;
   statusFilter: OrderStatus[];
@@ -82,6 +91,11 @@ interface OrdersTableFiltersProps {
 export function OrdersTableFilters({
   searchTerm,
   setSearchTerm,
+  searchByPassengers,
+  setSearchByPassengers,
+  participantId,
+  participantName,
+  setParticipant,
   typeFilter,
   handleTypeFilterChange,
   statusFilter,
@@ -106,6 +120,94 @@ export function OrdersTableFilters({
   justSavedFilters,
 }: OrdersTableFiltersProps) {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+
+  // Поиск водителя
+  const [driverSearch, setDriverSearch] = useState(participantName || '');
+  const [driverResults, setDriverResults] = useState<GetDriverDTO[]>([]);
+  const [showDriverDropdown, setShowDriverDropdown] = useState(false);
+  const [driverSearchLoading, setDriverSearchLoading] = useState(false);
+  const driverInputRef = useRef<HTMLInputElement>(null);
+  const driverWrapperRef = useRef<HTMLDivElement>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null);
+
+  const updateDropdownPos = useCallback(() => {
+    if (driverInputRef.current) {
+      const rect = driverInputRef.current.getBoundingClientRect();
+      setDropdownPos({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    }
+  }, []);
+
+  useEffect(() => {
+    setDriverSearch(participantName || '');
+  }, [participantName]);
+
+  useEffect(() => {
+    if (participantId) return;
+    if (!driverSearch.trim()) {
+      setDriverResults([]);
+      setShowDriverDropdown(false);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setDriverSearchLoading(true);
+      try {
+        const res = await usersApi.getDrivers({
+          fullName: driverSearch.trim(),
+          fullNameOp: 'Contains',
+          size: 8,
+        });
+        setDriverResults(res.data);
+        setShowDriverDropdown(true);
+        updateDropdownPos();
+      } catch {
+        setDriverResults([]);
+      } finally {
+        setDriverSearchLoading(false);
+      }
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [driverSearch, participantId, updateDropdownPos]);
+
+  useEffect(() => {
+    if (!showDriverDropdown) return;
+    const handleScroll = () => updateDropdownPos();
+    const handleResize = () => updateDropdownPos();
+    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [showDriverDropdown, updateDropdownPos]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      const wrapperContains = driverWrapperRef.current?.contains(target);
+      const dropdownEl = document.getElementById('driver-search-dropdown');
+      const dropdownContains = dropdownEl?.contains(target);
+      if (!wrapperContains && !dropdownContains) {
+        setShowDriverDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleDriverSelect = (driver: GetDriverDTO) => {
+    setParticipant(driver.id, driver.fullName);
+    setDriverSearch(driver.fullName);
+    setShowDriverDropdown(false);
+    setDriverResults([]);
+  };
+
+  const handleDriverClear = () => {
+    setParticipant(undefined, undefined);
+    setDriverSearch('');
+    setDriverResults([]);
+    setShowDriverDropdown(false);
+  };
+
   const handleTypeChange = (type: OrderType, checked: boolean) => {
     if (checked) {
       handleTypeFilterChange([...typeFilter, type]);
@@ -137,10 +239,12 @@ export function OrdersTableFilters({
     handleSubStatusFilterChange([]);
     setAirFlightInput('');
     setFlyReisInput('');
+    handleDriverClear();
   };
 
   const activeFiltersCount =
     [airFlightInput, flyReisInput].filter(Boolean).length +
+    (participantId ? 1 : 0) +
     typeFilter.length +
     statusFilter.length +
     subStatusFilter.length;
@@ -159,6 +263,86 @@ export function OrdersTableFilters({
               className='pl-10 w-full md:w-80'
             />
           </div>
+
+          <div className='relative'>
+            <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
+            <Input
+              placeholder='По имени пассажира...'
+              value={searchByPassengers}
+              onChange={e => setSearchByPassengers(e.target.value)}
+              className='pl-10 w-full md:w-80'
+            />
+          </div>
+
+          {/* Фильтр по водителю */}
+          <div className='relative w-full md:w-72' ref={driverWrapperRef}>
+            {participantId ? (
+              <div className='flex items-center gap-2 h-10 px-3 rounded-md border border-blue-300 bg-blue-50 text-sm'>
+                <User className='h-4 w-4 text-blue-600 shrink-0' />
+                <span className='flex-1 truncate text-blue-800 font-medium'>{driverSearch}</span>
+                <button onClick={handleDriverClear} className='text-blue-500 hover:text-blue-700 shrink-0'>
+                  <X className='h-4 w-4' />
+                </button>
+              </div>
+            ) : (
+              <>
+                <User className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
+                <Input
+                  ref={driverInputRef}
+                  placeholder='Поиск водителя...'
+                  value={driverSearch}
+                  onChange={e => {
+                    setDriverSearch(e.target.value);
+                    if (!e.target.value.trim()) handleDriverClear();
+                  }}
+                  onFocus={() => {
+                    if (driverResults.length > 0) {
+                      setShowDriverDropdown(true);
+                      updateDropdownPos();
+                    }
+                  }}
+                  className='pl-10 w-full'
+                />
+                {driverSearch && (
+                  <button
+                    onClick={handleDriverClear}
+                    className='absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground'
+                  >
+                    <X className='h-4 w-4' />
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+
+          {showDriverDropdown && !participantId && dropdownPos && typeof document !== 'undefined' && createPortal(
+            <div
+              id='driver-search-dropdown'
+              style={{ position: 'fixed', top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width, zIndex: 9999 }}
+              className='rounded-md border bg-white shadow-lg max-h-56 overflow-y-auto'
+            >
+              {driverSearchLoading ? (
+                <div className='px-3 py-2 text-sm text-muted-foreground'>Поиск...</div>
+              ) : (
+                driverResults.map(driver => (
+                  <button
+                    key={driver.id}
+                    className='w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted/60 text-left'
+                    onMouseDown={e => { e.preventDefault(); handleDriverSelect(driver); }}
+                  >
+                    <User className='h-4 w-4 text-muted-foreground shrink-0' />
+                    <div className='min-w-0'>
+                      <p className='font-medium truncate'>{driver.fullName}</p>
+                      {driver.phoneNumber && (
+                        <p className='text-xs text-muted-foreground truncate'>{driver.phoneNumber}</p>
+                      )}
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>,
+            document.body
+          )}
 
           {/* Фильтр типа заказа */}
           <DropdownMenu>

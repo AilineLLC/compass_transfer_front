@@ -13,7 +13,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@shared/ui/modals/tooltip';
-import type { Location } from '@entities/user';
+import type { LocationDTO as Location } from '@entities/locations/interface/LocationDTO';
 import { Button } from './button';
 import { Input } from './input';
 
@@ -23,6 +23,7 @@ interface LocationSelectProps {
   placeholder?: string;
   className?: string;
   error?: boolean;
+  isLandingOnly?: boolean;
 }
 
 export function LocationSelect({
@@ -31,6 +32,7 @@ export function LocationSelect({
   placeholder = 'Выберите локацию',
   className = '',
   error = false,
+  isLandingOnly,
 }: LocationSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -40,6 +42,7 @@ export function LocationSelect({
   const [sheetLocationId, setSheetLocationId] = useState<string | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const loadingForRef = useRef<string | null>(null);
 
   const debouncedSearch = useDebounce(searchQuery, 300);
 
@@ -61,10 +64,16 @@ export function LocationSelect({
 
   // Загрузка выбранной локации при изменении value
   useEffect(() => {
-    if (value && !selectedLocation) {
+    if (value) {
+      if (selectedLocation?.id === value) return;
       loadSelectedLocation(value);
+    } else {
+      loadingForRef.current = null;
+      setSelectedLocation(null);
     }
-  }, [value, selectedLocation]);
+  // selectedLocation намеренно исключён: изменение локации не должно перезапускать загрузку
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
 
   // Закрытие при клике вне компонента
   useEffect(() => {
@@ -82,7 +91,19 @@ export function LocationSelect({
   const loadPopularLocations = async () => {
     setIsLoading(true);
     try {
-      const popularLocations = await locationsApi.getPopularLocations(10);
+      let popularLocations: Location[];
+
+      if (isLandingOnly) {
+        const result = await locationsApi.getLocations({
+          isLandingOnly: true,
+          size: 10,
+          sortBy: 'name',
+          sortOrder: 'Asc',
+        });
+        popularLocations = result.data as unknown as Location[];
+      } else {
+        popularLocations = await locationsApi.getPopularLocations(10);
+      }
 
       setLocations(popularLocations);
     } catch (error) {
@@ -95,7 +116,20 @@ export function LocationSelect({
   const searchLocations = async (query: string) => {
     setIsLoading(true);
     try {
-      const searchResults = await locationsApi.searchLocations(query, 10);
+      let searchResults: Location[];
+
+      if (isLandingOnly) {
+        const result = await locationsApi.getLocations({
+          isLandingOnly: true,
+          'FTS.Plain': query,
+          size: 10,
+          sortBy: 'name',
+          sortOrder: 'Asc',
+        });
+        searchResults = result.data as unknown as Location[];
+      } else {
+        searchResults = await locationsApi.searchLocations(query, 10);
+      }
 
       setLocations(searchResults);
     } catch (error) {
@@ -106,9 +140,10 @@ export function LocationSelect({
   };
 
   const loadSelectedLocation = async (locationId: string) => {
+    loadingForRef.current = locationId;
     try {
       const location = await locationsApi.getLocationById(locationId);
-
+      if (loadingForRef.current !== locationId) return;
       setSelectedLocation(location);
     } catch (error) {
       logger.error('Ошибка загрузки выбранной локации:', error);
@@ -123,7 +158,9 @@ export function LocationSelect({
   };
 
   const handleClear = () => {
+    loadingForRef.current = null;
     setSelectedLocation(null);
+    setLocations([]);
     onValueChange(null);
     setSearchQuery('');
   };
@@ -194,7 +231,7 @@ export function LocationSelect({
 
         {/* Выпадающий список */}
         {isOpen && (
-          <Card className='absolute top-full left-0 right-0 z-50 mt-1 max-h-60 overflow-hidden'>
+          <Card className='absolute top-full left-0 right-0 z-50 mt-1 max-h-60 overflow-hidden bg-background shadow-lg border'>
             <CardContent className='p-0'>
               {/* Поиск */}
               {!selectedLocation && (
@@ -209,7 +246,7 @@ export function LocationSelect({
               )}
 
               {/* Список локаций */}
-              <div className='max-h-48 overflow-y-auto'>
+              <div className='max-h-48 overflow-y-auto pb-5'>
                 {isLoading ? (
                   <div className='flex items-center justify-center p-4'>
                     <Loader2 className='h-4 w-4 animate-spin' />

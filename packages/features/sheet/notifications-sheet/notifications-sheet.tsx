@@ -25,7 +25,77 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@shared/ui/navigation/dropdown-menu';
-import { useNotifications } from '@features/notifications/hooks/useNotifications';
+import { useNotificationContext } from '@entities/notifications/context';
+
+// ──────────────────────────────────────────────────────────────
+// Превью структурированных данных уведомления
+// ──────────────────────────────────────────────────────────────
+
+type NotifData = Record<string, unknown>;
+
+function NotificationDataPreview({ data, type }: { data: unknown; type: string }) {
+  if (!data || typeof data !== 'object') return null;
+
+  const d = data as NotifData;
+
+  // Маршрут (Waypoints)
+  const waypoints = (d.Waypoints || d.waypoints) as Array<{ Location?: { Address?: string; Name?: string }; location?: { address?: string; name?: string } }> | undefined;
+  const start = waypoints?.[0];
+  const end = waypoints?.[waypoints.length - 1];
+  const startAddr = start?.Location?.Address || start?.location?.address;
+  const endAddr = end?.Location?.Address || end?.location?.address;
+  const hasRoute = startAddr && endAddr && waypoints && waypoints.length >= 2;
+
+  // Водитель (RideAccepted / DriverAssigned)
+  const driver = d.Driver as { FullName?: string; fullName?: string; Rating?: number; rating?: number } | undefined;
+  const car = d.Car as { Model?: string; model?: string; Color?: string; color?: string; LicensePlate?: string; licensePlate?: string } | undefined;
+
+  // Номер заказа
+  const orderNumber = d.OrderNumber || d.orderNumber;
+
+  const hasDriver = driver?.FullName || driver?.fullName;
+  const hasCar = car?.Model || car?.model;
+
+  if (!hasRoute && !hasDriver && !orderNumber) return null;
+
+  return (
+    <div className='mt-1 mb-1 space-y-1 text-xs text-muted-foreground border-l-2 border-muted pl-2'>
+      {orderNumber && (
+        <div className='font-medium text-foreground'>№ {String(orderNumber)}</div>
+      )}
+      {hasRoute && (
+        <div className='space-y-0.5'>
+          <div className='flex gap-1'>
+            <span className='text-blue-500'>●</span>
+            <span className='line-clamp-1'>{startAddr}</span>
+          </div>
+          {waypoints && waypoints.length > 2 && (
+            <div className='flex gap-1 text-orange-500'>
+              <span>●</span>
+              <span>+{waypoints.length - 2} остановок</span>
+            </div>
+          )}
+          <div className='flex gap-1'>
+            <span className='text-gray-400'>●</span>
+            <span className='line-clamp-1'>{endAddr}</span>
+          </div>
+        </div>
+      )}
+      {(hasDriver || hasCar) && (
+        <div className='flex flex-wrap gap-x-3'>
+          {hasDriver && (
+            <span>🧑‍✈️ {driver?.FullName || driver?.fullName}
+              {(driver?.Rating || driver?.rating) ? ` ★${driver.Rating || driver.rating}` : ''}
+            </span>
+          )}
+          {hasCar && (
+            <span>🚗 {car?.Model || car?.model} {car?.Color || car?.color} {car?.LicensePlate || car?.licensePlate}</span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface NotificationsSheetProps {
   open: boolean;
@@ -35,20 +105,13 @@ interface NotificationsSheetProps {
 export function NotificationsSheet({ open, onOpenChange }: NotificationsSheetProps) {
   const [activeCategory, setActiveCategory] = React.useState('all');
 
-  // Используем хук для получения уведомлений
   const {
     notifications: notificationsData,
     isLoading,
     unreadCount,
-    actions: { loadNotifications, markAsRead, deleteNotification }
-  } = useNotifications();
+    actions: { refresh, markAsRead, deleteNotification },
+  } = useNotificationContext();
 
-  // Загружаем уведомления при монтировании
-  React.useEffect(() => {
-    loadNotifications();
-  }, [loadNotifications]);
-
-  // Фильтруем уведомления по категории
   const filteredNotifications = React.useMemo(() => {
     switch (activeCategory) {
       case 'unread':
@@ -60,7 +123,6 @@ export function NotificationsSheet({ open, onOpenChange }: NotificationsSheetPro
     }
   }, [notificationsData, activeCategory]);
 
-  // Категории уведомлений
   const categories = React.useMemo(
     () => [
       {
@@ -85,32 +147,30 @@ export function NotificationsSheet({ open, onOpenChange }: NotificationsSheetPro
     [notificationsData],
   );
 
-  // Функции для работы с уведомлениями (используем API)
   const handleMarkAsRead = React.useCallback(async (id: string) => {
     try {
       await markAsRead(id);
-      // Перезагружаем уведомления после успешного выполнения
-      await loadNotifications();
-      // Уведомляем другие компоненты об изменении
       notificationsEvents.emit();
     } catch {
-      toast.error('Ошибка при отметке уведомления как прочитанного:');
+      toast.error('Ошибка при отметке уведомления как прочитанного');
     }
-  }, [markAsRead, loadNotifications]);
+  }, [markAsRead]);
 
   const handleDeleteNotification = React.useCallback(async (id: string) => {
     try {
       await deleteNotification(id);
-      // Перезагружаем уведомления после успешного удаления
-      await loadNotifications();
-      // Уведомляем другие компоненты об изменении
       notificationsEvents.emit();
     } catch {
-      toast.error('Ошибка при удалении уведомления:');
+      toast.error('Ошибка при удалении уведомления');
     }
-  }, [deleteNotification, loadNotifications]);
+  }, [deleteNotification]);
 
-
+  // Обновляем список при открытии шторки
+  React.useEffect(() => {
+    if (open) {
+      refresh();
+    }
+  }, [open, refresh]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -131,11 +191,10 @@ export function NotificationsSheet({ open, onOpenChange }: NotificationsSheetPro
         </SheetHeader>
 
         <div className='flex h-[calc(100vh-3.5rem)] gap-4'>
-          {/* Сайдбар с категориями */}
+          {/* Категории */}
           <div className='w-16 border-r flex flex-col items-center justify-start gap-1 p-2'>
             {categories.map(category => {
               const Icon = category.icon;
-
               return (
                 <SimpleTooltip key={category.id} content={category.label}>
                   <button
@@ -161,7 +220,7 @@ export function NotificationsSheet({ open, onOpenChange }: NotificationsSheetPro
             })}
           </div>
 
-          {/* Список уведомлений */}
+          {/* Список */}
           <div className='flex-1 overflow-y-auto min-h-0'>
             <div className='flex flex-col gap-4 p-4'>
               {isLoading ? (
@@ -201,17 +260,27 @@ export function NotificationsSheet({ open, onOpenChange }: NotificationsSheetPro
                             {notification.title}
                           </h4>
                         </div>
-                        <p className='text-sm text-muted-foreground mb-2 line-clamp-2'>
-                          {notification.content || notification.title}
-                        </p>
-                        <div className='flex items-center justify-between'>
+
+                        {/* Content с поддержкой переносов строк */}
+                        {notification.content && (
+                          <p className='text-sm text-muted-foreground mb-2 whitespace-pre-line'>
+                            {notification.content}
+                          </p>
+                        )}
+
+                        {/* Дополнительные данные из поля data */}
+                        <NotificationDataPreview data={notification.data} type={notification.type} />
+
+                        <div className='flex items-center justify-between mt-2'>
                           <p className='text-xs text-muted-foreground'>
-                            {notification.createdAt ? new Date(notification.createdAt).toLocaleString('ru-RU') : 'Недавно'}
+                            {notification.createdAt
+                              ? new Date(notification.createdAt).toLocaleString('ru-RU')
+                              : 'Недавно'}
                           </p>
                           {notification.orderId && (
                             <Link
                               href={`/orders/edit/${notification.orderType?.toLowerCase() || 'instant'}/${notification.orderId}`}
-                              onClick={(e) => {
+                              onClick={e => {
                                 e.stopPropagation();
                                 onOpenChange(false);
                               }}
@@ -230,7 +299,7 @@ export function NotificationsSheet({ open, onOpenChange }: NotificationsSheetPro
                             variant='ghost'
                             size='sm'
                             className='h-8 w-8 p-0'
-                            onClick={(e) => e.stopPropagation()}
+                            onClick={e => e.stopPropagation()}
                           >
                             <MoreHorizontal className='h-4 w-4' />
                           </Button>

@@ -21,6 +21,12 @@ export interface UpdateScheduledOrderDTO {
   /** ID конечной точки (опционально, если не используется routeId) */
   endLocationId?: string | null;
 
+  /** Текстовый адрес начальной точки */
+  startAddress: string;
+
+  /** Текстовый адрес конечной точки */
+  endAddress: string;
+
   /** Промежуточные точки (ID локаций) */
   additionalStops: string[];
 
@@ -32,6 +38,9 @@ export interface UpdateScheduledOrderDTO {
 
   /** Запланированное время */
   scheduledTime: string;
+
+  /** Примерное время завершения заказа (ISO строка) */
+  completionTimeEstimate: string;
 
   /** Информация о пассажирах (без ID, так как это данные для обновления) */
   passengers: PassengerDTO[];
@@ -53,6 +62,9 @@ export interface UpdateScheduledOrderDTO {
 
   /** Комментарии к заказу */
   notes?: string | null;
+
+  /** Заметки операторов (не видны водителям и контрагентам) */
+  operatorNotes?: string | null;
 
   /** Метод оплаты */
   paymentMethodType?: PaymentMethodType | null;

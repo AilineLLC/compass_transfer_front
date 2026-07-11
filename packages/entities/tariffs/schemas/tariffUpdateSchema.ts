@@ -89,6 +89,16 @@ export const tariffUpdateSchema = z.object({
         .min(0, { message: 'Время ожидания не может быть отрицательным' })
         .max(60, { message: 'Время ожидания не может превышать 60 минут' })
     ),
+
+  isLanding: z
+    .boolean()
+    .nullable()
+    .default(false),
+
+  color: z
+    .string()
+    .nullable()
+    .default(null),
 });
 
 /**

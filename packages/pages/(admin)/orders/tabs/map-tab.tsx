@@ -1,13 +1,17 @@
 'use client';
 
-import { Car, MapPin } from 'lucide-react';
+import { Car, MapPin, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import type { RoutePoint, ActiveDriverDTO } from '@shared/components/map/types';
 import { Button } from '@shared/ui/forms/button';
+import { Skeleton } from '@shared/ui/data-display/skeleton';
+import { useCarById } from '@shared/hooks/useCarById';
 import type { GetRideDTO } from '@entities/orders/interface';
 import type { GetDriverDTO } from '@entities/users/interface';
+import type { GetTariffDTO } from '@entities/tariffs/interface';
 import { useDeleteRide } from '@entities/orders/hooks';
 import { DriverPanel } from '@features/orders/components/DriverPanel';
+import { DriverOrdersWidget } from '@features/orders/components/DriverOrdersWidget';
 import { LocationSelectionModal } from '@features/orders/components/LocationSelectionModal';
 import { useOrderLocations, RoutePointsList, LocationMap } from '@features/orders/locations';
 
@@ -31,6 +35,16 @@ interface MapTabProps {
   setSelectedDriver?: (driver: GetDriverDTO | null) => void;
   dynamicMapCenter?: { latitude: number; longitude: number } | null;
 
+  // ID предпочитаемого автомобиля пассажиров
+  requestedCarId?: string | null;
+
+  // Запланированное время заказа (для виджета конфликтов водителя)
+  scheduledTime?: string | null;
+  completionTimeEstimate?: string | null;
+
+  // Тариф заказа — для фильтрации водителей по классу
+  selectedTariff?: GetTariffDTO | null;
+
   // Для моментальных заказов - показывать радиус водителей
   showDriverRadius?: boolean;
   isInstantOrder?: boolean; // Флаг для моментальных заказов
@@ -42,7 +56,8 @@ interface MapTabProps {
   onRouteChange?: (routePoints: RoutePoint[]) => void;
   onRoutePointsChange?: (startId: string, endId: string, points: RoutePoint[]) => void;
   onRouteDistanceChange?: (distance: number) => void;
-  onRouteLoadingChange?: (loading: boolean) => void; // колбэк для состояния загрузки
+  onRouteLegsChange?: (legs: { distance: number }[]) => void;
+  onRouteLoadingChange?: (loading: boolean) => void;
 }
 
 export function MapTab({
@@ -51,6 +66,9 @@ export function MapTab({
   additionalStops = [],
   mode = 'create',
   rides,
+  requestedCarId,
+  scheduledTime,
+  completionTimeEstimate,
   // Внешнее состояние
   routePoints: externalRoutePoints,
   setRoutePoints: setExternalRoutePoints,
@@ -58,6 +76,7 @@ export function MapTab({
   setSelectedDriver: setExternalSelectedDriver,
   showDriverRadius = false,
   isInstantOrder = false,
+  selectedTariff,
   dynamicMapCenter: externalDynamicMapCenter,
   setDynamicMapCenter: setExternalDynamicMapCenter,
   openDriverPopupId: externalOpenDriverPopupId,
@@ -67,8 +86,11 @@ export function MapTab({
   onRouteChange,
   onRoutePointsChange,
   onRouteDistanceChange,
+  onRouteLegsChange,
   onRouteLoadingChange,
 }: MapTabProps) {
+  const { car: requestedCar, isLoading: requestedCarLoading } = useCarById(requestedCarId);
+
   // Состояние для отслеживания ошибки маршрута и загрузки
   const [routeError, setRouteError] = useState(false);
   const [routeLoading, setRouteLoading] = useState(false);
@@ -77,6 +99,9 @@ export function MapTab({
   // Состояние для управления видимостью маркеров
   const [showDrivers, setShowDrivers] = useState<boolean>(true);
   const [showLocations, setShowLocations] = useState<boolean>(true);
+
+  // Состояние виджета расписания водителя
+  const [ordersWidget, setOrdersWidget] = useState<{ driverId: string; driverName: string } | null>(null);
 
   // Хук для удаления ride при нажатии X в DriverPanel
   const { deleteRide } = useDeleteRide({
@@ -99,6 +124,7 @@ export function MapTab({
     handlePointSelect,
     handleLocationSelect,
     handlePointClear,
+    handleReorderPoints,
     handleMapBoundsChange,
     handleDriverSelect,
     handleLocationToggle,
@@ -113,6 +139,8 @@ export function MapTab({
     additionalStops,
     mode,
     rides,
+    scheduledTime,
+    completionTimeEstimate,
     // Передаем внешнее состояние
     externalRoutePoints,
     setExternalRoutePoints,
@@ -197,6 +225,9 @@ export function MapTab({
     );
   }
 
+  const getUploadUrl = (path: string) =>
+    `${process.env.NEXT_PUBLIC_UPLOADS_URL}/Uploads/${path}`;
+  
   return (
     <div className='flex flex-col lg:flex-row gap-0 h-full'>
       {/* Левая колонка - Построение маршрута */}
@@ -208,11 +239,43 @@ export function MapTab({
           onPointSelect={handlePointSelect}
           onPointClear={handlePointClear}
           onAddIntermediatePoint={addIntermediatePoint}
+          onReorderPoints={handleReorderPoints}
         />
+        {requestedCarId && (
+          <div className='mx-4 flex flex-col gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800'>
+           <div className='flex items-center gap-x-2'>
+            <Car className='h-4 w-4 shrink-0' />
+            <span className='font-medium'>Предпочитаемый автомобиль:&nbsp;</span>
+           </div>
+            {requestedCarLoading ? (
+              <Skeleton className='h-4 w-32' />
+            ) : requestedCar ? (
+              <div className='flex gap-x-3'>
+                {requestedCar.images?.[0]?.path ? (
+                  <img
+                    src={getUploadUrl(requestedCar.images[0].path)}
+                    alt={requestedCar.make + ' ' + requestedCar.model}
+                    className='w-[95px] h-16 rounded-md object-cover shrink-0'
+                  />
+                ) : (
+                  <div className='w-[95px] h-16 rounded-md bg-blue-100 flex items-center justify-center shrink-0'>
+                    <Car className='h-6 w-6 text-blue-300' />
+                  </div>
+                )}
+                <span>
+                  <p className='font-semibold mb-1'>{requestedCar.make + ' ' + requestedCar.model}</p>
+                  <p>{requestedCar.serviceClass} • {requestedCar.type} • {requestedCar.year}</p>
+                </span>
+              </div>
+            ) : (
+              <span className='text-blue-600'>{requestedCarId}</span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Правая колонка - Карта */}
-      <div className='flex-[2] w-full lg:w-1/2 relative'>
+      <div className='flex-[2] w-full lg:w-1/2 relative h-full'>
         {/* Кнопки управления видимостью */}
         <div className='absolute top-6 right-6 z-[500] flex gap-2'>
           <Button
@@ -273,9 +336,31 @@ export function MapTab({
                 }
           }
           onRouteDistanceChange={handleRouteDistanceChange}
+          onRouteLegsChange={onRouteLegsChange}
           getDriverById={getDriverById}
           loadDriverData={loadDriverData}
         />
+        {/* Виджет расписания водителя */}
+        {ordersWidget && (
+          <div className='absolute left-1 top-1 z-[1600] w-80 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden'>
+            <div className='flex items-center justify-between px-3 py-2 border-b border-gray-100 bg-gray-50'>
+              <span className='text-xs font-medium text-gray-700 truncate pr-2'>{ordersWidget.driverName}</span>
+              <button
+                onClick={() => setOrdersWidget(null)}
+                className='flex-shrink-0 p-0.5 rounded hover:bg-gray-200 transition-colors'
+              >
+                <X className='h-3.5 w-3.5 text-gray-500' />
+              </button>
+            </div>
+            <div className='p-3'>
+              <DriverOrdersWidget
+                driverId={ordersWidget.driverId}
+                currentOrderScheduledTime={scheduledTime}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Панель водителя - скрыта для партнеров */}
         {userRole !== 'partner' && (
           <DriverPanel
@@ -296,6 +381,10 @@ export function MapTab({
             }}
             isInstantOrder={isInstantOrder}
             userRole={userRole}
+            onViewDriverOrders={(driverId, driverName) => setOrdersWidget({ driverId, driverName })}
+            requiredServiceClass={selectedTariff?.serviceClass ?? null}
+            scheduledTime={scheduledTime}
+            completionTimeEstimate={completionTimeEstimate}
           />
         )}
       </div>

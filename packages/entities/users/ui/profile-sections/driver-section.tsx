@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   Car,
   CreditCard,
@@ -10,17 +11,20 @@ import {
   FileText,
   AlertCircle,
   DollarSign,
-  TrendingUp,
+  Trash2,
 } from 'lucide-react';
 import { Badge } from '@shared/ui/data-display/badge';
 import { Button } from '@shared/ui/forms/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/layout/card';
+import { DeleteConfirmationModal } from '@shared/ui/modals/delete-confirmation-modal';
 import { CarColor, VehicleType, VehicleStatus, CarFeature } from '@entities/cars/enums';
 import { formatDate } from '@entities/my-profile';
 import type { GetDriverDTO } from '@entities/users/interface';
+import type { GetCarDTO } from '@entities/cars/interface';
 import type { SectionWithMapProps } from '@entities/users/ui/profile-sections/types';
 import { getServiceClassLabel, getLicenseCategoryLabel, getCitizenshipLabel } from '@entities/users/utils';
 import { getLanguageLabel } from '@entities/users/utils/language-utils';
+import type { DriverAnalytics } from '@shared/api/analytics';
 
 // Переводы для цветов автомобилей
 const carColorLabels: Record<CarColor, string> = {
@@ -92,13 +96,24 @@ function isDriverData(profile: SectionWithMapProps['profile']): profile is GetDr
 
 interface DriverSectionProps extends SectionWithMapProps {
   onAssignCar?: () => void;
+  onRemoveCar?: (carId: string) => Promise<void>;
+  analytics: DriverAnalytics | null;
+  loading: boolean;
+  cars?: GetCarDTO[];
 }
 
 export function DriverSection({
   profile,
+  analytics,
+  loading,
   openMapSheet: _openMapSheet,
-  onAssignCar
+  onAssignCar,
+  onRemoveCar,
+  cars,
 }: DriverSectionProps) {
+  const [carToDelete, setCarToDelete] = useState<GetCarDTO | null>(null);
+  const [isRemoving, setIsRemoving] = useState(false);
+
   if (!isDriverData(profile)) return null;
 
   const driverProfile = profile.profile;
@@ -118,40 +133,36 @@ export function DriverSection({
             <div className='border-l-4 border-green-200 pl-4 flex flex-col gap-2'>
               <label className='text-sm font-medium text-muted-foreground'>Общий доход</label>
               <p className='text-lg font-bold text-green-600'>
-                {/* TODO: Интегрировать с API для получения общего дохода */}
-                0 сом
+                {analytics?.totalRevenue.toLocaleString()} сом
               </p>
             </div>
 
             <div className='border-l-4 border-blue-200 pl-4 flex flex-col gap-2'>
               <label className='text-sm font-medium text-muted-foreground'>Доход за месяц</label>
               <p className='text-lg font-bold text-blue-600'>
-                {/* TODO: Интегрировать с API для получения дохода за месяц */}
-                0 сом
+                {analytics?.monthlyRevenue.toLocaleString()} сом
               </p>
             </div>
 
             <div className='border-l-4 border-purple-200 pl-4 flex flex-col gap-2'>
               <label className='text-sm font-medium text-muted-foreground'>Средний доход</label>
               <p className='text-lg font-bold text-purple-600'>
-                {/* TODO: Интегрировать с API для получения среднего дохода */}
-                0 сом
+                {analytics?.averageRevenue.toLocaleString()} сом
               </p>
             </div>
 
             <div className='border-l-4 border-orange-200 pl-4 flex flex-col gap-2'>
               <label className='text-sm font-medium text-muted-foreground'>Ожидает выплат</label>
               <p className='text-lg font-bold text-orange-600'>
-                {/* TODO: Интегрировать с API для получения ожидающих выплат */}
-                0 сом
+                {analytics?.pendingPayout.toLocaleString()} сом
               </p>
             </div>
           </div>
 
-          <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+          {/* <div className='flex items-center gap-2 text-sm text-muted-foreground'>
             <TrendingUp className='h-4 w-4' />
             <span>Данные за последние 30 дней</span>
-          </div>
+          </div> */}
         </CardContent>
       </Card>
 
@@ -172,15 +183,15 @@ export function DriverSection({
 
             <div className='border-l-4 border-green-200 pl-4 flex flex-col gap-2'>
               <label className='text-sm font-medium text-muted-foreground'>Всего поездок</label>
-              <p className='text-sm font-medium'>{driverProfile.totalRides}</p>
+              <p className='text-sm font-medium'>{analytics?.totalRides}</p>
             </div>
 
-            <div className='border-l-4 border-purple-200 pl-4 flex flex-col gap-2'>
+            {/* <div className='border-l-4 border-purple-200 pl-4 flex flex-col gap-2'>
               <label className='text-sm font-medium text-muted-foreground'>Общий пробег</label>
               <p className='text-sm font-medium'>
                 {driverProfile.totalDistance.toLocaleString()} км
               </p>
-            </div>
+            </div> */}
           </div>
 
           <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
@@ -197,13 +208,13 @@ export function DriverSection({
 
           <div className='border-l-4 border-indigo-200 pl-4 flex flex-col gap-2'>
             <label className='text-sm font-medium text-muted-foreground'>Гражданство</label>
-            <p className='text-sm'>{getCitizenshipLabel(driverProfile.citizenship)}</p>
+            <p className='text-sm'>{getCitizenshipLabel(driverProfile.citizenship ?? '')}</p>
           </div>
 
           <div className='border-l-4 border-pink-200 pl-4 flex flex-col gap-2'>
             <label className='text-sm font-medium text-muted-foreground'>Языки</label>
             <div className='flex flex-wrap gap-1'>
-              {driverProfile.languages.map(language => (
+              {(driverProfile.languages ?? []).map(language => (
                 <Badge key={language} variant='secondary' className='text-xs w-fit'>
                   {getLanguageLabel(language)}
                 </Badge>
@@ -213,115 +224,127 @@ export function DriverSection({
         </CardContent>
       </Card>
 
-      {/* Активный автомобиль */}
-      <Card>
-        <CardHeader>
-          <div className='flex items-center justify-between'>
-            <CardTitle className='flex items-center gap-2'>
-              <Car className='h-5 w-5' />
-              Активный автомобиль
-            </CardTitle>
-            {onAssignCar && !profile.activeCar && (
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={onAssignCar}
-                className='flex items-center gap-2'
-              >
-                <Car className='h-4 w-4' />
-                Назначить автомобиль
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {profile.activeCar ? (
-            <div className='space-y-4'>
-              {/* Основная информация об автомобиле */}
-              <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-                <div className='border-l-4 border-blue-200 pl-4 flex flex-col gap-2'>
-                  <label className='text-sm font-medium text-muted-foreground'>Марка и модель</label>
-                  <p className='text-sm font-medium'>
-                    {profile.activeCar.make} {profile.activeCar.model} ({profile.activeCar.year})
+      {/* Активные автомобили */}
+      {(() => {
+        const assignedCars = (cars && cars.length > 0)
+          ? cars
+          : (profile.activeCar ? [profile.activeCar] : []);
+
+        return (
+          <Card>
+            <CardHeader>
+              <div className='flex items-center justify-between'>
+                <CardTitle className='flex items-center gap-2'>
+                  <Car className='h-5 w-5' />
+                  Активные автомобили
+                </CardTitle>
+                {onAssignCar && assignedCars.length < 2 && (
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    onClick={onAssignCar}
+                    className='flex items-center gap-2'
+                  >
+                    <Car className='h-4 w-4' />
+                    Назначить автомобиль
+                  </Button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {assignedCars.length > 0 ? (
+                <div className='space-y-6'>
+                  {assignedCars.map((car, index) => (
+                    <div key={car.id} className={index > 0 ? 'pt-6 border-t' : ''}>
+                      <div className='flex items-center justify-between mb-3'>
+                        {profile.activeCarId && car.id === profile.activeCarId && (
+                          <Badge variant='default'>Активный</Badge>
+                        )}
+                        {onRemoveCar && (
+                          <Button
+                            variant='ghost'
+                            size='sm'
+                            onClick={() => setCarToDelete(car)}
+                            className='ml-auto h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50'
+                          >
+                            <Trash2 className='h-4 w-4' />
+                          </Button>
+                        )}
+                      </div>
+                      <div className='space-y-4'>
+                        <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                          <div className='border-l-4 border-blue-200 pl-4 flex flex-col gap-2'>
+                            <label className='text-sm font-medium text-muted-foreground'>Марка и модель</label>
+                            <p className='text-sm font-medium'>
+                              {car.make} {car.model} ({car.year})
+                            </p>
+                          </div>
+                          <div className='border-l-4 border-green-200 pl-4 flex flex-col gap-2'>
+                            <label className='text-sm font-medium text-muted-foreground'>Номерной знак</label>
+                            <p className='text-sm font-mono font-medium'>{car.licensePlate}</p>
+                          </div>
+                          <div className='border-l-4 border-purple-200 pl-4 flex flex-col gap-2'>
+                            <label className='text-sm font-medium text-muted-foreground'>Цвет</label>
+                            <p className='text-sm'>{carColorLabels[car.color] ?? car.color}</p>
+                          </div>
+                        </div>
+                        <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                          <div className='border-l-4 border-orange-200 pl-4 flex flex-col gap-2'>
+                            <label className='text-sm font-medium text-muted-foreground'>Тип автомобиля</label>
+                            <p className='text-sm'>{vehicleTypeLabels[car.type]}</p>
+                          </div>
+                          <div className='border-l-4 border-teal-200 pl-4 flex flex-col gap-2'>
+                            <label className='text-sm font-medium text-muted-foreground'>Класс обслуживания</label>
+                            <p className='text-sm'>{getServiceClassLabel(car.serviceClass)}</p>
+                          </div>
+                          <div className='border-l-4 border-indigo-200 pl-4 flex flex-col gap-2'>
+                            <label className='text-sm font-medium text-muted-foreground'>Пассажировместимость</label>
+                            <p className='text-sm'>{car.passengerCapacity} мест</p>
+                          </div>
+                        </div>
+                        <div className='border-l-4 border-pink-200 pl-4 flex flex-col gap-2'>
+                          <label className='text-sm font-medium text-muted-foreground'>Статус</label>
+                          <Badge
+                            variant={
+                              car.status === VehicleStatus.Available ? 'default' :
+                              car.status === VehicleStatus.Maintenance ? 'secondary' :
+                              car.status === VehicleStatus.Repair ? 'destructive' : 'outline'
+                            }
+                            className='w-fit'
+                          >
+                            {vehicleStatusLabels[car.status]}
+                          </Badge>
+                        </div>
+                        {car.features && car.features.length > 0 && (
+                          <div className='border-l-4 border-yellow-200 pl-4 flex flex-col gap-2'>
+                            <label className='text-sm font-medium text-muted-foreground'>Дополнительные опции</label>
+                            <div className='flex flex-wrap gap-1'>
+                              {car.features.map((feature) => (
+                                <Badge key={feature} variant='outline' className='text-xs'>
+                                  {carFeatureLabels[feature as CarFeature] || feature}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className='text-center py-8'>
+                  <div className='w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4'>
+                    <AlertCircle className='h-8 w-8 text-gray-400' />
+                  </div>
+                  <p className='text-gray-500 text-sm'>
+                    У водителя нет назначенных автомобилей
                   </p>
                 </div>
-
-                <div className='border-l-4 border-green-200 pl-4 flex flex-col gap-2'>
-                  <label className='text-sm font-medium text-muted-foreground'>Номерной знак</label>
-                  <p className='text-sm font-mono font-medium'>{profile.activeCar.licensePlate}</p>
-                </div>
-
-                <div className='border-l-4 border-purple-200 pl-4 flex flex-col gap-2'>
-                  <label className='text-sm font-medium text-muted-foreground'>Цвет</label>
-                  <p className='text-sm'>{carColorLabels[profile.activeCar.color]}</p>
-                </div>
-              </div>
-
-              <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-                <div className='border-l-4 border-orange-200 pl-4 flex flex-col gap-2'>
-                  <label className='text-sm font-medium text-muted-foreground'>Тип автомобиля</label>
-                  <p className='text-sm'>{vehicleTypeLabels[profile.activeCar.type]}</p>
-                </div>
-
-                <div className='border-l-4 border-teal-200 pl-4 flex flex-col gap-2'>
-                  <label className='text-sm font-medium text-muted-foreground'>Класс обслуживания</label>
-                  <p className='text-sm'>{getServiceClassLabel(profile.activeCar.serviceClass)}</p>
-                </div>
-
-                <div className='border-l-4 border-indigo-200 pl-4 flex flex-col gap-2'>
-                  <label className='text-sm font-medium text-muted-foreground'>Пассажировместимость</label>
-                  <p className='text-sm'>{profile.activeCar.passengerCapacity} мест</p>
-                </div>
-              </div>
-
-              <div className='border-l-4 border-pink-200 pl-4 flex flex-col gap-2'>
-                <label className='text-sm font-medium text-muted-foreground'>Статус</label>
-                <Badge
-                  variant={profile.activeCar.status === VehicleStatus.Available ? 'default' :
-                          profile.activeCar.status === VehicleStatus.Maintenance ? 'secondary' :
-                          profile.activeCar.status === VehicleStatus.Repair ? 'destructive' : 'outline'}
-                  className='w-fit'
-                >
-                  {vehicleStatusLabels[profile.activeCar.status]}
-                </Badge>
-              </div>
-
-              {/* Дополнительные опции */}
-              {profile.activeCar.features && profile.activeCar.features.length > 0 && (
-                <div className='border-l-4 border-yellow-200 pl-4 flex flex-col gap-2'>
-                  <label className='text-sm font-medium text-muted-foreground'>Дополнительные опции</label>
-                  <div className='flex flex-wrap gap-1'>
-                    {profile.activeCar.features.map((feature) => (
-                      <Badge key={feature} variant='outline' className='text-xs'>
-                        {carFeatureLabels[feature as CarFeature] || feature}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
               )}
-            </div>
-          ) : (
-            <div className='text-center py-8'>
-              <div className='w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4'>
-                <AlertCircle className='h-8 w-8 text-gray-400' />
-              </div>
-              <p className='text-gray-500 text-sm mb-4'>
-                У водителя нет активного автомобиля
-              </p>
-              {onAssignCar && (
-                <Button
-                  variant='outline'
-                  onClick={onAssignCar}
-                  className='flex items-center gap-2'
-                >
-                  <Car className='h-4 w-4' />
-                  Назначить автомобиль
-                </Button>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* Водительские права */}
       <Card>
@@ -341,7 +364,7 @@ export function DriverSection({
             <div className='border-l-4 border-green-200 pl-4 flex flex-col gap-2'>
               <label className='text-sm font-medium text-muted-foreground'>Категории водительского удостоверения</label>
               <div className='flex flex-wrap gap-1'>
-                {driverProfile.licenseCategories.map(category => (
+                {(driverProfile.licenseCategories ?? []).map(category => (
                   <Badge key={category} variant='outline' className='text-xs w-fit'>
                     {getLicenseCategoryLabel(category)}
                   </Badge>
@@ -365,6 +388,7 @@ export function DriverSection({
       </Card>
 
       {/* Паспортные данные */}
+      {driverProfile.passport && (
       <Card>
         <CardHeader>
           <CardTitle className='flex items-center gap-2'>
@@ -410,6 +434,7 @@ export function DriverSection({
           )}
         </CardContent>
       </Card>
+      )}
 
       {/* Опыт работы */}
       {driverProfile.workExperience && driverProfile.workExperience.length > 0 && (
@@ -579,6 +604,27 @@ export function DriverSection({
           </div>
         </CardContent>
       </Card>
+
+      <DeleteConfirmationModal
+        isOpen={!!carToDelete}
+        onClose={() => setCarToDelete(null)}
+        onConfirm={async () => {
+          if (!carToDelete || !onRemoveCar) return;
+          setIsRemoving(true);
+          try {
+            await onRemoveCar(carToDelete.id);
+          } finally {
+            setIsRemoving(false);
+            setCarToDelete(null);
+          }
+        }}
+        title='Открепить автомобиль'
+        description={
+          carToDelete
+            ? `Вы уверены, что хотите открепить автомобиль "${carToDelete.make} ${carToDelete.model} (${carToDelete.licensePlate})" от водителя?`
+            : ''
+        }
+      />
     </div>
   );
 }

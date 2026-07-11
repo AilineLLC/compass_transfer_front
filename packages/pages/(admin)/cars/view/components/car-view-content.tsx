@@ -1,16 +1,22 @@
-import { Info, Settings, Users, Star, Plus } from 'lucide-react';
+'use client';
+import { useRef, useState } from 'react';
+import { Info, Settings, Users, Star, Plus, ImageIcon, Pencil } from 'lucide-react';
+import { AuditEntityType } from '@entities/audit';
+import { AuditSection } from '@features/audit';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/layout';
 import { Button } from '@shared/ui/forms/button';
 import { Badge } from '@shared/ui/data-display/badge';
 import type { GetCarDTO } from '@entities/cars/interface';
 import { ServiceClass, ServiceClassValues, CarType, CarTypeValues } from '@entities/tariffs/enums';
 import { CarFeature } from '@entities/cars/enums';
+import { CarImagesSection, type CarImagesItem } from '@entities/cars';
 import { CarDriversList } from './car-drivers-list';
 
 interface CarViewContentProps {
   car: GetCarDTO;
   onRemoveDriver?: (driverId: string) => Promise<void>;
   onAddFeature?: () => void;
+  onUpdateImages?: (items: CarImagesItem[]) => Promise<void>;
 }
 
 // Переводы опций автомобиля
@@ -40,9 +46,99 @@ const carFeatureLabels: Record<CarFeature, string> = {
   [CarFeature.BikeRack]: 'Велосипедная стойка',
 };
 
-export function CarViewContent({ car, onRemoveDriver, onAddFeature }: CarViewContentProps) {
+export function CarViewContent({ car, onRemoveDriver, onAddFeature, onUpdateImages }: CarViewContentProps) {
+  const [isEditingImages, setIsEditingImages] = useState(false);
+  const [isSavingImages, setIsSavingImages] = useState(false);
+  const imageItemsRef = useRef<CarImagesItem[]>(
+    (car.images ?? []).map(img => ({ kind: 'existing', id: img.id, path: img.path })),
+  );
+
+  const getUploadUrl = (path: string) =>
+    `${process.env.NEXT_PUBLIC_UPLOADS_URL}/Uploads/${path}`;
+
+  const handleSaveImages = async () => {
+    if (!onUpdateImages) return;
+    setIsSavingImages(true);
+    try {
+      await onUpdateImages(imageItemsRef.current);
+      setIsEditingImages(false);
+    } finally {
+      setIsSavingImages(false);
+    }
+  };
+
   return (
     <div className='space-y-6'>
+      {/* Фотографии */}
+      <Card>
+        <CardHeader>
+          <div className='flex items-center justify-between'>
+            <CardTitle className='flex items-center gap-2'>
+              <ImageIcon className='h-5 w-5' />
+              Фотографии
+            </CardTitle>
+            {onUpdateImages && !isEditingImages && (
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={() => setIsEditingImages(true)}
+                className='flex items-center gap-2'
+              >
+                <Pencil className='h-4 w-4' />
+                Изменить
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isEditingImages ? (
+            <div className='space-y-3'>
+              <CarImagesSection
+                existingImages={car.images ?? []}
+                onItemsChange={items => { imageItemsRef.current = items; }}
+              />
+              <div className='flex gap-2 justify-end'>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  onClick={() => {
+                    imageItemsRef.current = (car.images ?? []).map(img => ({
+                      kind: 'existing' as const,
+                      id: img.id,
+                      path: img.path,
+                    }));
+                    setIsEditingImages(false);
+                  }}
+                  disabled={isSavingImages}
+                >
+                  Отмена
+                </Button>
+                <Button size='sm' onClick={handleSaveImages} disabled={isSavingImages}>
+                  {isSavingImages ? 'Сохранение...' : 'Сохранить'}
+                </Button>
+              </div>
+            </div>
+          ) : car.images && car.images.length > 0 ? (
+            <div className='flex flex-col gap-2'>
+              {car.images.map((img, index) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={img.id}
+                  src={getUploadUrl(img.path)}
+                  alt={`${car.make} ${car.model} — фото ${index + 1}`}
+                  className='w-full max-h-72 object-cover rounded-lg'
+                />
+              ))}
+            </div>
+          ) : (
+            <div className='flex flex-col items-center justify-center py-8 text-gray-400'>
+              <ImageIcon className='h-12 w-12 mb-2' />
+              <p className='text-sm'>Фотографии не добавлены</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Основная информация */}
       <Card>
         <CardHeader>
@@ -104,7 +200,7 @@ export function CarViewContent({ car, onRemoveDriver, onAddFeature }: CarViewCon
             <div>
               <label className='text-sm font-medium text-gray-500'>Тип автомобиля</label>
               <p className='text-base text-gray-900 mt-1'>
-                {CarTypeValues[car.type as CarType] || car.type}
+                {CarTypeValues[car.type]}
               </p>
             </div>
 
@@ -131,7 +227,7 @@ export function CarViewContent({ car, onRemoveDriver, onAddFeature }: CarViewCon
               <Star className='h-5 w-5' />
               Дополнительные опции
             </CardTitle>
-            {onAddFeature && (
+            {/* {onAddFeature && (
               <Button
                 variant='outline'
                 size='sm'
@@ -141,7 +237,7 @@ export function CarViewContent({ car, onRemoveDriver, onAddFeature }: CarViewCon
                 <Plus className='h-4 w-4' />
                 Добавить опцию
               </Button>
-            )}
+            )} */}
           </div>
         </CardHeader>
         <CardContent>
@@ -180,14 +276,16 @@ export function CarViewContent({ car, onRemoveDriver, onAddFeature }: CarViewCon
         </CardContent>
       </Card>
 
+      <AuditSection entityType={AuditEntityType.Car} entityId={car.id} />
+
       {/* Назначенные водители */}
       <Card>
         <CardHeader>
           <CardTitle className='flex items-center gap-2'>
             <Users className='h-5 w-5' />
             Назначенные водители
-            {car.drivers.length >= 2 && (
-              <Badge variant='secondary' className='text-xs ml-2'>
+            {(car?.drivers?.length ?? 0) >= 2 && (
+              <Badge variant="secondary" className="text-xs ml-2">
                 Максимум: 2/2
               </Badge>
             )}
@@ -196,7 +294,7 @@ export function CarViewContent({ car, onRemoveDriver, onAddFeature }: CarViewCon
         <CardContent>
           <CarDriversList
             carId={car.id}
-            drivers={car.drivers}
+            drivers={car.drivers || []}
             onRemoveDriver={onRemoveDriver}
           />
         </CardContent>

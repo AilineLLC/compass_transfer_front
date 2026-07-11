@@ -6,12 +6,14 @@ export default async function OrdersPage({
 }: {
   searchParams: Promise<{
     orderNumber?: string;
+    mainPassengerName?: string;
     type?: string;
     status?: string;
     subStatus?: string;
     creatorId?: string;
     airFlight?: string;
     flyReis?: string;
+    participantId?: string;
   }>;
 }) {
   const params = await searchParams;

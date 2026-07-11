@@ -1,15 +1,16 @@
-import type { NotificationType } from '../enums';
+import type { NotificationType } from '@entities/notifications/enums/NotificationType.enum';
 
-/**
- * Интерфейс WSNotificationDTO
- * @interface
- */
+export type OrderType = 'Unknown' | 'Instant' | 'Scheduled' | 'Partner' | 'Shuttle' | 'Subscription';
+
 export interface WSNotificationDTO {
-  id?: string;
-  type?: NotificationType;
+  id: string;
+  type: NotificationType;
   title: string;
   content?: string | null;
   orderId?: string | null;
   rideId?: string | null;
-  orderType?: 'Instant' | 'Scheduled';
+  orderType?: OrderType;
+  isRead: boolean;
+  data: unknown;
+  createdAt: string;
 }

@@ -26,6 +26,12 @@ export interface CreateScheduledOrderDTO {
   /** ID конечной точки (опционально, если не используется routeId) */
   endLocationId?: string | null;
 
+  /** Текстовый адрес начальной точки */
+  startAddress?: string | null;
+
+  /** Текстовый адрес конечной точки */
+  endAddress?: string | null;
+
   /** Промежуточные точки (ID локаций) */
   additionalStops: string[];
 
@@ -37,6 +43,9 @@ export interface CreateScheduledOrderDTO {
 
   /** Запланированное время */
   scheduledTime: string;
+
+  /** Примерное время завершения заказа (ISO строка) */
+  completionTimeEstimate: string;
 
   /** Информация о пассажирах */
   passengers: CreatePassengerDTO[];

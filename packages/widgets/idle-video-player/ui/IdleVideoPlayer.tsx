@@ -203,7 +203,7 @@ export const IdleVideoPlayer: React.FC = () => {
           ${isVideoPlaying ? 'block' : 'hidden'}
         `}
         style={{ zIndex: 50 }}
-        src="/video/video.mp4"
+        src={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/video/video.mp4`}
         loop
         playsInline
         controls={false} // Убираем встроенные контролы

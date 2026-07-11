@@ -6,7 +6,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { usersApi } from '@shared/api/users';
-import { logger } from '@shared/lib';
+import { logger, applyServerErrors } from '@shared/lib';
 import {
   EmploymentType,
   IdentityDocumentType,
@@ -113,12 +113,26 @@ export function useDriverEditFormLogic({
     async (data: DriverUpdateFormData) => {
       setIsSubmitting(true);
       try {
-        const apiData: UpdateDriverDTO = {
+        const nullifyEmptyDate = (val: string | null | undefined) =>
+          val === '' || val === undefined ? null : val;
+
+        const apiData = {
           ...data,
           phoneNumber: data.phoneNumber || null,
           avatarUrl: data.avatarUrl || null,
+          profile: {
+            ...data.profile,
+            lastRideDate: nullifyEmptyDate(data.profile.lastRideDate),
+            medicalExamDate: nullifyEmptyDate(data.profile.medicalExamDate),
+            backgroundCheckDate: nullifyEmptyDate(data.profile.backgroundCheckDate),
+            passport: data.profile.passport ? {
+              ...data.profile.passport,
+              issueDate: nullifyEmptyDate(data.profile.passport.issueDate),
+              expiryDate: nullifyEmptyDate(data.profile.passport.expiryDate),
+            } : undefined,
+          } as any,
         };
-        const result = await usersApi.updateDriver(driverId, apiData);
+        const result = await usersApi.updateDriver(driverId, apiData as UpdateDriverDTO);
 
         if (result && result.fullName) {
           toast.success(`Водитель ${result.fullName} успешно обновлен!`);
@@ -132,17 +146,7 @@ export function useDriverEditFormLogic({
           const axiosError = error as AxiosError<ApiError>;
 
           if (axiosError.response?.data?.errors) {
-            const serverErrors = axiosError.response.data.errors;
-
-            Object.keys(serverErrors).forEach(field => {
-              if (serverErrors[field] && serverErrors[field].length > 0) {
-                form.setError(field as keyof DriverUpdateFormData, {
-                  type: 'server',
-                  message: serverErrors[field][0],
-                });
-              }
-            });
-            toast.error('Исправьте ошибки в форме');
+            toast.error(applyServerErrors(axiosError.response.data.errors, form.setError));
           } else {
             toast.error(axiosError.response?.data?.detail || 'Ошибка обновления водителя');
           }
@@ -173,16 +177,16 @@ export function useDriverEditFormLogic({
         return 'complete';
       }
       if (chapterId === 'driver-license') {
-        return getDriverLicenseStatus(formData.profile, errors, isSubmitted);
+        return getDriverLicenseStatus(formData.profile as any, errors, isSubmitted);
       }
       if (chapterId === 'employment') {
         return getDriverEmploymentStatus(formData, errors, isSubmitted);
       }
       if (chapterId === 'passport-data') {
-        return getPassportDataStatus(formData.profile, errors, isSubmitted);
+        return getPassportDataStatus(formData.profile as any, errors, isSubmitted);
       }
       if (chapterId === 'personal-info') {
-        return getPersonalInfoStatus(formData.profile, errors, isSubmitted);
+        return getPersonalInfoStatus(formData.profile as any, errors, isSubmitted);
       }
       if (chapterId === 'ride-preferences') {
         return getRidePreferencesStatus(formData.profile, errors, isSubmitted);
@@ -212,19 +216,19 @@ export function useDriverEditFormLogic({
         return [];
       }
       if (chapterId === 'driver-license') {
-        return getDriverLicenseErrors(formData.profile, errors, isSubmitted);
+        return getDriverLicenseErrors(formData.profile as any, errors, isSubmitted);
       }
       if (chapterId === 'employment') {
         return getDriverEmploymentErrors(formData, errors, isSubmitted);
       }
       if (chapterId === 'passport-data') {
-        return getPassportDataErrors(formData.profile, errors, isSubmitted);
+        return getPassportDataErrors(formData.profile as any, errors, isSubmitted);
       }
       if (chapterId === 'personal-info') {
-        return getPersonalInfoErrors(formData.profile, errors, isSubmitted);
+        return getPersonalInfoErrors(formData.profile as any, errors, isSubmitted);
       }
       if (chapterId === 'ride-preferences') {
-        return getRidePreferencesErrors(formData.profile, errors, isSubmitted);
+        return getRidePreferencesErrors(formData.profile as any, errors, isSubmitted);
       }
       if (chapterId === 'tests') {
         // Тесты не имеют ошибок (заглушка)

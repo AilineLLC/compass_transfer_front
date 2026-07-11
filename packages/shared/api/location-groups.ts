@@ -1,13 +1,14 @@
-import { apiGet, apiPost, apiPut, apiDelete } from './client';
+﻿import { apiGet, apiPost, apiPut, apiDelete } from './client';
 
-// Интерфейс для группы локаций
 export interface LocationGroupDTO {
   id: string;
   name: string;
   city: string;
+  latitude: number;
+  longitude: number;
+  poly: number[];
 }
 
-// Интерфейс для ответа со списком групп
 export interface LocationGroupListResponseDTO {
   data: LocationGroupDTO[];
   totalCount: number;
@@ -16,71 +17,67 @@ export interface LocationGroupListResponseDTO {
   hasNext: boolean;
 }
 
-// Интерфейс для создания группы
 export interface CreateLocationGroupDTO {
   name: string;
   city: string;
+  latitude: number;
+  longitude: number;
+  poly: number[];
 }
 
-// Интерфейс для обновления группы
 export interface UpdateLocationGroupDTO {
   name: string;
   city: string;
+  latitude: number;
+  longitude: number;
+  poly: number[];
+}
+
+interface LocationGroupFilters {
+  first?: boolean;
+  before?: string;
+  after?: string;
+  last?: boolean;
+  size?: number;
+  name?: string;
+  city?: string;
+  sortBy?: string;
+  sortOrder?: 'Asc' | 'Desc';
 }
 
 export const locationGroupsApi = {
-  // Получение всех групп локаций
-  getLocationGroups: async (): Promise<LocationGroupListResponseDTO> => {
-    const result = await apiGet<LocationGroupListResponseDTO>('/LocationGroup');
-
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
-
+  getLocationGroups: async (params?: LocationGroupFilters): Promise<LocationGroupListResponseDTO> => {
+    const result = await apiGet<LocationGroupListResponseDTO>('/LocationGroup', { params });
+    if (result.error) throw new Error(result.error.message);
     return result.data!;
   },
 
-  // Получение групп локаций по городу
+  getLocationGroupById: async (id: string): Promise<LocationGroupDTO> => {
+    const result = await apiGet<LocationGroupDTO>(`/LocationGroup/${id}`);
+    if (result.error) throw new Error(result.error.message);
+    return result.data!;
+  },
+
   getLocationGroupsByCity: async (city: string): Promise<LocationGroupListResponseDTO> => {
-    const result = await apiGet<LocationGroupListResponseDTO>('/LocationGroup', {
-      params: { city }
-    });
-
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
-
+    const result = await apiGet<LocationGroupListResponseDTO>('/LocationGroup', { params: { city } });
+    if (result.error) throw new Error(result.error.message);
     return result.data!;
   },
 
-  // Создание группы локаций
   createLocationGroup: async (data: CreateLocationGroupDTO): Promise<LocationGroupDTO> => {
     const result = await apiPost<LocationGroupDTO, CreateLocationGroupDTO>('/LocationGroup', data);
-
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
-
+    if (result.error) throw new Error(result.error.message);
     return result.data!;
   },
 
-  // Обновление группы локаций
   updateLocationGroup: async (id: string, data: UpdateLocationGroupDTO): Promise<LocationGroupDTO> => {
     const result = await apiPut<LocationGroupDTO, UpdateLocationGroupDTO>(`/LocationGroup/${id}`, data);
-
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
-
+    if (result.error) throw new Error(result.error.message);
     return result.data!;
   },
 
-  // Удаление группы локаций
   deleteLocationGroup: async (id: string): Promise<void> => {
     const result = await apiDelete(`/LocationGroup/${id}`);
-
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
+    if (result.error) throw new Error(result.error.message);
   },
 };

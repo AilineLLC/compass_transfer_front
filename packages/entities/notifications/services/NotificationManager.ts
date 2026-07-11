@@ -1,26 +1,17 @@
-/**
- * Менеджер уведомлений
- */
 import { toast } from '@shared/lib/conditional-toast';
 import type { NotificationHandler } from '@shared/hooks/signal/interface/NotificationHandler';
 import { logger } from '@shared/lib/logger';
 
-// Интерфейс для сообщения уведомления
 interface NotificationMessage {
   title?: string;
   content?: string;
+  type?: string;
   [key: string]: unknown;
 }
 
-/**
- * Менеджер для обработки SignalR уведомлений
- */
 export class NotificationManager {
   private handlers = new Map<string, NotificationHandler<NotificationMessage>[]>();
 
-  /**
-   * Регистрирует обработчик для типа уведомления
-   */
   registerHandler(type: string, handler: NotificationHandler<NotificationMessage>) {
     if (!this.handlers.has(type)) {
       this.handlers.set(type, []);
@@ -28,9 +19,6 @@ export class NotificationManager {
     this.handlers.get(type)!.push(handler);
   }
 
-  /**
-   * Обрабатывает входящее уведомление
-   */
   handleNotification(type: string, data: unknown) {
     logger.info('📢 Обработка уведомления:', { type, data });
     const handlers = this.handlers.get(type);
@@ -38,71 +26,67 @@ export class NotificationManager {
     if (handlers) {
       handlers.forEach(handler => handler(data as NotificationMessage));
     }
-    // Показываем toast уведомление
     this.showToast(type, data as NotificationMessage);
   }
 
-  /**
-   * Показывает toast уведомление
-   */
   private showToast(type: string, data: NotificationMessage) {
     const title = data.title || 'Уведомление';
     const content = data.content || '';
+    const msg = content ? `${title}: ${content}` : title;
 
     switch (type) {
+      case 'OrderCreated':
+        toast.info(`📦 ${msg}`);
+        break;
+      case 'OrderUpdated':
+        toast.info(`📦 ${msg}`);
+        break;
+      case 'OrderCancelled':
+        toast.warning(`❌ ${msg}`, { type: 'order_cancelled' });
+        break;
+      case 'OrderCompleted':
+        toast.success(`🎉 ${msg}`, { type: 'order_success' });
+        break;
       case 'RideRequest':
-      case 'RideRequestNotification':
-        toast.info(`🚗 ${title}: ${content}`);
+        toast.info(`🚗 ${msg}`);
         break;
       case 'RideAccepted':
-      case 'RideAcceptedNotification':
-        toast.success(`✅ ${title}: ${content}`);
-        break;
-      case 'RideCancelled':
-      case 'RideCancelledNotification':
-        toast.warning(`❌ ${title}: ${content}`);
+        toast.success(`✅ ${msg}`);
         break;
       case 'RideStarted':
-      case 'RideStartedNotification':
-        toast.success(`🚗 ${title}: ${content}`);
-        // this.handleRideStarted(data);
+        toast.success(`🚀 ${msg}`);
         break;
-      case 'DriverArrivedNotification':
-        toast.success(`🏁 ${title}: ${content}`);
+      case 'RideCompleted':
+        toast.success(`✅ ${msg}`);
         break;
-      case 'DriverHeadingNotification':
-        toast.info(`🚗 ${title}: ${content}`);
+      case 'RideCancelled':
+        toast.warning(`❌ ${msg}`);
         break;
-      case 'DriverCancelledNotification':
-        toast.error(`❌ ${title}: ${content}`);
+      case 'RideUpdate':
+        toast.info(`🔄 ${msg}`);
         break;
-      case 'OrderConfirmedNotification':
-        toast.success(`✅ ${title}: ${content}`);
+      case 'CancelRideRequest':
+        toast.warning(`❌ ${msg}`);
         break;
-      case 'OrderCancelledNotification':
-        toast.warning(`❌ ${title}: ${content}`, { type: 'order_cancelled' });
+      case 'PaymentReceived':
+        toast.success(`💰 ${msg}`, { type: 'payment_success' });
         break;
-      case 'OrderCompletedNotification':
-        toast.success(`🎉 ${title}: ${content}`, { type: 'order_success' });
+      case 'DriverHeading':
+        toast.info(`🚗 ${msg}`);
         break;
-      case 'RideRejectedNotification':
-        toast.error(`❌ ${title}: ${content}`);
+      case 'DriverArrived':
+        toast.success(`🏁 ${msg}`);
         break;
-      case 'RideStartedNotification':
-        toast.info(`🚀 ${title}: ${content}`);
+      case 'DriverAssigned':
+        toast.success(`✅ ${msg}`);
         break;
-      case 'PaymentNotification':
-        toast.info(`💳 ${title}: ${content}`);
-        break;
-      case 'PaymentReceivedNotification':
-        toast.success(`💰 ${title}: ${content}`, { type: 'payment_success' });
-        break;
-      case 'PaymentFailedNotification':
-        toast.error(`💸 ${title}: ${content}`);
+      case 'DriverCancelled':
+        toast.error(`❌ ${msg}`);
         break;
       default:
-        toast.info(`📢 ${title}: ${content}`);
+        toast.info(`📢 ${msg}`);
     }
   }
 }
+
 export const notificationManager = new NotificationManager();

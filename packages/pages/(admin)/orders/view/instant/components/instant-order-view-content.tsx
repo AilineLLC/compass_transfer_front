@@ -1,6 +1,8 @@
 'use client'
 
-import { MapPin, User, Car, Info, DollarSign, ExternalLink, Settings } from 'lucide-react';
+import { MapPin, User, Car, Info, DollarSign, ExternalLink, Settings, CheckCircle2 } from 'lucide-react';
+import { AuditEntityType } from '@entities/audit';
+import { AuditSection } from '@features/audit';
 import { useState } from 'react';
 import { useServices } from '@shared/hooks/useServices';
 import { useTariffById } from '@shared/hooks/useTariffById';
@@ -14,6 +16,7 @@ import { useUserById } from '@features/users';
 import { DriverSheet } from '@widgets/sidebar/ui/driver-sheet';
 import { RideDetailCard } from '@entities/rides';
 import { useUsdRate } from '@shared/hooks';
+import { useCarById } from '@shared/hooks/useCarById';
 import { formatPriceWithUsd } from '@shared/utils/format-price-with-usd';
 
 interface InstantOrderViewContentProps {
@@ -35,6 +38,7 @@ export function InstantOrderViewContent({ order }: InstantOrderViewContentProps)
 
   // Данные выбранного водителя получаются в DriverSheet при необходимости
   const usdRate = useUsdRate();
+  const { car: requestedCar, isLoading: requestedCarLoading } = useCarById(order.requestedCar);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('ru-RU', {
@@ -358,6 +362,23 @@ export function InstantOrderViewContent({ order }: InstantOrderViewContentProps)
             <div className='text-sm text-muted-foreground'>Создан</div>
             <div className='font-medium'>{formatDate(order.createdAt)}</div>
           </div>
+          {order.requestedCar && (
+            <div>
+              <div className='text-sm text-muted-foreground'>Предпочитаемый автомобиль</div>
+              <div className='font-medium flex items-center gap-2'>
+                <Car className='h-4 w-4 text-blue-600' />
+                {requestedCarLoading ? (
+                  <Skeleton className='h-4 w-40' />
+                ) : requestedCar ? (
+                  <span>
+                    {requestedCar.make} {requestedCar.model} · {requestedCar.licensePlate}
+                  </span>
+                ) : (
+                  <span className='text-muted-foreground text-sm'>{order.requestedCar}</span>
+                )}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -386,8 +407,28 @@ export function InstantOrderViewContent({ order }: InstantOrderViewContentProps)
               {formatFinalPrice(order.finalPrice)}
             </span>
           </div>
+          {order.driverPrice != null && (
+            <div className='flex justify-between text-sm'>
+              <span className='text-muted-foreground'>Сумма водителю:</span>
+              <span>{formatPriceWithUsd(order.driverPrice, usdRate)}</span>
+            </div>
+          )}
+          <div className='flex justify-between text-sm items-center border-t pt-2'>
+            <span className='text-muted-foreground'>Выплата водителю:</span>
+            {order.driverPayedOut ? (
+              <span className='flex items-center gap-1 text-emerald-600 font-medium'>
+                <CheckCircle2 className='h-4 w-4' />
+                Оплачено
+              </span>
+            ) : (
+              <span className='text-orange-500 font-medium'>Не выплачено</span>
+            )}
+          </div>
         </CardContent>
       </Card>
+
+      {/* Журнал изменений */}
+      <AuditSection entityType={AuditEntityType.Order} entityId={order.id} />
 
       {/* Driver Sheet */}
       <DriverSheet

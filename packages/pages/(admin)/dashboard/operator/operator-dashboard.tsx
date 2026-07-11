@@ -25,7 +25,7 @@ export function OperatorDashboard(_props: OperatorDashboardProps) {
         serviceClass: [tariff.serviceClass as ServiceClass],
         type: [tariff.carType as unknown as VehicleType],
         status: [VehicleStatus.Available],
-        size: 20
+        size: 20,
       };
 
       const response = await carsApi.getCars(params);
@@ -41,21 +41,18 @@ export function OperatorDashboard(_props: OperatorDashboardProps) {
   return (
     <div className='h-full flex flex-1 flex-col gap-2 border rounded-2xl overflow-hidden pr-2 bg-white'>
       <div className='flex flex-col overflow-hidden overflow-y-auto space-y-6'>
-        {/* Карточки тарифов */}
         <TariffCards
           onTariffClick={handleTariffSelect}
           onFirstTariffLoaded={handleTariffSelect}
         />
 
-        {/* Промо баннеры */}
-        <PromoBanners userRole="operator" />
+        <PromoBanners userRole='operator' />
 
-        {/* Премиум просмотр автомобилей */}
         {selectedTariff && (
           <div className='space-y-6'>
             <div className='text-right'>
               <h2 className='text-3xl font-bold text-gray-900'>
-                Наш автопорк для тарифа {selectedTariff.name}
+                Наш автопарк для тарифа {selectedTariff.name}
               </h2>
             </div>
 

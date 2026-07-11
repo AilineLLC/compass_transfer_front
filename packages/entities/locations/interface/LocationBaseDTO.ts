@@ -1,4 +1,5 @@
 import type { LocationType } from '@entities/locations/enums';
+import type { LocationProfileDTO } from './LocationDTO';
 
 /**
  * Базовый интерфейс для локации с географическими координатами и адресной информацией
@@ -17,5 +18,7 @@ export interface LocationBaseDTO {
   isActive: boolean;
   popular1?: boolean;
   popular2?: boolean;
-  group?: string | null;
+  images?: string[];
+  priceCoefficient?: number | null;
+  profile?: LocationProfileDTO | null;
 }

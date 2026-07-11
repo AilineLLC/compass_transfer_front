@@ -1,49 +1,66 @@
 import type { LocationType } from '../enums/LocationType.enum';
+import type { TagDTO } from '@shared/api/tags';
+
+export interface LocationImageDTO {
+  id: string;
+  path: string;
+}
+
+export interface PoiImageFileDTO {
+  id: string;
+  name: string | null;
+  extension: string;
+  size: number;
+  createdAt: string;
+  path: string;
+}
+
+export interface PoiItemDTO {
+  name: string;
+  image: PoiImageFileDTO | null;
+  type?: string;
+}
+
+export interface LocationAdviceDTO {
+  fullName: string;
+  specialization: string | null;
+  image: PoiImageFileDTO | null;
+  content: string;
+}
+
+export interface LocationProfileDTO {
+  images: LocationImageDTO[];
+  description: string | null;
+  poi: PoiItemDTO[];
+  tags: TagDTO[];
+  advice: LocationAdviceDTO | null;
+  polyPriceCoefficient?: number[] | null;
+}
+
+export type { TagDTO };
 
 /**
- * Интерфейс для локации
  * GET /Location/{uuid}
  */
 export interface LocationDTO {
-  /** Тип локации */
   type: LocationType;
-
-  /** Название локации */
   name: string;
-
-  /** Адрес локации */
   address: string;
-
-  /** Район */
   district: string | null;
-
-  /** Город */
   city: string;
-
-  /** Страна */
   country: string;
-
-  /** Регион */
   region: string;
-
-  /** Широта */
   latitude: number;
-
-  /** Долгота */
   longitude: number;
-
-  /** Активна ли локация */
   isActive: boolean;
-
-  /** Популярная локация 1 */
   popular1: boolean;
-
-  /** Популярная локация 2 */
   popular2: boolean;
-
-  /** Группа локации */
-  group?: string | null;
-
-  /** ID локации */
+  isLandingOnly: boolean | null;
+  isLandingPagePinned?: boolean;
   id: string;
+  transient?: boolean;
+  poiCount?: number;
+  tagCount?: number;
+  profile?: LocationProfileDTO | null;
+  priceCoefficient?: number | null;
 }

@@ -28,6 +28,8 @@ interface UseOrderLocationsParams {
   externalOpenDriverPopupId?: string | null;
   setExternalOpenDriverPopupId?: (id: string | null) => void;
 
+  scheduledTime?: string | null;
+  completionTimeEstimate?: string | null;
   onRouteChange?: (routePoints: RoutePoint[]) => void;
   onRoutePointsChange?: (startId: string, endId: string, points: RoutePoint[]) => void;
 }
@@ -57,6 +59,7 @@ interface UseOrderLocationsResult {
   handlePointSelect: (index: number) => void;
   handleLocationSelect: (location: GetLocationDTO) => void;
   handlePointClear: (index: number) => void;
+  handleReorderPoints: (fromIndex: number, toIndex: number) => void;
   handleMapBoundsChange: (bounds: MapBounds) => void;
   handleDriverSelect: (driver: GetDriverDTO | null, location?: { latitude: number; longitude: number }, fromSearchPanel?: boolean) => void;
   handleLocationToggle: (location: GetLocationDTO, isSelected: boolean) => void;
@@ -87,6 +90,8 @@ export const useOrderLocations = ({
   setExternalDynamicMapCenter,
   externalOpenDriverPopupId,
   setExternalOpenDriverPopupId,
+  scheduledTime,
+  completionTimeEstimate,
   // Колбэки
   onRouteChange,
   onRoutePointsChange
@@ -208,7 +213,9 @@ export const useOrderLocations = ({
           params: {
             First: true,
             Size: 1000,
-            IsActive: true
+            IsActive: true,
+            ...(scheduledTime && { HasNoScheduledOrdersFrom: scheduledTime }),
+            ...(completionTimeEstimate && { HasNoScheduledOrdersTo: completionTimeEstimate }),
           }
         });
 
@@ -221,7 +228,7 @@ export const useOrderLocations = ({
     };
 
     fetchDrivers();
-  }, []);
+  }, [scheduledTime, completionTimeEstimate]);
 
   // Инициализируем точки маршрута ОДИН РАЗ при загрузке данных в режиме редактирования.
   // Используем fetchLocationById как основной путь — работает для любых локаций
@@ -423,9 +430,24 @@ export const useOrderLocations = ({
   const handlePointClear = useCallback((index: number) => {
     const updatedPoints = [...routePoints];
     const clearedPoint = { ...updatedPoints[index], location: null };
-    
+
     updatedPoints[index] = clearedPoint;
     setRoutePoints(updatedPoints);
+  }, [routePoints, setRoutePoints]);
+
+  const handleReorderPoints = useCallback((fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+    const updated = [...routePoints];
+    const [moved] = updated.splice(fromIndex, 1);
+    updated.splice(toIndex, 0, moved);
+    // Пересчитываем метки промежуточных точек по их новому порядку
+    let intermediateCounter = 0;
+    const renumbered = updated.map(p => {
+      if (p.type !== 'intermediate') return p;
+      intermediateCounter += 1;
+      return { ...p, label: `Остановка ${intermediateCounter}` };
+    });
+    setRoutePoints(renumbered);
   }, [routePoints, setRoutePoints]);
 
   const canSelectLocation = useCallback((location: GetLocationDTO): boolean => {
@@ -517,6 +539,10 @@ export const useOrderLocations = ({
   const handleDriverSelect = useCallback((driver: GetDriverDTO | null, location?: { latitude: number; longitude: number }, _fromSearchPanel?: boolean) => {
     setSelectedDriver(driver);
 
+    if (driver && !driver.activeCar && !driver.activeCarId) {
+      toast.warn('У выбранного водителя нет активного автомобиля. Назначьте автомобиль перед созданием заказа.');
+    }
+
     if (driver && location) {
       setDynamicMapCenter(location);
       setOpenDriverPopupId(driver.id);
@@ -587,6 +613,7 @@ export const useOrderLocations = ({
     handlePointSelect,
     handleLocationSelect,
     handlePointClear,
+    handleReorderPoints,
     handleMapBoundsChange,
     handleDriverSelect,
     handleLocationToggle,

@@ -6,7 +6,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { usersApi } from '@shared/api/users';
-import { logger } from '@shared/lib';
+import { logger, applyServerErrors } from '@shared/lib';
 import type { UpdateOperatorDTO } from '@entities/users/interface/UpdateOperatorDTO';
 import {
   getEmployeeProfileStatus,
@@ -34,6 +34,7 @@ export function useOperatorEditFormLogic({
     phoneNumber?: string | null;
     avatarUrl?: string | null;
     isActive: boolean;
+    isMainSupportOperator: boolean;
     profile: Record<string, unknown>; // TODO: Использовать OperatorProfile после исправления несоответствий типов
   };
   onBack: () => void;
@@ -49,6 +50,7 @@ export function useOperatorEditFormLogic({
       phoneNumber: initialData.phoneNumber || '',
       avatarUrl: initialData.avatarUrl || null,
       isActive: initialData.isActive,
+      isMainSupportOperator: initialData.isMainSupportOperator,
       profile: initialData.profile,
     },
   });
@@ -86,19 +88,7 @@ export function useOperatorEditFormLogic({
           const axiosError = error as AxiosError<ApiError>;
 
           if (axiosError.response?.data?.errors) {
-            const serverErrors = axiosError.response.data.errors;
-
-            Object.keys(serverErrors).forEach(field => {
-              const fieldKey = field as keyof OperatorUpdateFormData;
-
-              if (serverErrors[field] && serverErrors[field].length > 0) {
-                form.setError(fieldKey, {
-                  type: 'server',
-                  message: serverErrors[field][0],
-                });
-              }
-            });
-            toast.error('Исправьте ошибки в форме');
+            toast.error(applyServerErrors(axiosError.response.data.errors, form.setError));
           } else {
             toast.error(axiosError.response?.data?.detail || 'Ошибка обновления оператора');
           }

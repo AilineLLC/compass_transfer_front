@@ -29,15 +29,18 @@ export async function middleware(request: NextRequest) {
   // Для защищенных маршрутов проверяем аутентификацию
   const user = await getUserFromJWTCookie(request);
 
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+  const loginUrl = new URL(`${basePath}/login`, request.url);
+  console.log(user)
   // Если пользователь не авторизован, перенаправляем на /login
   if (!user) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    return NextResponse.redirect(loginUrl);
   }
 
   // Проверяем доступ к приложению водителя
   if (pathname.startsWith('/(driver)') || pathname.startsWith('/')) {
     if (!DRIVER_ALLOWED_ROLES.includes(user.role)) {
-      return NextResponse.redirect(new URL('/login', request.url));
+      return NextResponse.redirect(loginUrl);
     }
   }
 

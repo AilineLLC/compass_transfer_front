@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { carsApi } from '@shared/api/cars';
+import { filesApi } from '@shared/api/files';
 import type { GetCarDTO } from '@entities/cars/interface';
 import { CarFeature } from '@entities/cars/enums';
+import type { CarImagesItem } from '@entities/cars';
 import { CarViewHeader } from './components/car-view-header';
 import { CarViewActions } from './components/car-view-actions';
 import { CarViewContent } from './components/car-view-content';
@@ -108,15 +110,33 @@ export function CarView({ carId }: CarViewProps) {
     }
   };
 
+  // Обработчик обновления изображений
+  const handleUpdateImages = async (items: CarImagesItem[]) => {
+    if (!car) return;
+
+    const imageIds = await Promise.all(
+      items
+        .filter(item => item.kind !== 'pending' || !item.error)
+        .map(item =>
+          item.kind === 'existing'
+            ? Promise.resolve(item.id)
+            : filesApi.uploadFile('CarImage', item.file),
+        ),
+    );
+
+    await carsApi.updateCar(carId, { images: imageIds });
+    toast.success('Фотографии автомобиля обновлены');
+
+    const carData = await carsApi.getCarById(carId);
+    setCar(carData);
+  };
+
   // Обработчик обновления опций
   const handleUpdateFeatures = async (features: CarFeature[]) => {
     if (!car) return;
 
     try {
-      await carsApi.updateCar(carId, {
-        ...car,
-        features
-      });
+      await carsApi.updateCar(carId, { features });
       toast.success('Опции автомобиля успешно обновлены');
 
       // Перезагружаем данные автомобиля
@@ -165,6 +185,7 @@ export function CarView({ carId }: CarViewProps) {
             car={car}
             onRemoveDriver={handleRemoveDriver}
             onAddFeature={() => setIsManageFeaturesModalOpen(true)}
+            onUpdateImages={handleUpdateImages}
           />
         </div>
 
@@ -186,7 +207,7 @@ export function CarView({ carId }: CarViewProps) {
         isOpen={isAddDriverModalOpen}
         onClose={() => setIsAddDriverModalOpen(false)}
         onAddDriver={handleAddDriver}
-        assignedDriverIds={car.drivers.map(driver => driver.driverId)}
+        assignedDriverIds={(car.drivers ?? []).map(driver => driver.driverId)}
       />
 
       {/* Модальное окно управления опциями */}

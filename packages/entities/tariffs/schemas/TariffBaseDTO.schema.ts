@@ -42,6 +42,11 @@ const TariffBaseDTORawSchema = z.object({
     .number()
     .min(0, { message: 'Время ожидания не может быть отрицательным' })
     .describe('Бесплатное время ожидания в минутах'),
+  isLanding: z
+    .boolean()
+    .nullable()
+    .default(false)
+    .describe('Отображать тариф на лендинг-сайте'),
 });
 
 export const TariffBaseDTOSchema = TariffBaseDTORawSchema.transform(data => ({

@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from '@shared/lib/conditional-toast';
+import { toast } from 'sonner';
+import { ApiRequestError } from '@shared/api/client';
 import { OrdersApi, type CreateScheduledOrderRequest } from '../api/orders';
 import { OrderStatus } from '../enums';
 import type { GetOrderDTO, UpdateScheduledOrderDTO } from '../interface';
@@ -14,10 +15,13 @@ function convertToUpdateData(data: CreateScheduledOrderRequest, orderId: string)
     routeId: data.routeId || null,
     startLocationId: data.startLocationId || null,
     endLocationId: data.endLocationId || null,
+    startAddress: data.startAddress || '',
+    endAddress: data.endAddress || '',
     additionalStops: data.additionalStops || [],
     services: data.services || [],
     initialPrice: data.initialPrice,
     scheduledTime: data.scheduledTime,
+    completionTimeEstimate: data.completionTimeEstimate,
     passengers: [], // Пассажиры обновляются отдельным запросом
     status: (data.status as string) || (OrderStatus.Pending as string),
     subStatus: (data as any).subStatus || 'SearchingDriver',
@@ -26,6 +30,7 @@ function convertToUpdateData(data: CreateScheduledOrderRequest, orderId: string)
     airFlight: data.airFlight ?? null,
     flyReis: data.flyReis ?? null,
     notes: data.notes ?? null,
+    operatorNotes: data.operatorNotes ?? null,
     paymentMethodType: data.paymentMethodType ?? null,
     driverPrice: data.driverPrice ?? null,
   };
@@ -134,9 +139,24 @@ export function useScheduledOrderSubmit(
     },
 
     onError: (error: Error) => {
-      toast.error(
-        `❌ Ошибка ${orderId ? 'обновления' : 'создания'} заказа: ${error.message}`
-      );
+      if (error instanceof ApiRequestError) {
+        const messages = error.apiError.errors
+          ? Object.values(error.apiError.errors).flat().filter(Boolean)
+          : [];
+        if (messages.length > 0) {
+          messages.forEach(msg => toast.error(String(msg)));
+        } else {
+          // Fallback: used when server returns error with empty or absent errors object
+          toast.error(
+            error.message ||
+              `Ошибка ${orderId ? 'обновления' : 'создания'} заказа`,
+          );
+        }
+      } else {
+        toast.error(
+          error.message || `Ошибка ${orderId ? 'обновления' : 'создания'} заказа`,
+        );
+      }
       onError?.(error);
     },
 

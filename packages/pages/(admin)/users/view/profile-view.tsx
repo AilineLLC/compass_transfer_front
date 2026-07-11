@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { carsApi } from '@shared/api/cars';
 import { usersApi } from '@shared/api/users';
+import { analyticsApi, type DriverAnalytics } from '@shared/api/analytics';
 import {
   getRoleLabel,
   getPageTitle,
@@ -16,8 +17,9 @@ import {
   PartnerSection,
   TerminalSection
 } from '@entities/users';
-import type { Role } from '@entities/users/enums';
+import { Role } from '@entities/users/enums';
 import type { GetOperatorDTO, GetDriverDTO, GetCustomerDTO, GetAdminDTO, GetPartnerDTO, GetTerminalDTO } from '@entities/users/interface';
+import type { GetCarDTO } from '@entities/cars/interface';
 import {
   ProfileActions,
   ProfileError,
@@ -28,6 +30,10 @@ import {
 } from '@features/users';
 import { AssignCarModal } from './components/assign-car-modal';
 import { ManageDriverCarsModal } from './components/manage-driver-cars-modal';
+import { useRouter } from 'next/navigation';
+import { useUserRole } from '@shared/contexts/user-role-context';
+import { AuditEntityType } from '@entities/audit';
+import { AuditSection } from '@features/audit';
 
 type UserData = GetOperatorDTO | GetDriverDTO | GetCustomerDTO | GetAdminDTO | GetPartnerDTO | GetTerminalDTO;
 
@@ -37,14 +43,38 @@ interface ProfileViewProps {
 }
 
 export function ProfileView({ userId, userRole }: ProfileViewProps) {
+  const router = useRouter();
+  const { userRole: currentUserRole } = useUserRole();
+
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ProfileTab>('basic');
 
+  const canViewAudit = currentUserRole === Role.Admin || currentUserRole === Role.Operator;
+
   // Состояния для модальных окон управления автомобилями
   const [isAssignCarModalOpen, setIsAssignCarModalOpen] = useState(false);
   const [isManageCarsModalOpen, setIsManageCarsModalOpen] = useState(false);
+
+  // Аналитика водителя
+  const [driverAnalytics, setDriverAnalytics] = useState<DriverAnalytics | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+
+  // Машины водителя
+  const [driverCars, setDriverCars] = useState<GetCarDTO[]>([]);
+
+  const loadDriverCars = async (driverId: string) => {
+    try {
+      const response = await carsApi.getCars({ size: 100, Includes: 'Drivers' });
+      const cars = response.data.filter(car =>
+        car.drivers?.some(d => d.driverId === driverId)
+      );
+      setDriverCars(cars);
+    } catch {
+      setDriverCars([]);
+    }
+  };
 
   // Загрузка данных пользователя
   useEffect(() => {
@@ -80,6 +110,16 @@ export function ProfileView({ userId, userRole }: ProfileViewProps) {
         }
 
         setUser(userData);
+
+        if (userRole === 'Driver') {
+          setAnalyticsLoading(true);
+          analyticsApi.getDriverAnalytics(userId)
+            .then(setDriverAnalytics)
+            .catch(() => setDriverAnalytics(null))
+            .finally(() => setAnalyticsLoading(false));
+
+          loadDriverCars(userId);
+        }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : `Ошибка загрузки ${getRoleLabel(userRole)}`;
 
@@ -122,13 +162,25 @@ export function ProfileView({ userId, userRole }: ProfileViewProps) {
       await carsApi.assignDriver(carId, userId);
       toast.success('Автомобиль успешно назначен водителю');
 
-      // Перезагружаем данные пользователя
       const updatedUser = await usersApi.getDriver(userId);
-
       setUser(updatedUser);
+      loadDriverCars(userId);
     } catch (error) {
       // Логируем ошибку для отладки
       toast.error(error instanceof Error ? error.message : 'Ошибка назначения автомобиля');
+      throw error;
+    }
+  };
+
+  const handleRemoveCar = async (carId: string) => {
+    try {
+      await carsApi.removeDriver(carId, userId);
+      toast.success('Автомобиль успешно откреплён от водителя');
+      const updatedUser = await usersApi.getDriver(userId);
+      setUser(updatedUser);
+      loadDriverCars(userId);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Ошибка открепления автомобиля');
       throw error;
     }
   };
@@ -157,6 +209,10 @@ export function ProfileView({ userId, userRole }: ProfileViewProps) {
             profile={user}
             openMapSheet={openMapSheet}
             onAssignCar={() => setIsAssignCarModalOpen(true)}
+            onRemoveCar={handleRemoveCar}
+            analytics={driverAnalytics}
+            loading={analyticsLoading}
+            cars={driverCars}
           />
         );
       case 'Admin':
@@ -176,7 +232,7 @@ export function ProfileView({ userId, userRole }: ProfileViewProps) {
 
   // Обработчик кнопки "Назад"
   const handleBackToList = () => {
-    window.location.href = '/users';
+    router.back()
   };
 
   // Функция рендера контента табов
@@ -193,6 +249,8 @@ export function ProfileView({ userId, userRole }: ProfileViewProps) {
         );
       case 'rides':
         return <UserRidesSection userId={userId} />;
+      case 'audit':
+        return <AuditSection entityType={AuditEntityType.User} entityId={userId} />;
       default:
         return null;
     }
@@ -233,7 +291,7 @@ export function ProfileView({ userId, userRole }: ProfileViewProps) {
           <div className='lg:col-span-3 flex flex-col gap-6'>
             {/* Табы для переключения между секциями */}
             <div className='px-4'>
-              <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} hideMy />
+              <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} hideMy showAudit={canViewAudit} />
             </div>
             {/* Контент выбранной вкладки */}
             {renderTabContent()}

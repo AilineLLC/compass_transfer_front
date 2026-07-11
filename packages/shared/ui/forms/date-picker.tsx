@@ -21,6 +21,8 @@ interface DatePickerProps {
   className?: string;
   id?: string;
   modal?: boolean; // Флаг для использования внутри модального окна
+  maxDate?: Date; // Верхняя граница: нельзя выбрать дату позже (напр. дата выдачи документа)
+  minDate?: Date; // Нижняя граница: нельзя выбрать дату раньше (напр. срок действия)
 }
 
 export function DatePicker({
@@ -31,8 +33,15 @@ export function DatePicker({
   className,
   id,
   modal = false,
+  maxDate,
+  minDate,
 }: DatePickerProps) {
   const [open, setOpen] = useState(false);
+
+  const disabledDays = [
+    ...(maxDate ? [{ after: maxDate }] : []),
+    ...(minDate ? [{ before: minDate }] : []),
+  ];
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -53,22 +62,25 @@ export function DatePicker({
           </span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent 
+      <PopoverContent
         className={cn(
           "w-auto p-0",
           modal && "!z-[1003]"
-        )} 
+        )}
         align="start"
         style={modal ? { zIndex: 1003 } : undefined}
       >
         <Calendar
           mode="single"
-          defaultMonth={value || new Date()}
+          defaultMonth={value ?? minDate ?? new Date()}
           selected={value}
           onSelect={(date: Date | undefined) => {
             onChange?.(date);
             setOpen(false);
           }}
+          disabled={disabledDays.length > 0 ? disabledDays : undefined}
+          toDate={maxDate}
+          fromDate={minDate}
           className="rounded-md border-0"
         />
       </PopoverContent>

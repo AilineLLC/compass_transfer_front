@@ -2,10 +2,11 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { AxiosError } from 'axios';
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { tariffsApi } from '@shared/api/tariffs';
+import { filesApi } from '@shared/api/files';
 import { logger } from '@shared/lib';
 import { ServiceClass } from '@entities/tariffs/enums/ServiceClass.enum';
 import { CarType } from '@entities/tariffs/enums/CarType.enum';
@@ -19,6 +20,7 @@ import {
   tariffUpdateSchema,
   type TariffUpdateFormData,
 } from '@entities/tariffs/schemas/tariffUpdateSchema';
+import type { TariffIconItem } from '@entities/tariffs/ui/tariff-basic-section';
 
 type ApiError = {
   detail?: string;
@@ -41,11 +43,19 @@ export function useTariffEditFormLogic({
     minimumPrice: number;
     perKmPrice: number;
     freeWaitingTimeMinutes: number;
+    isLanding: boolean | null;
+    color: string | null;
+    icon?: { id: string; path: string } | null;
   };
   onBack: () => void;
   onSuccess: () => void;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const iconItemRef = useRef<TariffIconItem | null>(
+    initialData.icon
+      ? { kind: 'existing', id: initialData.icon.id, path: initialData.icon.path }
+      : null,
+  );
 
   const form = useForm({
     resolver: zodResolver(tariffUpdateSchema),
@@ -56,9 +66,11 @@ export function useTariffEditFormLogic({
       carType: initialData.carType,
       basePrice: initialData.basePrice,
       minutePrice: initialData.minutePrice,
-      minimumPrice: 0, // Всегда 0
+      minimumPrice: 0,
       perKmPrice: initialData.perKmPrice,
       freeWaitingTimeMinutes: initialData.freeWaitingTimeMinutes,
+      isLanding: initialData.isLanding,
+      color: initialData.color,
     },
   });
 
@@ -72,21 +84,36 @@ export function useTariffEditFormLogic({
 
   const formData = watch();
 
+  const onIconChange = useCallback((item: TariffIconItem | null) => {
+    iconItemRef.current = item;
+  }, []);
+
   const onSubmit = useCallback(
     async (data: TariffUpdateFormData) => {
       setIsSubmitting(true);
       try {
+        let iconId: string | null = null;
+        const iconItem = iconItemRef.current;
+        if (iconItem?.kind === 'pending' && !iconItem.error) {
+          iconId = await filesApi.uploadFile('TariffIcon', iconItem.file);
+        } else if (iconItem?.kind === 'existing') {
+          iconId = iconItem.id;
+        }
+
         const apiData = {
           name: data.name,
           serviceClass: data.serviceClass,
           carType: data.carType,
           basePrice: data.basePrice,
           minutePrice: data.minutePrice,
-          minimumPrice: 0, // Всегда передаем 0
+          minimumPrice: 0,
           perKmPrice: data.perKmPrice,
           freeWaitingTimeMinutes: data.freeWaitingTimeMinutes,
+          isLanding: data.isLanding,
+          color: data.color,
+          iconId,
         };
-        
+
         const result = await tariffsApi.updateTariff(tariffId, apiData);
 
         if (result && result.name) {
@@ -187,5 +214,6 @@ export function useTariffEditFormLogic({
     onUpdate,
     handleChapterClick,
     onBack,
+    onIconChange,
   };
 }

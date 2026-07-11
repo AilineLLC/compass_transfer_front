@@ -3,6 +3,7 @@
 import { useFormContext } from 'react-hook-form';
 import { Input } from '@shared/ui/forms/input';
 import { Label } from '@shared/ui/forms/label';
+import { Switch } from '@shared/ui/forms/switch';
 import { type EmployeeProfileFields } from '@entities/users/model/validation/ui/employee-profile';
 
 interface EmployeeProfileSectionProps {
@@ -14,10 +15,12 @@ export function EmployeeProfileSection({ showOptionalWarning = false }: Employee
     register,
     formState: { errors },
     watch,
-  } = useFormContext<{ profile: EmployeeProfileFields['profile'] }>(); // Удаляю все локальные определения getEmployeeProfileStatus, getEmployeeProfileErrors, EmployeeProfileFields
+    setValue,
+  } = useFormContext<{ profile: EmployeeProfileFields['profile']; isMainSupportOperator: boolean }>(); // Удаляю все локальные определения getEmployeeProfileStatus, getEmployeeProfileErrors, EmployeeProfileFields
   // profile можно использовать для вычислений, если нужно
   const profileErrors = errors.profile ?? {};
   const profile = watch('profile');
+  const isMainSupportOperator = watch('isMainSupportOperator');
 
   return (
     <div className='space-y-4'>
@@ -89,6 +92,7 @@ export function EmployeeProfileSection({ showOptionalWarning = false }: Employee
           <Input
             id='hireDate'
             type='date'
+            max={new Date().toISOString().split('T')[0]}
             {...register('profile.hireDate')}
             className={`focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0 hover:shadow-md focus:shadow-md focus-visible:shadow-md transition-shadow ${
               profileErrors.hireDate
@@ -105,6 +109,26 @@ export function EmployeeProfileSection({ showOptionalWarning = false }: Employee
                 : 'Ошибка валидации'}
             </p>
           )}
+        </div>
+      </div>
+
+      <div className='flex items-start gap-3 rounded-lg border p-4'>
+        <Switch
+          id='isMainSupportOperator'
+          checked={!!isMainSupportOperator}
+          onCheckedChange={(checked) =>
+            setValue('isMainSupportOperator', checked, { shouldDirty: true })
+          }
+          className='mt-0.5'
+        />
+        <div className='space-y-1'>
+          <Label htmlFor='isMainSupportOperator' className='cursor-pointer'>
+            Главный оператор поддержки
+          </Label>
+          <p className='text-xs text-muted-foreground'>
+            Даёт доступ к разделу «Чат с водителями». Этот статус должен быть только у одного оператора —
+            при включении у другого оператора его стоит выключить вручную.
+          </p>
         </div>
       </div>
     </div>

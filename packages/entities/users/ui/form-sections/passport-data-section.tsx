@@ -1,6 +1,7 @@
 'use client';
 
 import { useFormContext } from 'react-hook-form';
+import { DatePicker } from '@shared/ui/forms/date-picker';
 import { Input } from '@shared/ui/forms/input';
 import { Label } from '@shared/ui/forms/label';
 import {
@@ -20,8 +21,27 @@ export function PassportDataSection() {
     register,
     formState: { errors },
     watch,
+    setValue,
   } = useFormContext<{ profile: PassportDataFields['profile'] }>();
   const formData = watch();
+
+  const toDateString = (date: Date | undefined, field: string) => {
+    if (date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      setValue(field as never, `${y}-${m}-${d}`);
+    } else {
+      setValue(field as never, null);
+    }
+  };
+
+  const issueDate = formData.profile?.passport?.issueDate
+    ? new Date(formData.profile.passport.issueDate)
+    : undefined;
+  const expiryDate = formData.profile?.passport?.expiryDate
+    ? new Date(formData.profile.passport.expiryDate)
+    : undefined;
 
   return (
     <div className='space-y-4'>
@@ -49,8 +69,8 @@ export function PassportDataSection() {
         <div className='space-y-2'>
           <Label htmlFor='identityType'>Тип документа *</Label>
           <Select
-            {...register('profile.passport.identityType')}
-            value={formData.profile.passport.identityType}
+            value={formData.profile.passport.identityType || ''}
+            onValueChange={(v) => setValue('profile.passport.identityType', v)}
           >
             <SelectTrigger
               className={`focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0 hover:shadow-md focus:shadow-md focus-visible:shadow-md transition-shadow [&>span]:flex-1 [&>span]:text-left ${
@@ -74,6 +94,49 @@ export function PassportDataSection() {
                 : 'Ошибка валидации'}
             </p>
           )}
+        </div>
+
+        <div className='space-y-2'>
+          <Label htmlFor='passportSeries'>Серия паспорта</Label>
+          <Input
+            id='passportSeries'
+            {...register('profile.passport.series')}
+            placeholder='AN'
+            maxLength={2}
+            className='focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0 hover:shadow-md focus:shadow-md focus-visible:shadow-md transition-shadow'
+          />
+        </div>
+
+        <div className='space-y-2'>
+          <Label htmlFor='passportIssuedBy'>Кем выдан</Label>
+          <Input
+            id='passportIssuedBy'
+            {...register('profile.passport.issuedBy')}
+            placeholder='Орган, выдавший документ'
+            className='focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0 hover:shadow-md focus:shadow-md focus-visible:shadow-md transition-shadow'
+          />
+        </div>
+
+        <div className='space-y-2'>
+          <Label htmlFor='passportIssueDate'>Дата выдачи</Label>
+          <DatePicker
+            id='passportIssueDate'
+            value={issueDate}
+            onChange={date => toDateString(date, 'profile.passport.issueDate')}
+            placeholder='Выберите дату выдачи'
+            maxDate={new Date()}
+          />
+        </div>
+
+        <div className='space-y-2'>
+          <Label htmlFor='passportExpiryDate'>Срок действия</Label>
+          <DatePicker
+            id='passportExpiryDate'
+            value={expiryDate}
+            onChange={date => toDateString(date, 'profile.passport.expiryDate')}
+            placeholder='Выберите срок действия'
+            minDate={new Date()}
+          />
         </div>
       </div>
     </div>

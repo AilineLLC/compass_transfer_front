@@ -1,12 +1,12 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { AxiosError } from 'axios';
+import { ApiRequestError } from '@shared/api/client';
 import { useState, useMemo, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { usersApi } from '@shared/api/users';
-import { logger } from '@shared/lib';
+import { logger, applyServerErrors } from '@shared/lib';
 import type { CreateAdminDTO } from '@entities/users/interface/CreateAdminDTO';
 import {
   getBasicDataStatus,
@@ -21,10 +21,6 @@ import {
   type AdminCreateFormData,
 } from '@entities/users/schemas/adminCreateSchema';
 
-type ApiError = {
-  detail?: string;
-  errors?: Record<string, string[]>;
-};
 
 export function useAdminFormLogic({
   selectedRole,
@@ -91,29 +87,15 @@ export function useAdminFormLogic({
         onSuccess();
       } catch (error) {
         logger.warn('Ошибка создания администратора:', error);
-
-        if (error instanceof Error && 'response' in error) {
-          const axiosError = error as AxiosError<ApiError>;
-
-          if (axiosError.response?.data?.errors) {
-            const serverErrors = axiosError.response.data.errors;
-
-            Object.keys(serverErrors).forEach(field => {
-              const fieldKey = field as keyof AdminCreateFormData;
-
-              if (serverErrors[field] && serverErrors[field].length > 0) {
-                form.setError(fieldKey, {
-                  type: 'server',
-                  message: serverErrors[field][0],
-                });
-              }
-            });
-            toast.error('Исправьте ошибки в форме');
+        if (error instanceof ApiRequestError) {
+          const { errors: serverErrors, message } = error.apiError;
+          if (serverErrors && Object.keys(serverErrors).length > 0) {
+            toast.error(applyServerErrors(serverErrors, form.setError));
           } else {
-            toast.error(axiosError.response?.data?.detail || 'Ошибка создания администратора');
+            toast.error(message);
           }
         } else {
-          toast.error('Неизвестная ошибка при создании администратора');
+          toast.error(error instanceof Error ? error.message : 'Ошибка создания администратора');
         }
       } finally {
         setIsSubmitting(false);

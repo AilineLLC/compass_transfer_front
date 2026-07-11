@@ -9,6 +9,10 @@ import {
   CreditCard,
   Settings,
   DollarSign,
+  ArrowLeftRight,
+  ClipboardList,
+  Wallet,
+  MessageCircle,
 } from 'lucide-react';
 import { sidebarMockData } from '@entities/users/mock-data';
 
@@ -72,6 +76,44 @@ export const sidebarData = {
         {
           title: 'Создать заказ',
           url: '/orders/create',
+        },
+      ],
+    },
+    {
+      title: 'Трансферы',
+      url: '/transfers',
+      icon: ArrowLeftRight,
+      items: [
+        {
+          title: 'Все трансферы',
+          url: '/transfers',
+        },
+        {
+          title: 'Создать трансфер',
+          url: '/transfers/create',
+        },
+      ],
+    },
+    {
+      title: 'Заявки',
+      url: '/order-forms',
+      icon: ClipboardList,
+      items: [
+        {
+          title: 'Все заявки',
+          url: '/order-forms',
+        },
+        {
+          title: 'Ожидают',
+          url: '/order-forms?status=Pending',
+        },
+        {
+          title: 'Принятые',
+          url: '/order-forms?status=Verified',
+        },
+        {
+          title: 'Отклонённые',
+          url: '/order-forms?status=Rejected',
         },
       ],
     },
@@ -142,6 +184,17 @@ export const sidebarData = {
       ],
     },
     {
+      title: 'Финансы',
+      url: '/finances',
+      icon: Wallet,
+      items: [
+        {
+          title: 'Выплаты водителям',
+          url: '/finances',
+        },
+      ],
+    },
+    {
       title: 'Уведомления',
       url: '/notifications',
       icon: Bell,
@@ -163,6 +216,12 @@ export const sidebarData = {
           url: '/notifications/create',
         },
       ],
+    },
+    {
+      title: 'Чат с водителями',
+      url: '/chat',
+      icon: MessageCircle,
+      items: [],
     },
   ],
   documents: [
@@ -212,7 +271,7 @@ export const sidebarData = {
         },
       ],
     },
-    {
+{
       name: 'Услуги',
       url: '/services',
       icon: Settings,

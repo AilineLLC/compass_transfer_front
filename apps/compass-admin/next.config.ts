@@ -19,10 +19,33 @@ function toCspHost(raw?: string) {
   }
 }
 
+function toWssHost(raw?: string) {
+  if (!raw) return undefined;
+  try {
+    const u = new URL(raw.trim());
+    return `${u.protocol}//${u.host}`;
+  } catch {
+    return undefined;
+  }
+}
+
+function toHostname(raw?: string) {
+  if (!raw) return undefined;
+  try {
+    return new URL(raw.trim()).hostname;
+  } catch {
+    return undefined;
+  }
+}
+
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || '';
+
 const API_ORIGIN =
   normalizeApiOrigin(process.env.API_ORIGIN) ??
   normalizeApiOrigin(process.env.NEXT_PUBLIC_API_URL);
 const API_CSP_ORIGIN = toCspHost(API_ORIGIN);
+const WSS_CSP_ORIGIN = toWssHost(process.env.NEXT_PUBLIC_WS_BASE_URL);
+const UPLOADS_HOSTNAME = toHostname(process.env.NEXT_PUBLIC_UPLOADS_URL);
 
 // Заголовки безопасности, которые будут применяться ко всем маршрутам
 const getSecurityHeaders = (isDev: boolean) => {
@@ -57,14 +80,16 @@ const getSecurityHeaders = (isDev: boolean) => {
   const cspHeader = {
     key: 'Content-Security-Policy',
     value: isDev
-      ? `default-src 'self'; connect-src 'self' http://api.compass.local:3030 http://api.compass.local:3032 ws://api.compass.local:3030 ws://api.compass.local:3032 ${API_CSP_ORIGIN ?? ''} https://api.open-meteo.com https://api.exchangerate-api.com https://api-maps.yandex.ru https://geocode-maps.yandex.ru https://router.project-osrm.org wss://api.compasstransfer.kg; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://api-maps.yandex.ru https://yastatic.net https://*.yandex.ru; style-src 'self' 'unsafe-inline' https://unpkg.com https://yastatic.net https://*.yandex.ru; img-src 'self' data: https: https://core-renderer-tiles.maps.yandex.net https://yastatic.net https://*.maps.yandex.net https://*.yandex.ru; media-src 'self' https://www.youtube.com https://youtube.com; frame-src https://www.youtube.com https://youtube.com;`
-      : `default-src 'self'; connect-src 'self' http://api.compass.local:3030 http://api.compass.local:3032 ws://api.compass.local:3030 ws://api.compass.local:3032 ${API_CSP_ORIGIN ?? ''} https://api.open-meteo.com https://api.exchangerate-api.com https://api-maps.yandex.ru https://geocode-maps.yandex.ru https://yastatic.net https://*.maps.yandex.net https://*.yandex.ru https://router.project-osrm.org https://api.compasstransfer.kg wss://api.compasstransfer.kg; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://api-maps.yandex.ru https://yastatic.net https://*.yandex.ru; style-src 'self' 'unsafe-inline' https://unpkg.com https://yastatic.net https://*.yandex.ru; img-src 'self' data: https: https://core-renderer-tiles.maps.yandex.net https://yastatic.net https://*.maps.yandex.net https://*.yandex.ru; media-src 'self' https://www.youtube.com https://youtube.com; frame-src https://www.youtube.com https://youtube.com;`,
+      ? `default-src 'self'; connect-src 'self' http://api.compass.local:3030 http://api.compass.local:3032 ws://api.compass.local:3030 ws://api.compass.local:3032 ${API_CSP_ORIGIN ?? ''} ${WSS_CSP_ORIGIN ?? ''} https://api.d.compasstransfer.kg https://poc.api.compasstransfer.kg https://poc.api.d.compasstransfer.kg wss://poc.api.compasstransfer.kg wss://poc.api.d.compasstransfer.kg wss://api.d.compasstransfer.kg https://api.open-meteo.com https://api.exchangerate-api.com https://api-maps.yandex.ru https://geocode-maps.yandex.ru https://router.project-osrm.org wss://api.compasstransfer.kg; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://api-maps.yandex.ru https://yastatic.net https://*.yandex.ru; style-src 'self' 'unsafe-inline' https://unpkg.com https://yastatic.net https://*.yandex.ru; img-src 'self' data: https: https://core-renderer-tiles.maps.yandex.net https://yastatic.net https://*.maps.yandex.net https://*.yandex.ru; media-src 'self' https://www.youtube.com https://youtube.com; frame-src https://www.youtube.com https://youtube.com;`
+      : `default-src 'self'; connect-src 'self' http://api.compass.local:3030 http://api.compass.local:3032 ws://api.compass.local:3030 ws://api.compass.local:3032 ${API_CSP_ORIGIN ?? ''} ${WSS_CSP_ORIGIN ?? ''} https://api.d.compasstransfer.kg https://poc.api.compasstransfer.kg https://poc.api.d.compasstransfer.kg wss://poc.api.compasstransfer.kg wss://poc.api.d.compasstransfer.kg wss://api.d.compasstransfer.kg https://api.open-meteo.com https://api.exchangerate-api.com https://api-maps.yandex.ru https://geocode-maps.yandex.ru https://yastatic.net https://*.maps.yandex.net https://*.yandex.ru https://router.project-osrm.org https://api.compasstransfer.kg wss://api.compasstransfer.kg; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://api-maps.yandex.ru https://yastatic.net https://*.yandex.ru; style-src 'self' 'unsafe-inline' https://unpkg.com https://yastatic.net https://*.yandex.ru; img-src 'self' data: https: https://core-renderer-tiles.maps.yandex.net https://yastatic.net https://*.maps.yandex.net https://*.yandex.ru; media-src 'self' https://www.youtube.com https://youtube.com; frame-src https://www.youtube.com https://youtube.com;`,
   };
 
   return [...baseHeaders, cspHeader];
 };
 const nextConfig: NextConfig = {
   reactStrictMode: false,
+  basePath: BASE_PATH,
+  // assetPrefix: BASE_PATH || undefined,
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -72,8 +97,16 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
+    unoptimized: process.env.NEXT_PUBLIC_IMAGE_UNOPTIMIZED === 'true',
+    loaderFile: BASE_PATH ? './src/image-loader.ts' : undefined,
     formats: ['image/webp'],
     remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'compass.ailine.kg',
+        port: '',
+        pathname: '/**',
+      },
       {
         protocol: 'https',
         hostname: 'via.placeholder.com',
@@ -146,6 +179,9 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      ...(UPLOADS_HOSTNAME
+        ? [{ protocol: 'https' as const, hostname: UPLOADS_HOSTNAME, port: '', pathname: '/**' }]
+        : []),
     ],
   },
 
@@ -188,8 +224,12 @@ const nextConfig: NextConfig = {
   },
 
   async rewrites() {
-    if (!API_ORIGIN) return [];
-    return [{ source: '/api/:path*', destination: `${API_ORIGIN}/:path*` }];
+    if (!API_ORIGIN) return { beforeFiles: [], afterFiles: [], fallback: [] };
+    return {
+      beforeFiles: [],
+      afterFiles: [],
+      fallback: [{ source: '/api/:path*', destination: `${API_ORIGIN}/:path*` }],
+    };
   },
 
   experimental: {

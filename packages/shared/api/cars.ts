@@ -5,8 +5,9 @@ import type {
   VehicleStatus,
   CarFeature,
 } from '@entities/cars/enums';
-import type { GetCarDTO } from '@entities/cars/interface';
-import { apiGet, apiPost, apiPut, apiDelete } from './client';
+import type { GetCarDTO, GetCarDTOKeysetPaginationResult } from '@entities/cars/interface';
+import { apiGet, apiPost, apiPut, apiDelete, ApiRequestError } from './client';
+import type { GetMyCarParams } from './cars/cars-api';
 
 // Операторы поиска
 type SearchOperator =
@@ -63,6 +64,12 @@ interface CarFilters {
   // Сортировка
   sortBy?: string;
   sortOrder?: SortOrder;
+
+  // Включение связанных данных
+  Includes?: string | string[];
+
+  // Фильтр по водителю (возвращает машины, привязанные к водителю)
+  Driver?: string;
 }
 
 interface CarApiResponse {
@@ -87,6 +94,7 @@ interface CreateCarDTO {
   status: VehicleStatus;
   passengerCapacity: number;
   features: CarFeature[];
+  images?: string[];
 }
 
 // DTO для обновления автомобиля
@@ -101,15 +109,27 @@ interface UpdateCarDTO {
   status?: VehicleStatus;
   passengerCapacity?: number;
   features?: CarFeature[];
+  images?: string[];
 }
 
 export const carsApi = {
+  // Получение автомобилей текущего водителя
+  getMyCars: async (params?: GetMyCarParams): Promise<GetCarDTOKeysetPaginationResult> => {
+    const result = await apiGet<GetCarDTOKeysetPaginationResult>('/Car/my', { params });
+
+    if (result.error) {
+      throw new ApiRequestError(result.error);
+    }
+
+    return result.data!;
+  },
+
   // Получение списка автомобилей
   getCars: async (params?: CarFilters): Promise<CarApiResponse> => {
     const result = await apiGet<CarApiResponse>('/Car', { params });
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -117,10 +137,12 @@ export const carsApi = {
 
   // Получение автомобиля по ID
   getCarById: async (id: string): Promise<GetCarDTO> => {
-    const result = await apiGet<GetCarDTO>(`/Car/${id}`);
+    const result = await apiGet<GetCarDTO>(`/Car/${id}`, {
+      params: { Includes: 'Images' },
+    });
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -131,7 +153,7 @@ export const carsApi = {
     const result = await apiPost<GetCarDTO, CreateCarDTO>('/Car', data);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -142,7 +164,7 @@ export const carsApi = {
     const result = await apiPut<GetCarDTO, UpdateCarDTO>(`/Car/${id}`, data);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
 
     return result.data!;
@@ -153,7 +175,7 @@ export const carsApi = {
     const result = await apiDelete(`/Car/${id}`);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
   },
 
@@ -162,7 +184,7 @@ export const carsApi = {
     const result = await apiPost(`/Car/${carId}/drivers/${driverId}`, true);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
   },
 
@@ -171,7 +193,7 @@ export const carsApi = {
     const result = await apiPut(`/Car/${carId}/drivers/${driverId}`, isActive);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
     }
   },
 
@@ -180,7 +202,16 @@ export const carsApi = {
     const result = await apiDelete(`/Car/${carId}/drivers/${driverId}`);
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new ApiRequestError(result.error);
+    }
+  },
+
+  // Установить автомобиль активным для текущего водителя
+  setActiveCar: async (carId: string): Promise<void> => {
+    const result = await apiPost(`/Car/my/${carId}/set-active`, true);
+
+    if (result.error) {
+      throw new ApiRequestError(result.error);
     }
   },
 };

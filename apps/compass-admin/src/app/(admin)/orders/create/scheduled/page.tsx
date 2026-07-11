@@ -5,7 +5,16 @@ import { ScheduledOrderPage } from '@pages/(admin)/orders/create/scheduled';
 export default async function CreateScheduledOrderPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tariffId?: string }>;
+  searchParams: Promise<{
+    tariffId?: string;
+    formId?: string;
+    startLocationId?: string;
+    endLocationId?: string;
+    services?: string;
+    passengerName?: string;
+    passengerPhone?: string;
+    scheduledTime?: string;
+  }>;
 }) {
   const params = await searchParams;
 
@@ -28,7 +37,20 @@ export default async function CreateScheduledOrderPage({
     }
   })();
 
-  return <ScheduledOrderPage mode="create" initialTariffId={params.tariffId} userRole={roleString} />;
+  return (
+    <ScheduledOrderPage
+      mode="create"
+      initialTariffId={params.tariffId}
+      userRole={roleString}
+      fromFormId={params.formId}
+      initialStartLocationId={params.startLocationId}
+      initialEndLocationId={params.endLocationId}
+      initialServicesJson={params.services}
+      initialPassengerName={params.passengerName}
+      initialPassengerPhone={params.passengerPhone}
+      initialScheduledTime={params.scheduledTime}
+    />
+  );
 }
 
 export const metadata = {

@@ -9,6 +9,8 @@ import { ridesApi } from '@shared/api/rides/rides-api';
 import { usersApi } from '@shared/api/users';
 import { carsApi } from '@shared/api/cars';
 import { carColorLabels, vehicleTypeLabels } from '@entities/cars';
+import { AuditEntityType } from '@entities/audit';
+import { AuditSection } from '@features/audit';
 import type { GetRideDTO } from '../interface';
 import type { GetUserBasicDTO } from '@entities/users/interface';
 import type { GetCarDTO } from '@entities/cars/interface';
@@ -238,6 +240,11 @@ export function RideDetailCard({ rideId, rideIndex, orderId }: RideDetailCardPro
           )}
         </div>
       )}
+
+      {/* Журнал изменений поездки */}
+      <div className='pt-3 border-t'>
+        <AuditSection entityType={AuditEntityType.Ride} entityId={rideId} />
+      </div>
     </div>
   );
 }

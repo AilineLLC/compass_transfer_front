@@ -18,6 +18,7 @@ import {
 import { NavMain, NavDocuments } from '@entities/navigation';
 import { NavUser } from '@entities/users';
 import { Role, ActivityStatus } from '@entities/users/enums';
+import { useSelfUser } from '@entities/users/hooks/useSelfUser';
 import type { GetUserSelfProfileDTO, GetDriverDTO } from '@entities/users/interface';
 import { getRoleDisplayName } from '@entities/users/utils';
 import { useDrivers, type SidebarDriver } from '@widgets/sidebar/hooks';
@@ -27,18 +28,30 @@ import { DriversList } from './drivers-list';
 import { RefreshCw } from 'lucide-react';
 
 // Функция для фильтрации пунктов меню в зависимости от роли
-const filterMenuItemsByRole = (items: typeof sidebarData.navMain, userRole: Role) => {
+const filterMenuItemsByRole = (
+  items: typeof sidebarData.navMain,
+  userRole: Role,
+  isMainSupportOperator: boolean,
+) => {
   return items.filter(item => {
+    // "Чат с водителями" — только у оператора с флагом isMainSupportOperator
+    if (item.title === 'Чат с водителями') {
+      return isMainSupportOperator;
+    }
+
     // Для роли Operator убираем "Уведомления"
     if (userRole === Role.Operator && item.title === 'Уведомления') {
       return false;
     }
 
-    // Для роли Partner оставляем только "Дашбоард" и "Заказы"
-    if (userRole === Role.Partner) {
-      const allowedItems = ['Дашбоард', 'Заказы'];
+    // "Финансы" — только Admin и Operator
+    if (item.title === 'Финансы' && userRole !== Role.Admin && userRole !== Role.Operator) {
+      return false;
+    }
 
-      return allowedItems.includes(item.title);
+    // Для роли Partner оставляем только "Заказы"
+    if (userRole === Role.Partner) {
+      return item.title === 'Заказы';
     }
 
     return true;
@@ -48,11 +61,9 @@ const filterMenuItemsByRole = (items: typeof sidebarData.navMain, userRole: Role
 // Функция для фильтрации документов в зависимости от роли
 const filterDocumentsByRole = (items: typeof sidebarData.documents, userRole: Role) => {
   return items.filter(item => {
-    // Для роли Partner оставляем только "Тарифы"
+    // Для роли Partner скрываем все документы
     if (userRole === Role.Partner) {
-      const allowedItems = ['Тарифы'];
-
-      return allowedItems.includes(item.name);
+      return false;
     }
 
     return true;
@@ -226,8 +237,12 @@ const guestUser: GetUserSelfProfileDTO = {
 export function AppSidebar({ currentUser, ...props }: AppSidebarProps) {
   const userRole = currentUser ? currentUser.role : Role.Unknown;
 
+  // Флаг главного оператора поддержки — определяет доступ к разделу "Чат с водителями"
+  const { data: selfUser } = useSelfUser({ enabled: userRole === Role.Operator });
+  const isMainSupportOperator = userRole === Role.Operator && selfUser?.isMainSupportOperator === true;
+
   // Фильтруем пункты меню в зависимости от роли пользователя
-  const filteredNavMain = filterMenuItemsByRole(sidebarData.navMain, userRole);
+  const filteredNavMain = filterMenuItemsByRole(sidebarData.navMain, userRole, isMainSupportOperator);
   const filteredDocuments = filterDocumentsByRole(sidebarData.documents, userRole);
 
   // Определяем, нужно ли показывать список водителей для данной роли

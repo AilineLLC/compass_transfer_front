@@ -57,8 +57,7 @@ export const RouteMarker: React.FC<RouteMarkerProps> = ({
     );
   }
 
-  // Для точек маршрута используем правильные буквы A, B, C...
-  // Определяем букву на основе типа точки
+  // start = A, end = B (всегда), промежуточные = 1, 2, 3...
   let label: string;
 
   if (point.type === 'start') {
@@ -66,13 +65,11 @@ export const RouteMarker: React.FC<RouteMarkerProps> = ({
   } else if (point.type === 'end') {
     label = 'B';
   } else {
-    // Для всех остальных типов (waypoint, intermediate, etc.) считаем по порядку
-    // Исключаем водителей и считаем только точки маршрута
-    const routePointsBeforeIndex = routePoints
+    const waypointsBefore = routePoints
       .slice(0, index)
-      .filter(p => p.type !== 'driver').length;
+      .filter(p => p.type !== 'driver' && p.type !== 'start' && p.type !== 'end').length;
 
-    label = String.fromCharCode(65 + routePointsBeforeIndex); // A, B, C ...
+    label = String(waypointsBefore + 1); // 1, 2, 3...
   }
 
   const colorFill = getColorByType(point.type);

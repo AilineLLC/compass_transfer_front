@@ -6,6 +6,7 @@ import { FormSidebar } from '@shared/ui/layout/form-sidebar';
 import { TariffBasicSection, TariffPricingSection } from '@entities/tariffs';
 import { TARIFF_FORM_CHAPTERS } from '@entities/tariffs/model/form-chapters/tariff-chapters';
 import type { TariffCreateFormData } from '@entities/tariffs/schemas/tariffCreateSchema';
+import type { TariffIconItem } from '@entities/tariffs/ui/tariff-basic-section';
 
 interface TariffFormViewProps {
   form: UseFormReturn<TariffCreateFormData>;
@@ -15,6 +16,7 @@ interface TariffFormViewProps {
   onCreate: () => void;
   handleChapterClick: (chapterId: string) => void;
   onBack: () => void;
+  onIconChange: (item: TariffIconItem | null) => void;
 }
 
 export function TariffFormView({
@@ -25,6 +27,7 @@ export function TariffFormView({
   onCreate,
   handleChapterClick,
   onBack,
+  onIconChange,
 }: TariffFormViewProps) {
   return (
     <FormProvider {...form}>
@@ -53,6 +56,7 @@ export function TariffFormView({
                       placeholders={{
                         name: 'Введите название тарифа',
                       }}
+                      onIconChange={onIconChange}
                     />
                   </div>
                 </div>

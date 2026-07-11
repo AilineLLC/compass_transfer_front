@@ -37,7 +37,7 @@ export function useNotificationFormLogic({
     resolver: zodResolver(notificationCreateSchema),
     mode: 'onSubmit',
     defaultValues: {
-      type: NotificationType.SystemMessage,
+      type: NotificationType.OrderCreated,
       title: '',
       content: '',
       orderId: '',

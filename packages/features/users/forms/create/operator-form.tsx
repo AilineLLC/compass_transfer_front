@@ -1,12 +1,12 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { AxiosError } from 'axios';
+import { ApiRequestError } from '@shared/api/client';
 import { useState, useMemo, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { usersApi } from '@shared/api/users';
-import { logger } from '@shared/lib';
+import { logger, applyServerErrors } from '@shared/lib';
 import type { CreateOperatorDTO } from '@entities/users/interface/CreateOperatorDTO';
 import {
   getBasicDataStatus,
@@ -20,10 +20,6 @@ import {
   type OperatorCreateFormData,
 } from '@entities/users/schemas/operatorCreateSchema';
 
-type ApiError = {
-  detail?: string;
-  errors?: Record<string, string[]>;
-};
 
 export type { OperatorCreateFormData as CreateOperatorFormData };
 
@@ -46,6 +42,7 @@ export function useOperatorFormLogic({
       fullName: '',
       avatarUrl: null,
       isActive: true,
+      isMainSupportOperator: false,
       profile: {
         employeeId: `OP-${Date.now()}`,
         department: 'Операторы',
@@ -121,28 +118,16 @@ export function useOperatorFormLogic({
         onSuccess();
       } catch (error) {
         logger.warn('Ошибка создания оператора:', error);
-        if (error instanceof Error && 'response' in error) {
-          const axiosError = error as AxiosError<ApiError>;
+        if (error instanceof ApiRequestError) {
+          const { errors: serverErrors } = error.apiError;
 
-          if (axiosError.response?.data?.errors) {
-            const serverErrors = axiosError.response.data.errors;
-
-            Object.keys(serverErrors).forEach(field => {
-              const fieldKey = field as keyof OperatorCreateFormData;
-
-              if (serverErrors[field] && serverErrors[field].length > 0) {
-                form.setError(fieldKey, {
-                  type: 'server',
-                  message: serverErrors[field][0],
-                });
-              }
-            });
-            toast.error('Исправьте ошибки в форме');
+          if (serverErrors && Object.keys(serverErrors).length > 0) {
+            toast.error(applyServerErrors(serverErrors, form.setError));
           } else {
-            toast.error(axiosError.response?.data?.detail || 'Ошибка создания оператора');
+            toast.error(error.apiError.message);
           }
         } else {
-          toast.error('Неизвестная ошибка при создании оператора');
+          toast.error(error instanceof Error ? error.message : 'Ошибка создания оператора');
         }
       } finally {
         setIsSubmitting(false);

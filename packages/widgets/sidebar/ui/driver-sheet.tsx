@@ -24,6 +24,7 @@ interface DriverSheetProps {
   setActiveCategory: (category: string) => void;
   activeOrderType: string;
   setActiveOrderType: (type: string) => void;
+  onCarRemoved?: () => void;
 }
 
 export function DriverSheet({
@@ -34,6 +35,7 @@ export function DriverSheet({
   setActiveCategory,
   activeOrderType,
   setActiveOrderType,
+  onCarRemoved,
 }: DriverSheetProps) {
   // Категории информации о водителе
   const driverCategories = React.useMemo(
@@ -90,7 +92,7 @@ export function DriverSheet({
       case 'personal':
         return <DriverPersonalInfo driver={driver} />;
       case 'cars':
-        return <DriverCarsInfo driver={driver} />;
+        return <DriverCarsInfo driver={driver} onCarRemoved={onCarRemoved} />;
       case 'location':
         return <DriverLocationInfo driver={driver} />;
       case 'orders':

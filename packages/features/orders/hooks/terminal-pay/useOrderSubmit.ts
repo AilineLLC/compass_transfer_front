@@ -4,8 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { toast } from '@shared/lib/conditional-toast';
 import { orderService } from '@shared/api/orders';
 import { usePaymentContext } from '@shared/contexts/PaymentContext';
-import type { OrderCancelledNotificationDTO } from '@shared/hooks/signal/interface';
-import type { RideNotificationData } from '@shared/hooks/signal/types';
+import type { WSNotificationDTO } from '@shared/hooks/signal/interface/WSNotificationDTO';
 import { useSignalR } from '@shared/hooks/signal/useSignalR';
 import { useFiscalReceipt } from '@entities/fiscal';
 import type { GetLocationDTO } from '@entities/locations/interface';
@@ -43,7 +42,7 @@ export const useOrderSubmit = ({
   useEffect(() => {
     if (!signalR.isConnected || !orderId) return;
 
-    const handleRideAccepted = (data: RideNotificationData) => {
+    const handleRideAccepted = (data: WSNotificationDTO) => {
 
       // ✅ ИСПРАВЛЕНИЕ: Сохраняем данные в контекст вместо localStorage
       try {
@@ -93,19 +92,19 @@ export const useOrderSubmit = ({
       toast.error(t('errors.driverNotFound'));
     };
 
-    const handleDriverCancelled = (_data: OrderCancelledNotificationDTO) => {
+    const handleDriverCancelled = (_data: WSNotificationDTO) => {
       setIsLoading(false);
       toast.error(t('errors.driverCancelled'));
     };
 
-    signalR.on('RideAcceptedNotification', handleRideAccepted);
-    signalR.on('DriverNotFoundNotification', handleDriverNotFound);
-    signalR.on('OrderCancelledNotification', handleDriverCancelled);
+    signalR.on('RideAccepted', handleRideAccepted);
+    signalR.on('RideCancelled', handleDriverNotFound);
+    signalR.on('OrderCancelled', handleDriverCancelled);
 
     return () => {
-      signalR.off('RideAcceptedNotification', handleRideAccepted);
-      signalR.off('DriverNotFoundNotification', handleDriverNotFound);
-      signalR.off('OrderCancelledNotification', handleDriverCancelled);
+      signalR.off('RideAccepted', handleRideAccepted);
+      signalR.off('RideCancelled', handleDriverNotFound);
+      signalR.off('OrderCancelled', handleDriverCancelled);
     };
   }, [
     signalR,

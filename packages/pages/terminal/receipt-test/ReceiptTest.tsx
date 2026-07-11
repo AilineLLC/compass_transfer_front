@@ -203,7 +203,7 @@ export const ReceiptTest: NextPage = () => {
           {/* Иконка поверх фонового изображения */}
           <div className="absolute z-20" style={{ top: '60%', left: '114px', transform: 'translateY(-50%)' }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo/checklogo.png" alt="Check logo" style={{ width: '410px', height: '520px', objectFit: 'fill' }} />
+            <img src={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/logo/checklogo.png`} alt="Check logo" style={{ width: '410px', height: '520px', objectFit: 'fill' }} />
           </div>
 
           <div className="w-[90%] mx-auto py-[56px] px-[44px] flex flex-col gap-10 relative z-10"

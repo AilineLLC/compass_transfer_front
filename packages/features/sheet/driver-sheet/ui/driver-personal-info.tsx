@@ -14,7 +14,7 @@ export function DriverPersonalInfo({ driver }: DriverPersonalInfoProps) {
         <div className='space-y-3'>
           <div className='flex justify-between'>
             <span className='text-sm text-muted-foreground'>Дата рождения:</span>
-            <span className='font-medium'>{new Date(driver.profile.dateOfBirth).toLocaleDateString('ru-RU')}</span>
+            <span className='font-medium'>{driver.profile.dateOfBirth ? new Date(driver.profile.dateOfBirth).toLocaleDateString('ru-RU') : 'Не указана'}</span>
           </div>
           <div className='flex justify-between'>
             <span className='text-sm text-muted-foreground'>Место рождения:</span>
@@ -26,7 +26,7 @@ export function DriverPersonalInfo({ driver }: DriverPersonalInfoProps) {
           </div>
           <div className='flex justify-between'>
             <span className='text-sm text-muted-foreground'>Языки:</span>
-            <span className='font-medium'>{driver.profile.languages.length > 0 ? driver.profile.languages.join(', ') : 'Не указаны'}</span>
+            <span className='font-medium'>{(driver.profile.languages ?? []).length > 0 ? (driver.profile.languages ?? []).join(', ') : 'Не указаны'}</span>
           </div>
           <div className='flex justify-between'>
             <span className='text-sm text-muted-foreground'>Электронная почта:</span>

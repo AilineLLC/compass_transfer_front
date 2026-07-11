@@ -37,10 +37,10 @@ interface LeafletLocationMapProps {
   className?: string;
 }
 
-// Геокодер через API роут (без CORS проблем)
 const getAddressByCoordinates = async (lat: number, lon: number): Promise<AddressData> => {
   try {
-    const url = `/api/geocoding/reverse?lat=${lat}&lon=${lon}`;
+    const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+    const url = `${basePath}/api/geocoding/reverse?lat=${lat}&lon=${lon}`;
 
     const response = await fetch(url);
 
@@ -58,7 +58,7 @@ const getAddressByCoordinates = async (lat: number, lon: number): Promise<Addres
     const data = await response.json();
 
     return data;
-  } catch  {
+  } catch {
     toast.error('Ошибка при запросе к API геокодирования:');
 
     return {

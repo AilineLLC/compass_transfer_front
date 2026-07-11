@@ -1,14 +1,16 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { AxiosError } from 'axios';
-import { useState, useMemo, useCallback } from 'react';
+import { ApiRequestError } from '@shared/api/client';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { usersApi } from '@shared/api/users';
-import { logger } from '@shared/lib';
+import { filesApi } from '@shared/api/files';
+import { logger, applyServerErrors } from '@shared/lib';
 import { VerificationStatus, BusinessType } from '@entities/users/enums';
 import type { CreatePartnerDTO } from '@entities/users/interface/CreatePartnerDTO';
+import type { PartnerDocumentItem } from '@entities/users/ui/form-sections/partner-documents-section';
 import {
   getBasicDataStatus,
   getBasicDataErrors,
@@ -24,10 +26,6 @@ import {
   type PartnerCreateFormData,
 } from '@entities/users/schemas/partnerCreateSchema';
 
-type ApiError = {
-  detail?: string;
-  errors?: Record<string, string[]>;
-};
 
 export function usePartnerFormLogic({
   selectedRole,
@@ -39,6 +37,13 @@ export function usePartnerFormLogic({
   onSuccess: () => void;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [documentCount, setDocumentCount] = useState(0);
+  const documentItemsRef = useRef<PartnerDocumentItem[]>([]);
+
+  const onDocumentItemsChange = useCallback((items: PartnerDocumentItem[]) => {
+    documentItemsRef.current = items;
+    setDocumentCount(items.filter(i => i.kind !== 'pending' || !i.error).length);
+  }, []);
 
   const form = useForm<PartnerCreateFormData>({
     resolver: zodResolver(partnerCreateSchema) as any,
@@ -89,10 +94,14 @@ export function usePartnerFormLogic({
       if (chapterId === 'sale') {
         return getPartnerSaleStatus(formData, errors, isSubmitted);
       }
+      if (chapterId === 'documents') {
+        if (documentCount > 0) return 'complete';
+        return 'pending';
+      }
 
       return 'pending';
     };
-  }, [formData, errors, isSubmitted]);
+  }, [formData, errors, isSubmitted, documentCount]);
 
   const getChapterErrors = useMemo(() => {
     return (chapterId: string): string[] => {
@@ -108,6 +117,9 @@ export function usePartnerFormLogic({
       if (chapterId === 'sale') {
         return getPartnerSaleErrors(formData, errors, isSubmitted);
       }
+      if (chapterId === 'documents') {
+        return [];
+      }
 
       return [];
     };
@@ -117,6 +129,16 @@ export function usePartnerFormLogic({
     async (data: PartnerCreateFormData) => {
       setIsSubmitting(true);
       try {
+        const documentIds = await Promise.all(
+          documentItemsRef.current
+            .filter(item => item.kind !== 'pending' || !item.error)
+            .map(item =>
+              item.kind === 'existing'
+                ? Promise.resolve(item.id)
+                : filesApi.uploadFile('PartnerDocument', item.file),
+            ),
+        );
+
         // Подготавливаем данные для API (исключаем confirmPassword)
         const { confirmPassword: _confirmPassword, ...formDataWithoutConfirm } = data;
         const apiData: CreatePartnerDTO = {
@@ -134,6 +156,7 @@ export function usePartnerFormLogic({
             contactEmail: data.profile.contactEmail,
             contactPhone: data.profile.contactPhone,
             website: data.profile.website,
+            documents: documentIds.length > 0 ? documentIds : null,
           },
         };
         const result = await usersApi.createPartner(apiData);
@@ -145,28 +168,15 @@ export function usePartnerFormLogic({
         }
         onSuccess();
       } catch (error) {
-        if (error instanceof Error && 'response' in error) {
-          const axiosError = error as AxiosError<ApiError>;
-
-          if (axiosError.response?.data?.errors) {
-            const serverErrors = axiosError.response.data.errors;
-
-            Object.keys(serverErrors).forEach(field => {
-              const fieldKey = field as keyof PartnerCreateFormData;
-
-              if (serverErrors[field] && serverErrors[field].length > 0) {
-                form.setError(fieldKey, {
-                  type: 'server',
-                  message: serverErrors[field][0],
-                });
-              }
-            });
-            toast.error('Исправьте ошибки в форме');
+        if (error instanceof ApiRequestError) {
+          const { errors: serverErrors, message } = error.apiError;
+          if (serverErrors && Object.keys(serverErrors).length > 0) {
+            toast.error(applyServerErrors(serverErrors, form.setError));
           } else {
-            toast.error(axiosError.response?.data?.detail || 'Ошибка создания партнера');
+            toast.error(message);
           }
         } else {
-          toast.error('Неизвестная ошибка при создании партнера');
+          toast.error(error instanceof Error ? error.message : 'Ошибка создания партнера');
         }
       } finally {
         setIsSubmitting(false);
@@ -210,5 +220,6 @@ export function usePartnerFormLogic({
     handleChapterClick,
     onBack,
     selectedRole,
+    onDocumentItemsChange,
   };
 }

@@ -20,7 +20,6 @@ interface ColumnVisibility {
   name: boolean;
   address: boolean;
   district: boolean;
-  city: boolean;
   country: boolean;
   region: boolean;
   coordinates: boolean;
@@ -38,8 +37,6 @@ interface LocationsTableFiltersProps {
   setAddressFilter: (address: string) => void;
   districtFilter: string;
   setDistrictFilter: (district: string) => void;
-  cityFilter: string;
-  setCityFilter: (city: string) => void;
   countryFilter: string;
   setCountryFilter: (country: string) => void;
   regionFilter: string;
@@ -51,6 +48,8 @@ interface LocationsTableFiltersProps {
   handleIsActiveFilterChange: (isActive: boolean | null) => void;
   popular1Filter: boolean | null;
   setPopular1Filter: (popular1: boolean | null) => void;
+  isLandingOnlyFilter: boolean | null;
+  setIsLandingOnlyFilter: (val: boolean | null) => void;
   pageSize: number;
   handlePageSizeChange: (size: number) => void;
   showAdvancedFilters: boolean;
@@ -72,8 +71,6 @@ export function LocationsTableFilters({
   setAddressFilter,
   districtFilter,
   setDistrictFilter,
-  cityFilter,
-  setCityFilter,
   countryFilter,
   setCountryFilter,
   regionFilter,
@@ -85,6 +82,8 @@ export function LocationsTableFilters({
   handleIsActiveFilterChange,
   popular1Filter,
   setPopular1Filter,
+  isLandingOnlyFilter,
+  setIsLandingOnlyFilter,
   pageSize,
   handlePageSizeChange,
   showAdvancedFilters,
@@ -109,12 +108,12 @@ export function LocationsTableFilters({
     setNameFilter('');
     setAddressFilter('');
     setDistrictFilter('');
-    setCityFilter('');
     setCountryFilter('');
     setRegionFilter('');
     handleTypeFilterChange([]);
     setIsActiveFilter(null);
     setPopular1Filter(null);
+    setIsLandingOnlyFilter(null);
   };
 
   const activeFiltersCount = [
@@ -122,13 +121,13 @@ export function LocationsTableFilters({
     nameFilter,
     addressFilter,
     districtFilter,
-    cityFilter,
     countryFilter,
     regionFilter,
-  ].filter(Boolean).length + 
+  ].filter(Boolean).length +
   typeFilter.length + 
   (isActiveFilter !== null ? 1 : 0) +
-  (popular1Filter !== null ? 1 : 0);
+  (popular1Filter !== null ? 1 : 0) +
+  (isLandingOnlyFilter !== null ? 1 : 0);
 
   return (
     <>
@@ -252,7 +251,6 @@ export function LocationsTableFilters({
                   { key: 'name', label: 'Название' },
                   { key: 'address', label: 'Адрес' },
                   { key: 'district', label: 'Район' },
-                  { key: 'city', label: 'Город' },
                   { key: 'country', label: 'Страна' },
                   { key: 'region', label: 'Регион' },
                   { key: 'coordinates', label: 'Координаты' },
@@ -314,16 +312,6 @@ export function LocationsTableFilters({
             </div>
 
             <div>
-              <Label htmlFor='city'>Город</Label>
-              <Input
-                id='city'
-                placeholder='Введите город...'
-                value={cityFilter}
-                onChange={(e) => setCityFilter(e.target.value)}
-              />
-            </div>
-
-            <div>
               <Label htmlFor='country'>Страна</Label>
               <Input
                 id='country'
@@ -347,9 +335,26 @@ export function LocationsTableFilters({
 
             <div>
               <Label htmlFor='popular1'>Топ точки</Label>
-              <Select 
-                value={popular1Filter === null ? 'all' : popular1Filter.toString()} 
+              <Select
+                value={popular1Filter === null ? 'all' : popular1Filter.toString()}
                 onValueChange={(value) => setPopular1Filter(value === 'all' ? null : value === 'true')}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder='Выберите' />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value='all'>Все</SelectItem>
+                  <SelectItem value='true'>Да</SelectItem>
+                  <SelectItem value='false'>Нет</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor='isLandingOnly'>Лендинг</Label>
+              <Select
+                value={isLandingOnlyFilter === null ? 'all' : isLandingOnlyFilter.toString()}
+                onValueChange={(value) => setIsLandingOnlyFilter(value === 'all' ? null : value === 'true')}
               >
                 <SelectTrigger>
                   <SelectValue placeholder='Выберите' />

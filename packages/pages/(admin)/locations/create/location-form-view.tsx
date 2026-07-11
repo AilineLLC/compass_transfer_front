@@ -1,15 +1,25 @@
+import type { MutableRefObject } from 'react';
 import { FormProvider, type UseFormReturn } from 'react-hook-form';
 import { Button } from '@shared/ui/forms/button';
 import { Card, CardContent } from '@shared/ui/layout';
 import { ChapterHeader } from '@shared/ui/layout/chapter-header';
 import { FormSidebar } from '@shared/ui/layout/form-sidebar';
-import { LocationBasicSection, LocationCoordinatesSection, LocationMapSection } from '@entities/locations';
+import {
+  LocationBasicSection,
+  LocationCoordinatesSection,
+  LocationMapSection,
+  LocationProfileSection,
+} from '@entities/locations';
+import type { ImageItem, PoiItemState, AdviceImageItem } from '@entities/locations';
 import { LOCATION_FORM_CHAPTERS } from '@entities/locations/model/form-chapters/location-chapters';
 import type { LocationCreateFormData } from '@entities/locations/schemas/locationCreateSchema';
 
 interface LocationFormViewProps {
   form: UseFormReturn<LocationCreateFormData>;
   isSubmitting: boolean;
+  imageItemsRef: MutableRefObject<ImageItem[]>;
+  poiItemsRef: MutableRefObject<PoiItemState[]>;
+  onAdviceImageChange: (item: AdviceImageItem | null) => void;
   getChapterStatus: (chapterId: string) => 'complete' | 'warning' | 'error' | 'pending';
   getChapterErrors: (chapterId: string) => string[];
   onCreate: () => void;
@@ -20,6 +30,9 @@ interface LocationFormViewProps {
 export function LocationFormView({
   form,
   isSubmitting,
+  imageItemsRef,
+  poiItemsRef,
+  onAdviceImageChange,
   getChapterStatus,
   getChapterErrors,
   onCreate,
@@ -35,57 +48,47 @@ export function LocationFormView({
               <form className='flex flex-col gap-4'>
                 {/* Глава 1: Основная информация */}
                 <div id='chapter-basic' className='relative flex flex-col gap-4'>
-                  <ChapterHeader
-                    number={1}
-                    title='Основная информация'
-                    status={getChapterStatus('basic')}
-                  />
+                  <ChapterHeader number={1} title='Основная информация' status={getChapterStatus('basic')} />
                   <div className='relative ml-12'>
-                    {/* Вертикальная линия */}
                     <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
                     <LocationBasicSection
-                      labels={{
-                        name: 'Название локации *',
-                        type: 'Тип локации *',
-                        group: 'Группа локации',
-                      }}
+                      labels={{ name: 'Название локации *', type: 'Тип локации *' }}
                     />
                   </div>
                 </div>
 
-                {/* Глава 2: Местоположение на карте */}
+                {/* Глава 2: Карта */}
                 <div id='chapter-map' className='relative flex flex-col gap-4'>
-                  <ChapterHeader
-                    number={2}
-                    title='Местоположение на карте'
-                    status={getChapterStatus('map')}
-                  />
+                  <ChapterHeader number={2} title='Местоположение на карте' status={getChapterStatus('map')} />
                   <div className='relative ml-12'>
-                    {/* Вертикальная линия */}
                     <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
-                    <LocationMapSection
-                      labels={{
-                        coordinates: 'Местоположение на карте *',
-                      }}
-                    />
+                    <LocationMapSection labels={{ coordinates: 'Местоположение на карте *' }} />
                   </div>
                 </div>
 
-                {/* Глава 3: Настройки локации */}
+                {/* Глава 3: Настройки */}
                 <div id='chapter-settings' className='relative flex flex-col gap-4'>
-                  <ChapterHeader
-                    number={3}
-                    title='Настройки локации'
-                    status={getChapterStatus('coordinates')}
-                  />
+                  <ChapterHeader number={3} title='Настройки' status={getChapterStatus('settings')} />
                   <div className='relative ml-12'>
-                    {/* Вертикальная линия */}
                     <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
                     <LocationCoordinatesSection
                       labels={{
                         isActive: 'Активная локация',
-                        popular: 'Локация которая показывается в терминале в начале (Топ точки)',
+                        popular: 'Топ точки (отображается в начале списка терминала)',
                       }}
+                    />
+                  </div>
+                </div>
+
+                {/* Глава 4: Профиль локации */}
+                <div id='chapter-profile' className='relative flex flex-col gap-4'>
+                  <ChapterHeader number={4} title='Профиль локации' status='pending' />
+                  <div className='relative ml-12'>
+                    <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
+                    <LocationProfileSection
+                      onImagesChange={items => { imageItemsRef.current = items; }}
+                      onPoiChange={items => { poiItemsRef.current = items; }}
+                      onAdviceImageChange={onAdviceImageChange}
                     />
                   </div>
                 </div>
@@ -96,7 +99,7 @@ export function LocationFormView({
                     variant='outline'
                     onClick={onBack}
                     disabled={isSubmitting}
-                    className='focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0 hover:shadow-md focus:shadow-md focus-visible:shadow-md transition-shadow'
+                    className='focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0 hover:shadow-md transition-shadow'
                   >
                     Отмена
                   </Button>

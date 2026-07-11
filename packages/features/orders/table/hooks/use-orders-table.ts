@@ -43,6 +43,7 @@ export function useOrdersTable(initialFilters?: {
   subStatus?: string;
   airFlight?: string;
   flyReis?: string;
+  participantId?: string;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -58,6 +59,7 @@ export function useOrdersTable(initialFilters?: {
 
   // Фильтры
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchByPassengers, setSearchByPassengers] = useState('');
   const [orderNumberFilter, setOrderNumberFilter] = useState(initialFilters?.orderNumber || '');
   const [typeFilter, setTypeFilter] = useState<OrderType[]>(
     initialFilters?.type ? [initialFilters.type as OrderType] : [],
@@ -68,6 +70,10 @@ export function useOrdersTable(initialFilters?: {
   const [subStatusFilter, setSubStatusFilter] = useState<OrderSubStatus[]>(
     initialFilters?.subStatus ? [initialFilters.subStatus as OrderSubStatus] : [],
   );
+  // Фильтр по водителю
+  const [participantId, setParticipantId] = useState<string | undefined>(initialFilters?.participantId);
+  const [participantName, setParticipantName] = useState<string | undefined>(undefined);
+
   // Локальные состояния для ввода (без debounce)
   const [airFlightInput, setAirFlightInput] = useState(initialFilters?.airFlight || '');
   const [flyReisInput, setFlyReisInput] = useState(initialFilters?.flyReis || '');
@@ -141,10 +147,9 @@ export function useOrdersTable(initialFilters?: {
     // Обновляем фильтры только если они изменились
     let filtersChanged = false;
 
-    // Если в URL есть статус, обновляем фильтр (для поддержки прямых ссылок)
+    // Синхронизируем statusFilter с URL (URL — источник истины при навигации через стат-карточки)
     if (currentStatus) {
       const statusArray = [currentStatus as OrderStatus];
-      // Проверяем, изменился ли фильтр (сравниваем массивы)
       if (
         statusArray.length !== statusFilter.length ||
         !statusArray.every(status => statusFilter.includes(status))
@@ -152,22 +157,40 @@ export function useOrdersTable(initialFilters?: {
         setStatusFilter(statusArray);
         filtersChanged = true;
       }
-    }
-    // Не сбрасываем statusFilter если нет currentStatus - пользователь мог выбрать через UI
-
-    if (currentType && currentType !== typeFilter[0]) {
-      setTypeFilter([currentType as OrderType]);
+    } else if (statusFilter.length > 0) {
+      setStatusFilter([]);
       filtersChanged = true;
     }
-    // Не сбрасываем typeFilter если нет currentType - пользователь мог выбрать через UI
+
+    if (currentType) {
+      if (currentType !== typeFilter[0]) {
+        setTypeFilter([currentType as OrderType]);
+        filtersChanged = true;
+      }
+    } else if (typeFilter.length > 0) {
+      setTypeFilter([]);
+      filtersChanged = true;
+    }
 
     if (currentOrderNumber !== orderNumberFilter) {
       setOrderNumberFilter(currentOrderNumber || '');
       filtersChanged = true;
     }
 
-    // Фильтры рейсов (airFlight и flyReis) не синхронизируются с URL
-    // Они работают только локально с debounce
+    const currentSubStatus = searchParams.get('subStatus');
+    if (currentSubStatus) {
+      const subStatusArray = [currentSubStatus as OrderSubStatus];
+      if (
+        subStatusArray.length !== subStatusFilter.length ||
+        !subStatusArray.every(s => subStatusFilter.includes(s))
+      ) {
+        setSubStatusFilter(subStatusArray);
+        filtersChanged = true;
+      }
+    } else if (subStatusFilter.length > 0) {
+      setSubStatusFilter([]);
+      filtersChanged = true;
+    }
 
     // Сбрасываем пагинацию при изменении фильтров
     if (filtersChanged) {
@@ -176,7 +199,7 @@ export function useOrdersTable(initialFilters?: {
       setIsFirstPage(true);
       setCurrentPageNumber(1);
     }
-  }, [searchParams, statusFilter, typeFilter, orderNumberFilter]);
+  }, [searchParams, statusFilter, typeFilter, orderNumberFilter, subStatusFilter]);
 
   // Загрузка данных
   const loadOrders = useCallback(async () => {
@@ -224,6 +247,12 @@ export function useOrdersTable(initialFilters?: {
         params.orderNumber = searchTerm;
         params.orderNumberOp = 'Equal';
       }
+      if (searchByPassengers) {
+        params.mainPassengerName = searchByPassengers;
+      }
+      if (participantId) {
+        params.participantId = participantId;
+      }
 
       // Для партнеров используем API для заказов созданных ими
       const response =
@@ -256,6 +285,8 @@ export function useOrdersTable(initialFilters?: {
     airFlightFilter,
     flyReisFilter,
     searchTerm,
+    searchByPassengers,
+    participantId,
     userRole,
   ]);
 
@@ -297,36 +328,15 @@ export function useOrdersTable(initialFilters?: {
   useEffect(() => {
     if (!signalR.isConnected) return;
 
-    // События, которые влияют на список заказов
-    const orderEvents = [
-      'OrderCreatedNotification',
-      'OrderConfirmedNotification',
-      'OrderCompletedNotification',
-      'OrderCancelledNotification',
-      'OrderUpdatedNotification',
-      'RideRequestNotification',
-      'RideAcceptedNotification',
-      'RideStartedNotification',
-      'RideCompletedNotification',
-      'RideCancelledNotification',
-      'DriverAssignedNotification',
-    ];
-
-    // Обработчик события - перезагружаем список заказов
+    // Любое новое уведомление может означать изменение заказа
     const handleOrderEvent = () => {
       loadOrders();
     };
 
-    // Подписываемся на все события
-    orderEvents.forEach(event => {
-      signalR.on(event, handleOrderEvent);
-    });
+    signalR.on('New', handleOrderEvent);
 
-    // Отписываемся при размонтировании
     return () => {
-      orderEvents.forEach(event => {
-        signalR.off(event, handleOrderEvent);
-      });
+      signalR.off('New', handleOrderEvent);
     };
   }, [signalR, loadOrders]);
 
@@ -447,6 +457,10 @@ export function useOrdersTable(initialFilters?: {
     setCurrentCursor(null);
     setIsFirstPage(true);
     setCurrentPageNumber(1);
+
+    const params = new URLSearchParams(searchParams.toString());
+    if (types.length === 1) params.set('type', types[0]); else params.delete('type');
+    router.push(params.toString() ? `/orders?${params.toString()}` : '/orders');
   };
 
   const handleStatusFilterChange = (statuses: OrderStatus[]) => {
@@ -455,6 +469,10 @@ export function useOrdersTable(initialFilters?: {
     setCurrentCursor(null);
     setIsFirstPage(true);
     setCurrentPageNumber(1);
+
+    const params = new URLSearchParams(searchParams.toString());
+    if (statuses.length === 1) params.set('status', statuses[0]); else params.delete('status');
+    router.push(params.toString() ? `/orders?${params.toString()}` : '/orders');
   };
 
   const handleSubStatusFilterChange = (subStatuses: OrderSubStatus[]) => {
@@ -463,6 +481,10 @@ export function useOrdersTable(initialFilters?: {
     setCurrentCursor(null);
     setIsFirstPage(true);
     setCurrentPageNumber(1);
+
+    const params = new URLSearchParams(searchParams.toString());
+    if (subStatuses.length === 1) params.set('subStatus', subStatuses[0]); else params.delete('subStatus');
+    router.push(params.toString() ? `/orders?${params.toString()}` : '/orders');
   };
 
   return {
@@ -475,6 +497,7 @@ export function useOrdersTable(initialFilters?: {
 
     // Фильтры
     searchTerm,
+    searchByPassengers,
     orderNumberFilter,
     typeFilter,
     statusFilter,
@@ -483,6 +506,8 @@ export function useOrdersTable(initialFilters?: {
     airFlightFilter,
     flyReisInput,
     flyReisFilter,
+    participantId,
+    participantName,
     showAdvancedFilters,
 
     // Пагинация
@@ -509,8 +534,27 @@ export function useOrdersTable(initialFilters?: {
       setIsFirstPage(true);
       setCurrentPageNumber(1);
     },
+    setSearchByPassengers: (name: string) => {
+      setSearchByPassengers(name);
+      setCursorsHistory([]);
+      setCurrentCursor(null);
+      setIsFirstPage(true);
+      setCurrentPageNumber(1);
+    },
     setOrderNumberFilter: (orderNumber: string) => {
       setOrderNumberFilter(orderNumber);
+      setCursorsHistory([]);
+      setCurrentCursor(null);
+      setIsFirstPage(true);
+      setCurrentPageNumber(1);
+
+      const params = new URLSearchParams(searchParams.toString());
+      if (orderNumber) params.set('orderNumber', orderNumber); else params.delete('orderNumber');
+      router.replace(params.toString() ? `/orders?${params.toString()}` : '/orders');
+    },
+    setParticipant: (id: string | undefined, name: string | undefined) => {
+      setParticipantId(id);
+      setParticipantName(name);
       setCursorsHistory([]);
       setCurrentCursor(null);
       setIsFirstPage(true);

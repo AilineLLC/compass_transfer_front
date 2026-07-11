@@ -14,6 +14,9 @@ import {
   PassportDataSection,
   EmploymentSection,
   RidePreferencesSection,
+  ProfileExtrasSection,
+  WorkExperienceSection,
+  EducationSection,
   TestScoreSection,
 } from '@entities/users';
 import { VerificationStatus, CitizenshipCountry, IdentityDocumentType, EmploymentType, type ServiceClass } from '@entities/users/enums';
@@ -224,6 +227,7 @@ function DriverEditFormView({
                     <BasicDataSection
                       showOptionalPhoneWarning={getChapterStatus('basic') === 'warning'}
                       showEmail={false}
+                      showVerificationStatus
                       labels={{
                         fullName: 'Полное имя *',
                         phoneNumber: 'Телефон',
@@ -300,15 +304,53 @@ function DriverEditFormView({
                   </div>
                 </div>
 
-                {/* Глава 7: Тесты */}
-                <div id='chapter-tests' className='relative flex flex-col gap-4'>
+                {/* Глава 7: Дополнительная информация */}
+                <div id='chapter-additional' className='relative flex flex-col gap-4'>
                   <ChapterHeader
                     number={7}
+                    title='Дополнительная информация'
+                    status={getChapterStatus('additional')}
+                  />
+                  <div className='relative ml-12'>
+                    <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
+                    <ProfileExtrasSection />
+                  </div>
+                </div>
+
+                {/* Глава 8: Опыт работы */}
+                <div id='chapter-work-experience' className='relative flex flex-col gap-4'>
+                  <ChapterHeader
+                    number={8}
+                    title='Опыт работы'
+                    status={getChapterStatus('work-experience')}
+                  />
+                  <div className='relative ml-12'>
+                    <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
+                    <WorkExperienceSection />
+                  </div>
+                </div>
+
+                {/* Глава 9: Образование */}
+                <div id='chapter-education' className='relative flex flex-col gap-4'>
+                  <ChapterHeader
+                    number={9}
+                    title='Образование'
+                    status={getChapterStatus('education')}
+                  />
+                  <div className='relative ml-12'>
+                    <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
+                    <EducationSection />
+                  </div>
+                </div>
+
+                {/* Глава 10: Тесты */}
+                <div id='chapter-tests' className='relative flex flex-col gap-4'>
+                  <ChapterHeader
+                    number={10}
                     title='Тесты'
                     status={getChapterStatus('tests')}
                   />
                   <div className='relative ml-12'>
-                    {/* Вертикальная линия */}
                     <div className='absolute -left-8 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-gray-300' />
                     <TestScoreSection />
                   </div>

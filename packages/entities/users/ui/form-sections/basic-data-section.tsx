@@ -3,16 +3,34 @@
 import { useFormContext } from 'react-hook-form';
 import { Input } from '@shared/ui/forms/input';
 import { Label } from '@shared/ui/forms/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@shared/ui/forms/select';
+import { VerificationStatus } from '@entities/users/enums';
 
 interface BasicFormData {
   fullName: string;
   email?: string;
   phoneNumber?: string;
+  verificationStatus?: string;
 }
+
+const VERIFICATION_STATUS_LABELS: Record<VerificationStatus, string> = {
+  [VerificationStatus.Pending]: 'Ожидает проверки',
+  [VerificationStatus.Verified]: 'Верифицирован',
+  [VerificationStatus.Rejected]: 'Отклонён',
+  [VerificationStatus.InReview]: 'На проверке',
+  [VerificationStatus.Expired]: 'Истёк',
+};
 
 interface BasicDataSectionProps {
   showOptionalPhoneWarning?: boolean;
-  showEmail?: boolean; // Новый пропс для показа/скрытия email
+  showEmail?: boolean;
+  showVerificationStatus?: boolean;
   labels?: {
     fullName?: string;
     email?: string;
@@ -29,12 +47,14 @@ export function BasicDataSection({
   labels = {},
   placeholders = {},
   showOptionalPhoneWarning,
-  showEmail = true, // По умолчанию показываем email
+  showEmail = true,
+  showVerificationStatus = false,
 }: BasicDataSectionProps) {
   const {
     register,
     formState: { errors },
     watch,
+    setValue,
   } = useFormContext<BasicFormData>();
   const defaultLabels = {
     fullName: 'Полное имя *',
@@ -124,6 +144,27 @@ export function BasicDataSection({
             </p>
           )}
         </div>
+
+        {showVerificationStatus && (
+          <div className='space-y-2'>
+            <Label htmlFor='verificationStatus'>Статус верификации</Label>
+            <Select
+              value={watch('verificationStatus') || VerificationStatus.Pending}
+              onValueChange={(v) => setValue('verificationStatus', v)}
+            >
+              <SelectTrigger className='focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0 hover:shadow-md focus:shadow-md focus-visible:shadow-md transition-shadow [&>span]:flex-1 [&>span]:text-left'>
+                <SelectValue placeholder='Выберите статус' />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.values(VerificationStatus).map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {VERIFICATION_STATUS_LABELS[status]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
     </div>
   );

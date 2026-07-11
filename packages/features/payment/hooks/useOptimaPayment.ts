@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState, useRef } from 'react';
 import { toast } from '@shared/lib/conditional-toast';
 import { useSignalR } from '@shared/hooks/signal/useSignalR';
 import { paymentService } from '@entities/payments/api/payment-service';
-import type { PaymentReceivedNotificationDTO } from '@entities/payments/interface/PaymentReceivedNotificationDTO';
 
 export type PaymentState =
   | { status: 'idle' }
@@ -33,18 +32,19 @@ export const useOptimaPayment = (): UseOptimaPaymentResult => {
 
   // Обработчик уведомления о получении платежа
   const handlePaymentReceived = useCallback(
-    (notification: PaymentReceivedNotificationDTO) => {
-      console.log('💰 Получено уведомление о платеже:', notification);
+    (notification: unknown) => {
+      const n = notification as { type?: string; data?: { paymentId?: string; transactionId?: string } };
+      if (n?.type !== 'PaymentReceived') return;
 
-      // Извлекаем данные из уведомления
-      const { paymentId, transactionId } = notification.data;
+      const paymentId = n.data?.paymentId ?? '';
+      const transactionId = n.data?.transactionId ?? '';
 
       if (state.status === 'waiting' && state.transactionId === transactionId) {
         setState({
           status: 'completed',
           paymentId,
           transactionId,
-          sum: state.sum, // используем сумму из текущего состояния
+          sum: state.sum,
         });
       }
     },
@@ -54,10 +54,10 @@ export const useOptimaPayment = (): UseOptimaPaymentResult => {
   // Подписка на WebSocket уведомления
   useEffect(() => {
     if (signalR.isConnected && state.status === 'waiting') {
-      signalR.on('PaymentReceivedNotification', handlePaymentReceived);
+      signalR.on('New', handlePaymentReceived);
 
       return () => {
-        signalR.off('PaymentReceivedNotification', handlePaymentReceived);
+        signalR.off('New', handlePaymentReceived);
       };
     }
   }, [signalR, signalR.isConnected, state.status, handlePaymentReceived]);

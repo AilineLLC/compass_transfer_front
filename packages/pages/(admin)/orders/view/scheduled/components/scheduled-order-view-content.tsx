@@ -1,6 +1,6 @@
 'use client'
 
-import { Calendar, MapPin, User, Car, Info, DollarSign, Plane, ExternalLink, Settings } from 'lucide-react';
+import { Calendar, MapPin, User, Car, Info, DollarSign, Plane, ExternalLink, Settings, StickyNote, CheckCircle2 } from 'lucide-react';
 import { useState } from 'react';
 import { useServices } from '@shared/hooks/useServices';
 import { useTariffById } from '@shared/hooks/useTariffById';
@@ -13,6 +13,7 @@ import { useDriverById, useUserById } from '@features/users';
 import { DriverSheet } from '@widgets/sidebar/ui/driver-sheet';
 import { RideDetailCard } from '@entities/rides';
 import { useUsdRate } from '@shared/hooks';
+import { useCarById } from '@shared/hooks/useCarById';
 import { formatPriceWithUsd } from '@shared/utils/format-price-with-usd';
 
 interface ScheduledOrderViewContentProps {
@@ -37,6 +38,7 @@ export function ScheduledOrderViewContent({ order, userRole }: ScheduledOrderVie
   // Получаем данные выбранного водителя
   const { driver: selectedDriver } = useDriverById(selectedDriverId);
   const usdRate = useUsdRate();
+  const { car: requestedCar, isLoading: requestedCarLoading } = useCarById(order.requestedCar);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('ru-RU', {
@@ -126,6 +128,21 @@ export function ScheduledOrderViewContent({ order, userRole }: ScheduledOrderVie
           )}
         </CardContent>
       </Card>
+
+      {/* Заметки операторов (только Admin/Operator) */}
+      {(userRole === 'admin' || userRole === 'operator') && order.operatorNotes && (
+        <Card className='border-amber-200 bg-amber-50'>
+          <CardHeader className='pb-2'>
+            <CardTitle className='flex items-center gap-2 text-amber-800 text-sm font-medium'>
+              <StickyNote className='h-4 w-4' />
+              Заметки операторов
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className='text-sm text-amber-900 whitespace-pre-wrap'>{order.operatorNotes}</p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Маршрут */}
       <Card>
@@ -410,6 +427,23 @@ export function ScheduledOrderViewContent({ order, userRole }: ScheduledOrderVie
             <div className='text-sm text-muted-foreground'>Создан</div>
             <div className='font-medium'>{formatDate(order.createdAt)}</div>
           </div>
+          {order.requestedCar && (
+            <div>
+              <div className='text-sm text-muted-foreground'>Предпочитаемый автомобиль</div>
+              <div className='font-medium flex items-center gap-2'>
+                <Car className='h-4 w-4 text-blue-600' />
+                {requestedCarLoading ? (
+                  <Skeleton className='h-4 w-40' />
+                ) : requestedCar ? (
+                  <span>
+                    {requestedCar.make} {requestedCar.model} · {requestedCar.licensePlate}
+                  </span>
+                ) : (
+                  <span className='text-muted-foreground text-sm'>{order.requestedCar}</span>
+                )}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -452,6 +486,23 @@ export function ScheduledOrderViewContent({ order, userRole }: ScheduledOrderVie
             }>
               {formatFinalPrice(order.finalPrice)}
             </span>
+          </div>
+          {order.driverPrice != null && (
+            <div className='flex justify-between text-sm'>
+              <span className='text-muted-foreground'>Сумма водителю:</span>
+              <span>{formatPriceWithUsd(order.driverPrice, usdRate)}</span>
+            </div>
+          )}
+          <div className='flex justify-between text-sm items-center border-t pt-2'>
+            <span className='text-muted-foreground'>Выплата водителю:</span>
+            {order.driverPayedOut ? (
+              <span className='flex items-center gap-1 text-emerald-600 font-medium'>
+                <CheckCircle2 className='h-4 w-4' />
+                Оплачено
+              </span>
+            ) : (
+              <span className='text-orange-500 font-medium'>Не выплачено</span>
+            )}
           </div>
         </CardContent>
       </Card>

@@ -1,12 +1,17 @@
 'use client';
 
-import { ArrowLeft, Edit, Trash2, DollarSign } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, DollarSign, BellRing, Banknote, CheckCircle2 } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
+import { notificationsApi } from '@shared/api/notifications';
 import { useUserRole } from '@shared/contexts/user-role-context';
 import { Button } from '@shared/ui/forms/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/layout';
+import { OrderStatus } from '@entities/orders/enums';
 import type { GetOrderDTO } from '@entities/orders/interface';
+import { NotificationType } from '@entities/notifications';
 import { Role } from '@entities/users/enums';
+import { useDriverPayedOut } from '@features/orders/hooks/use-driver-payed-out';
 import { OrderPaymentsModal } from '../../components/order-payments-modal';
 
 interface ScheduledOrderViewActionsProps {
@@ -14,20 +19,49 @@ interface ScheduledOrderViewActionsProps {
   onEdit: () => void;
   onDelete?: () => void;
   onBack: () => void;
+  onRefetch?: () => void;
 }
 
 export function ScheduledOrderViewActions({
   order,
   onEdit,
   onDelete,
-  onBack
+  onBack,
+  onRefetch,
 }: ScheduledOrderViewActionsProps) {
   const [isPaymentsModalOpen, setIsPaymentsModalOpen] = useState(false);
+  const [isNotifying, setIsNotifying] = useState(false);
   const { userRole } = useUserRole();
+  const { toggleDriverPayedOut, isPending: isPayedOutPending } = useDriverPayedOut({
+    onSuccess: onRefetch,
+  });
 
   // Партнеры не могут редактировать и удалять заказы
   const canEditOrders = userRole !== Role.Partner;
   const canDeleteOrders = userRole !== Role.Partner;
+
+  const assignedDriverId = order.rides?.[0]?.driverId;
+  const canNotifyDriver =
+    assignedDriverId &&
+    (order.status === OrderStatus.Pending || order.status === OrderStatus.Scheduled);
+
+  const handleNotifyDriver = async () => {
+    if (!assignedDriverId) return;
+    setIsNotifying(true);
+    try {
+      await notificationsApi.broadcastToUser(assignedDriverId, {
+        type: NotificationType.RideRequest,
+        title: 'Повторный запрос на поездку',
+        content: `Заказ #${order.orderNumber} ожидает подтверждения`,
+        data: { orderId: order.id, orderType: order.type },
+      });
+      toast.success('Уведомление отправлено водителю');
+    } catch {
+      toast.error('Не удалось отправить уведомление водителю');
+    } finally {
+      setIsNotifying(false);
+    }
+  };
 
   return (
     <div className='sticky top-4'>
@@ -66,6 +100,38 @@ export function ScheduledOrderViewActions({
             Удалить
           </Button>
         )}
+
+        {canNotifyDriver && (
+          <Button
+            onClick={handleNotifyDriver}
+            variant='outline'
+            className='w-full justify-start'
+            disabled={isNotifying}
+          >
+            <BellRing className='h-4 w-4 mr-2' />
+            {isNotifying ? 'Отправка...' : 'Уведомить водителя повторно'}
+          </Button>
+        )}
+
+        {/* Выплата водителю */}
+        <Button
+          onClick={() => toggleDriverPayedOut(order)}
+          variant={order.driverPayedOut ? 'secondary' : 'outline'}
+          className={`w-full justify-start ${order.driverPayedOut ? 'text-cyan-600 border-cyan-200 bg-cyan-50 hover:bg-cyan-100' : ''}`}
+          disabled={isPayedOutPending}
+        >
+          {order.driverPayedOut ? (
+            <>
+              <CheckCircle2 className='h-4 w-4 mr-2 text-cyan-500' />
+              {isPayedOutPending ? 'Сохранение...' : 'Снять «Оплачен водителю»'}
+            </>
+          ) : (
+            <>
+              <Banknote className='h-4 w-4 mr-2' />
+              {isPayedOutPending ? 'Сохранение...' : 'Оплачен водителю'}
+            </>
+          )}
+        </Button>
 
         {/* Кнопка просмотра платежей */}
         <Button

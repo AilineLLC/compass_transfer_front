@@ -5,5 +5,5 @@ import type { TariffBaseDTO } from './TariffBaseDTO';
  * @interface
  */
 export interface CreateTariffDTO extends Omit<TariffBaseDTO, 'id'> {
-  // Дополнительные поля для создания, если нужны
+  iconId: string | null;
 }

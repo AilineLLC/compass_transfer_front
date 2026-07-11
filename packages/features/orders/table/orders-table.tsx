@@ -9,11 +9,13 @@ export function OrdersTable({
 }: {
   initialFilters?: {
     orderNumber?: string;
+    mainPassengerName?: string;
     type?: string;
     status?: string;
     subStatus?: string;
     airFlight?: string;
     flyReis?: string;
+    participantId?: string;
   };
 }) {
   const {
@@ -21,11 +23,14 @@ export function OrdersTable({
     loading,
     error,
     searchTerm,
+    searchByPassengers,
     typeFilter,
     statusFilter,
     subStatusFilter,
     airFlightInput,
     flyReisInput,
+    participantId,
+    participantName,
     showAdvancedFilters,
     pageSize,
     columnVisibility,
@@ -36,6 +41,8 @@ export function OrdersTable({
     sortBy,
     sortOrder,
     setSearchTerm,
+    setSearchByPassengers,
+    setParticipant,
     setAirFlightInput,
     setFlyReisInput,
     setShowAdvancedFilters,
@@ -72,6 +79,11 @@ export function OrdersTable({
       <OrdersTableFilters
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
+        searchByPassengers={searchByPassengers}
+        setSearchByPassengers={setSearchByPassengers}
+        participantId={participantId}
+        participantName={participantName}
+        setParticipant={setParticipant}
         typeFilter={typeFilter}
         handleTypeFilterChange={handleTypeFilterChange}
         statusFilter={statusFilter}

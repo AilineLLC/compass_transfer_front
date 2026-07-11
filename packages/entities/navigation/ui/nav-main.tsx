@@ -127,7 +127,7 @@ export function NavMain({ items }: { items: MenuItem[] }) {
                   </Link>
                 </SidebarMenuButton>
 
-                {item.title !== 'Дашборд' && (
+                {item.title !== 'Дашборд' && item.items && item.items.length > 0 && (
                   <DropdownMenu
                     modal={false}
                     onOpenChange={open => {

@@ -10,6 +10,8 @@ export interface UpdateInstantOrderDTO {
   routeId?: string | null;
   services: OrderServiceDTO[];
   initialPrice: number;
+  /** Примерное время завершения заказа (ISO строка) */
+  completionTimeEstimate: string;
   status: OrderStatus;
   paymentMethodType?: PaymentMethodType | null;
   driverPrice?: number | null;

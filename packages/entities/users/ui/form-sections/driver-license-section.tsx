@@ -139,6 +139,7 @@ export function DriverLicenseSection() {
             onChange={handleIssueDate}
             placeholder='Выберите дату выдачи'
             className={profileErrors.licenseIssueDate ? 'border-red-500' : ''}
+            maxDate={new Date()}
           />
           {profileErrors.licenseIssueDate && (
             <p className='text-sm text-red-500'>
@@ -157,6 +158,7 @@ export function DriverLicenseSection() {
             onChange={handleExpiryDate}
             placeholder='Выберите дату окончания'
             className={profileErrors.licenseExpiryDate ? 'border-red-500' : ''}
+            minDate={new Date()}
           />
           {profileErrors.licenseExpiryDate && (
             <p className='text-sm text-red-500'>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { toast } from 'sonner';
 import { locationsApi, type LocationFilters } from '@shared/api/locations';
 import { useSavedFilters } from '@shared/hooks';
@@ -13,7 +13,6 @@ interface ColumnVisibility {
   name: boolean;
   address: boolean;
   district: boolean;
-  city: boolean;
   country: boolean;
   region: boolean;
   coordinates: boolean;
@@ -26,7 +25,6 @@ interface SavedLocationFilters {
   nameFilter: string;
   addressFilter: string;
   districtFilter: string;
-  cityFilter: string;
   countryFilter: string;
   regionFilter: string;
 }
@@ -40,7 +38,9 @@ export function useLocationsTable(_initialFilters?: {
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+
+  const regionDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Данные
   const [locations, setLocations] = useState<LocationDTO[]>([]);
   const [filteredLocations, setFilteredLocations] = useState<LocationDTO[]>([]);
@@ -53,10 +53,12 @@ export function useLocationsTable(_initialFilters?: {
   const [nameFilter, setNameFilter] = useState('');
   const [addressFilter, setAddressFilter] = useState('');
   const [districtFilter, setDistrictFilter] = useState('');
-  const [cityFilter, setCityFilter] = useState('');
   const [countryFilter, setCountryFilter] = useState('');
-  const [regionFilter, setRegionFilter] = useState('');
-  const [typeFilter, setTypeFilter] = useState<LocationType[]>([]);
+  const [regionFilter, setRegionFilter] = useState(() => searchParams.get('region') || '');
+  const [typeFilter, setTypeFilter] = useState<LocationType[]>(() => {
+    const tp = searchParams.get('type');
+    return tp ? (tp.split(',') as LocationType[]) : [];
+  });
   const [isActiveFilter, setIsActiveFilter] = useState<boolean | null>(() => {
     const isActiveParam = searchParams.get('isActive');
 
@@ -65,7 +67,13 @@ export function useLocationsTable(_initialFilters?: {
 
     return null;
   });
-  const [popular1Filter, setPopular1Filter] = useState<boolean | null>(null);
+  const [popular1Filter, setPopular1Filter] = useState<boolean | null>(() => {
+    const p1 = searchParams.get('popular1');
+    if (p1 === 'true') return true;
+    if (p1 === 'false') return false;
+    return null;
+  });
+  const [isLandingOnlyFilter, setIsLandingOnlyFilter] = useState<boolean | null>(null);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   // Пагинация (cursor-based с историей)
@@ -116,7 +124,6 @@ export function useLocationsTable(_initialFilters?: {
       name: true,
       address: true,
       district: false,
-      city: true,
       country: false,
       region: true,
       coordinates: false,
@@ -153,10 +160,6 @@ export function useLocationsTable(_initialFilters?: {
         params.district = districtFilter;
         params.districtOp = 'Contains';
       }
-      if (cityFilter) {
-        params.city = cityFilter;
-        params.cityOp = 'Contains';
-      }
       if (countryFilter) {
         params.country = countryFilter;
         params.countryOp = 'Contains';
@@ -173,6 +176,9 @@ export function useLocationsTable(_initialFilters?: {
       }
       if (popular1Filter !== null) {
         params.popular1 = popular1Filter;
+      }
+      if (isLandingOnlyFilter !== null) {
+        params.isLandingOnly = isLandingOnlyFilter;
       }
       if (searchTerm) {
         params['FTS.Plain'] = searchTerm;
@@ -201,12 +207,12 @@ export function useLocationsTable(_initialFilters?: {
     nameFilter,
     addressFilter,
     districtFilter,
-    cityFilter,
     countryFilter,
     regionFilter,
     typeFilter,
     isActiveFilter,
     popular1Filter,
+    isLandingOnlyFilter,
     searchTerm,
   ]);
 
@@ -215,31 +221,34 @@ export function useLocationsTable(_initialFilters?: {
     loadLocations();
   }, [loadLocations]);
 
-  // Синхронизируем фильтр статуса с URL параметрами
-  const isActiveParam = searchParams.get('isActive');
-
+  // Синхронизация всех URL-фильтров при внешнем изменении (кнопка назад/вперёд)
   useEffect(() => {
-    let newIsActiveFilter: boolean | null = null;
-
-    if (isActiveParam === 'true') newIsActiveFilter = true;
-    if (isActiveParam === 'false') newIsActiveFilter = false;
-
-    // Обновляем только если значение действительно отличается
-    // Используем внутреннюю функцию состояния, чтобы не вызывать обновление URL
-    if (newIsActiveFilter !== isActiveFilter) {
-      setIsActiveFilter(newIsActiveFilter);
+    const isActiveParam = searchParams.get('isActive');
+    const newIsActive = isActiveParam === 'true' ? true : isActiveParam === 'false' ? false : null;
+    if (newIsActive !== isActiveFilter) {
+      setIsActiveFilter(newIsActive);
       setCurrentCursor(null);
       setIsFirstPage(true);
       setCurrentPageNumber(1);
     }
-  }, [isActiveParam, isActiveFilter]); // Реагируем на изменения URL параметра и текущего состояния
+
+    const typeParam = searchParams.get('type');
+    const newType = typeParam ? (typeParam.split(',') as LocationType[]) : [];
+    if (JSON.stringify(newType) !== JSON.stringify(typeFilter)) setTypeFilter(newType);
+
+    const p1Param = searchParams.get('popular1');
+    const newP1 = p1Param === 'true' ? true : p1Param === 'false' ? false : null;
+    if (newP1 !== popular1Filter) setPopular1Filter(newP1);
+
+    const region = searchParams.get('region') || '';
+    if (region !== regionFilter) setRegionFilter(region);
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Конфигурация для сохранения фильтров
   const defaultFilters: SavedLocationFilters = {
     nameFilter: '',
     addressFilter: '',
     districtFilter: '',
-    cityFilter: '',
     countryFilter: '',
     regionFilter: '',
   };
@@ -248,17 +257,15 @@ export function useLocationsTable(_initialFilters?: {
     nameFilter,
     addressFilter,
     districtFilter,
-    cityFilter,
     countryFilter,
     regionFilter,
-  }), [nameFilter, addressFilter, districtFilter, cityFilter, countryFilter, regionFilter]);
+  }), [nameFilter, addressFilter, districtFilter, countryFilter, regionFilter]);
 
   // Функция загрузки сохраненных фильтров
   const onFiltersLoad = useCallback((filters: SavedLocationFilters) => {
     setNameFilter(filters.nameFilter || '');
     setAddressFilter(filters.addressFilter || '');
     setDistrictFilter(filters.districtFilter || '');
-    setCityFilter(filters.cityFilter || '');
     setCountryFilter(filters.countryFilter || '');
     setRegionFilter(filters.regionFilter || '');
   }, []);
@@ -369,6 +376,10 @@ export function useLocationsTable(_initialFilters?: {
     setCurrentCursor(null);
     setIsFirstPage(true);
     setCurrentPageNumber(1);
+
+    const params = new URLSearchParams(searchParams.toString());
+    if (types.length > 0) params.set('type', types.join(',')); else params.delete('type');
+    router.push(params.toString() ? `/locations?${params.toString()}` : '/locations');
   };
 
   return {
@@ -384,12 +395,12 @@ export function useLocationsTable(_initialFilters?: {
     nameFilter,
     addressFilter,
     districtFilter,
-    cityFilter,
     countryFilter,
     regionFilter,
     typeFilter,
     isActiveFilter,
     popular1Filter,
+    isLandingOnlyFilter,
     showAdvancedFilters,
 
     // Пагинация
@@ -434,12 +445,6 @@ export function useLocationsTable(_initialFilters?: {
       setIsFirstPage(true);
       setCurrentPageNumber(1);
     },
-    setCityFilter: (city: string) => {
-      setCityFilter(city);
-      setCurrentCursor(null);
-      setIsFirstPage(true);
-      setCurrentPageNumber(1);
-    },
     setCountryFilter: (country: string) => {
       setCountryFilter(country);
       setCurrentCursor(null);
@@ -451,6 +456,13 @@ export function useLocationsTable(_initialFilters?: {
       setCurrentCursor(null);
       setIsFirstPage(true);
       setCurrentPageNumber(1);
+
+      if (regionDebounceRef.current) clearTimeout(regionDebounceRef.current);
+      regionDebounceRef.current = setTimeout(() => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (region) params.set('region', region); else params.delete('region');
+        router.replace(params.toString() ? `/locations?${params.toString()}` : '/locations');
+      }, 500);
     },
     setIsActiveFilter: (isActive: boolean | null) => {
       setIsActiveFilter(isActive);
@@ -460,6 +472,16 @@ export function useLocationsTable(_initialFilters?: {
     },
     setPopular1Filter: (popular1: boolean | null) => {
       setPopular1Filter(popular1);
+      setCurrentCursor(null);
+      setIsFirstPage(true);
+      setCurrentPageNumber(1);
+
+      const params = new URLSearchParams(searchParams.toString());
+      if (popular1 !== null) params.set('popular1', String(popular1)); else params.delete('popular1');
+      router.push(params.toString() ? `/locations?${params.toString()}` : '/locations');
+    },
+    setIsLandingOnlyFilter: (val: boolean | null) => {
+      setIsLandingOnlyFilter(val);
       setCurrentCursor(null);
       setIsFirstPage(true);
       setCurrentPageNumber(1);

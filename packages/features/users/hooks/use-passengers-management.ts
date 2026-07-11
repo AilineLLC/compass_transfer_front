@@ -277,7 +277,7 @@ export function usePassengersManagement({
       lastName: '',
       phone: '',
       email: '',
-      isMainPassenger: false,
+      isMainPassenger: passengers.length === 0,
       isFromSystem: false, // Пассажир создан вручную - редактируемый
       userData: null,
       isUserDataLoaded: true,

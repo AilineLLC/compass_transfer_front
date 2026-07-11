@@ -14,5 +14,7 @@ export interface GetOperatorDTO {
   avatarUrl?: string | null;
   online?: boolean | null;
   isActive?: boolean;
+  /** true только у одного оператора — того, кто ведёт чат с водителями */
+  isMainSupportOperator?: boolean;
   profile: OperatorProfile;
 }

@@ -195,6 +195,17 @@ export const ridesApi = {
   },
 
   /**
+   * Подтверждение получения наличных от пассажира
+   */
+  async markCashReceived(rideId: string): Promise<void> {
+    const result = await apiClient.put(`/Ride/${rideId}/cash-received`, true);
+
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+  },
+
+  /**
    * Принятие запланированной поездки водителем
    */
   async acceptScheduledRide(rideId: string): Promise<void> {

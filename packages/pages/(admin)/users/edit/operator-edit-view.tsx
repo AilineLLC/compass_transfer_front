@@ -63,6 +63,7 @@ export function OperatorEditView({ userId }: OperatorEditViewProps) {
       phoneNumber: '',
       avatarUrl: null,
       isActive: true,
+      isMainSupportOperator: false,
       profile: {
         employeeId: '',
         department: '',
@@ -83,6 +84,7 @@ export function OperatorEditView({ userId }: OperatorEditViewProps) {
         phoneNumber: operator.phoneNumber || '',
         avatarUrl: operator.avatarUrl || null,
         isActive: operator.isActive ?? true,
+        isMainSupportOperator: operator.isMainSupportOperator ?? false,
         profile: {
           employeeId: operator.profile?.employeeId || '',
           department: operator.profile?.department || '',

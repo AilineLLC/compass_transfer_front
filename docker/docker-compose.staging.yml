@@ -1,60 +1,138 @@
-version: '3.8'
+name: compass-staging
 
 services:
   compass-install:
     image: node:20-alpine3.19
     working_dir: /app
+    # container_name удален, чтобы не конфликтовать с продом
     volumes:
       - ../:/app
-    # Подтягиваем файл из корня проекта на сервере
-    env_file:
-      - ../.env
-    command: npm install
+    environment:
+      NODE_ENV: staging
+    # Используем yarn install для монорепозитория
+    command: >
+      sh -c "yarn install"
+    restart: "no"
+    profiles: ["ops"]
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    networks:
+      - compass-network
 
-  compass-landing:
+  compass-admin-build:
     image: node:20-alpine3.19
     working_dir: /app
     volumes:
       - ../:/app
-    ports:
-      - "${STAGING_PORT_LANDING}:3000"
+    environment:
+      NODE_ENV: production
+      NODE_OPTIONS: --max-old-space-size=4096
     env_file:
-      - ../.env
-    command: sh -c "npm run build --workspace=landing && npm run start --workspace=landing"
-    restart: always
+      - ../apps/compass-admin/.env.staging
+    command: >
+      sh -c "rm -rf /app/node_modules/@img/sharp-win32-x64 /app/node_modules/@img/sharp-darwin-x64 /app/node_modules/@img/sharp-darwin-arm64 2>/dev/null; yarn build:admin"
+    restart: "no"
+    profiles: ["ops"]
+    mem_limit: 2g
+    networks:
+      - compass-network
+
+  compass-driver-build:
+    image: node:20-alpine3.19
+    working_dir: /app
+    volumes:
+      - ../:/app
+    environment:
+      NODE_ENV: production
+      NODE_OPTIONS: --max-old-space-size=4096
+    env_file:
+      - ../apps/compass-driver-mobile/.env.staging
+    command: >
+      sh -c "rm -rf /app/node_modules/@img/sharp-win32-x64 /app/node_modules/@img/sharp-darwin-x64 /app/node_modules/@img/sharp-darwin-arm64 2>/dev/null; yarn build:driver-mobile"
+    restart: "no"
+    profiles: ["ops"]
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    mem_limit: 6g
+    networks:
+      - compass-network
+
+  compass-terminal-build:
+    image: node:20-alpine3.19
+    working_dir: /app
+    volumes:
+      - ../:/app
+    environment:
+      NODE_ENV: production
+      NODE_OPTIONS: --max-old-space-size=4096
+    env_file:
+      - ../apps/compass-terminal/.env.staging
+    command: >
+      sh -c "rm -rf /app/node_modules/@img/sharp-win32-x64 /app/node_modules/@img/sharp-darwin-x64 /app/node_modules/@img/sharp-darwin-arm64 2>/dev/null; yarn build:terminal"
+    restart: "no"
+    profiles: ["ops"]
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+      - 1.1.1.1
+    mem_limit: 6g
+    networks:
+      - compass-network
 
   compass-admin:
     image: node:20-alpine3.19
     working_dir: /app
+    restart: always
     volumes:
       - ../:/app
     ports:
-      - "${STAGING_PORT_ADMIN}:3000"
+      - "${STAGING_PORT_ADMIN}:3027" # Внешний порт 4027 -> внутренний 3027
+    environment:
+      NODE_ENV: production
     env_file:
-      - ../.env
-    command: sh -c "npm run build --workspace=admin && npm run start --workspace=admin"
-    restart: always
+      - ../apps/compass-admin/.env.staging
+    command: >
+      sh -c "yarn start:admin"
+    networks:
+      - compass-network
 
   compass-driver:
     image: node:20-alpine3.19
     working_dir: /app
+    restart: always
     volumes:
       - ../:/app
     ports:
-      - "${STAGING_PORT_DRIVER}:3000"
+      - "${STAGING_PORT_DRIVER}:3028" # Внешний порт 4028 -> внутренний 3028
+    environment:
+      NODE_ENV: production
     env_file:
-      - ../.env
-    command: sh -c "npm run build --workspace=driver && npm run start --workspace=driver"
-    restart: always
+      - ../apps/compass-driver-mobile/.env.staging
+    command: >
+      sh -c "yarn start:driver-mobile"
+    networks:
+      - compass-network
 
   compass-terminal:
     image: node:20-alpine3.19
     working_dir: /app
+    restart: always
     volumes:
       - ../:/app
     ports:
-      - "${STAGING_PORT_TERMINAL}:3000"
+      - "${STAGING_PORT_TERMINAL}:3029" # Внешний порт 4029 -> внутренний 3029
+    environment:
+      NODE_ENV: production
     env_file:
-      - ../.env
-    command: sh -c "npm run build --workspace=terminal && npm run start --workspace=terminal"
-    restart: always
+      - ../apps/compass-terminal/.env.staging
+    command: >
+      sh -c "yarn start:terminal"
+    networks:
+      - compass-network
+
+networks:
+  compass-network:
+    name: compass_default
+    external: true

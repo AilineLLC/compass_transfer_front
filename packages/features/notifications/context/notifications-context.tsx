@@ -87,13 +87,10 @@ export function NotificationsProvider({ children }: NotificationsProviderProps) 
       refreshUnreadCount();
     };
 
-    // Подписываемся на события уведомлений
-    on('NotificationUpdate', handleNotificationUpdate);
-    on('NewNotification', handleNotificationUpdate);
+    on('New', handleNotificationUpdate);
 
     return () => {
-      off('NotificationUpdate', handleNotificationUpdate);
-      off('NewNotification', handleNotificationUpdate);
+      off('New', handleNotificationUpdate);
     };
   }, [on, off, refreshUnreadCount]);
 

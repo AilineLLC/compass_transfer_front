@@ -34,44 +34,72 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
   const { playSound, stopSound } = useNotificationSound();
   const { addToStack } = useOrderStack();
 
+  const dateformat = (date: string) => {
+    const newDate = new Date(date)
+    return newDate.toLocaleString('ru-RU', {
+      timeZone: 'Asia/Bishkek',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }) ;
+  }
+
   // SignalR слушатель входящих заказов
   useEffect(() => {
-    const handleRideRequest = (notification: SignalREventData) => {
+    const handleRideRequest = async (notification: SignalREventData) => {
       if (notification && typeof notification === 'object' && 'data' in notification && notification.data && 'orderId' in notification && notification.orderId) {
-        // ID заказа находится в notification.orderId, а данные в notification.data!
-        const signalRData = notification.data as { waypoints: Array<{ location: { address?: string; name?: string } }> };
+        // Если у водителя уже есть активный заказ — не показываем модалку.
+        // Заказ уже назначен и виден в списке запланированных.
+        try {
+          const rides = await ridesApi.getMyAssignedRides();
+          const hasActive = rides.data.some(r =>
+            ['Accepted', 'Arrived', 'InProgress'].includes(r.status)
+          );
+          if (hasActive) return;
+        } catch {
+          // При ошибке проверки показываем модалку как обычно
+        }
+        type WsLocation = { Address?: string; Name?: string };
+        type WsWaypoint = { Location?: WsLocation; DepartureTime?: string | null };
+        type WsPassenger = { FirstName?: string; LastName?: string; IsMainPassenger?: boolean; Phone?: string | null };
+        type WsRideRequestData = {
+          Waypoints?: WsWaypoint[];
+          Passengers?: WsPassenger[];
+          InitialPrice?: number;
+          DriverPrice?: number | null;
+          PaymentMethodType?: string | null;
+          ScheduledTime: string;
+        };
+
+        const notifData = notification.data as WsRideRequestData;
         const orderId = notification.orderId as string;
         const rideId = (notification as { rideId?: string }).rideId as string;
         const orderTypeValue = (notification as { orderType?: string }).orderType as string;
-        const passangers = (notification.data as { passengers: Array<{ firstName?: string, lastName?: string, isMainPassenger: boolean }> }).passengers || [];
-        // Создаем правильную структуру данных для модального окна
-        const waypoints = signalRData.waypoints || [];
-        const startLocation = waypoints[0]?.location;
-        const endLocation = waypoints[1]?.location;
 
-        const notifData = notification.data as {
-          waypoints: Array<{ location: { address?: string; name?: string } }>;
-          passengers: Array<{ firstName?: string; lastName?: string; isMainPassenger: boolean }>;
-          initialPrice?: number;
-          driverPrice?: number | null;
-          paymentMethodType?: string | null;
-        };
+        const waypoints = notifData.Waypoints || [];
+        const startLocation = waypoints[0]?.Location;
+        const endLocation = waypoints[waypoints.length - 1]?.Location;
+        const passengers = notifData.Passengers || [];
+        const content = dateformat(notifData.ScheduledTime)
 
-        const tripPrice = notifData.initialPrice || 0;
-        const driverPriceValue = notifData.driverPrice ?? null;
-        const paymentMethod = (notifData.paymentMethodType as PaymentMethodType) || PaymentMethodType.Cash;
+        const tripPrice = notifData.InitialPrice || 0;
+        const driverPriceValue = notifData.DriverPrice ?? null;
+        const paymentMethod = (notifData.PaymentMethodType as PaymentMethodType) || PaymentMethodType.Cash;
 
         const mappedOrderData = {
           id: orderId,
-          orderNumber: orderId.slice(-8), // Последние 8 символов ID как номер
-          startLocationId: startLocation?.address || startLocation?.name || 'Не указано',
-          endLocationId: endLocation?.address || endLocation?.name || 'Не указано',
-          startLocationAddress: startLocation?.address || '',
-          endLocationAddress: endLocation?.address || '',
+          orderNumber: orderId.slice(-8),
+          startLocationId: startLocation?.Address || startLocation?.Name || 'Не указано',
+          endLocationId: endLocation?.Address || endLocation?.Name || 'Не указано',
+          startLocationAddress: startLocation?.Address || '',
+          endLocationAddress: endLocation?.Address || '',
           type: orderTypeValue === 'Instant' ? 'Instant' : 'Scheduled',
           status: OrderStatus.Pending,
-          additionalStops: waypoints.slice(2)?.map((wp: { location: { address?: string; name?: string } }) => wp.location?.address || wp.location?.name || 'Дополнительная остановка') || [],
-          // Добавляем другие поля с дефолтными значениями
+          additionalStops: waypoints.slice(1, -1).map((wp) =>
+            wp.Location?.Address || wp.Location?.Name || 'Дополнительная остановка',
+          ),
           customerId: '',
           driverId: null,
           createdAt: new Date().toISOString(),
@@ -88,9 +116,15 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
           driverPrice: driverPriceValue,
           paymentMethodType: paymentMethod,
           services: [],
-          passengers: passangers.length > 1 ? passangers.filter((passenger) => passenger.isMainPassenger) : passangers
+          content: content,
+          passengers: passengers.map((p) => ({
+            firstName: p.FirstName || '',
+            lastName: p.LastName || null,
+            isMainPassenger: p.IsMainPassenger || false,
+            phone: p.Phone || null,
+          })),
         } as unknown as GetOrderDTO;
-
+        
         setCurrentOrder(mappedOrderData);
         setCurrentOrderId(orderId);
         setCurrentRideId(rideId);
@@ -106,10 +140,10 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
       }
     };
 
-    on('RideRequestNotification', handleRideRequest);
+    on('RideRequest', handleRideRequest);
 
     return () => {
-      off('RideRequestNotification', handleRideRequest);
+      off('RideRequest', handleRideRequest);
       stopSound();
     };
   }, [on, off, playSound, stopSound]);
@@ -219,14 +253,20 @@ export function IncomingOrderModal({ onOrderAccepted }: IncomingOrderModalProps)
   // Вычисляем процент для анимации кнопки - теперь считаем оставшееся время
   const progressPercent = (timeLeft / 10) * 100;
 
+  const passenger = currentOrder.passengers.find(item => item?.IsMainPassenger) 
+  ?? currentOrder.passengers[0]
+
+  const passengerFullname = `${passenger?.firstName || '-'} ${passenger?.lastName || ''}`
+
   return (
     <div className='fixed inset-0 z-50 flex items-center justify-center p-4'>
       <div className='w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300'>
         {/*  информация о пользователе */}
         <div className='px-6 pt-8 pb-4 text-left'>
           <h3 className='text-lg font-semibold text-gray-900 mb-1'>
-            {currentOrder.passengers[0]?.firstName} {currentOrder.passengers[0]?.lastName}
+            {passengerFullname}
           </h3>
+          <p className='text-sm font-semibold mt-1'>Запланированное время: {currentOrder.content}</p>
         </div>
         <div className='mb-[30px] flex justify-center px-[10px]'>
           <hr className='border-gray-200 border-gray-200 w-full' />

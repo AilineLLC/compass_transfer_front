@@ -19,6 +19,8 @@ export interface GetOrderDTO {
    */
   orderNumber: number;
 
+  content: string;
+
   /**
    * Тип заказа
    */
@@ -68,6 +70,11 @@ export interface GetOrderDTO {
    * Время фактического завершения заказа
    */
   completedAt?: string | null;
+
+  /**
+   * Примерное время окончания заказа
+   */
+  completionTimeEstimate?: string | null;
 
   /**
    * Использованный шаблон маршрута (если есть)
@@ -140,6 +147,11 @@ export interface GetOrderDTO {
   notes?: string | null;
 
   /**
+   * Заметки операторов (не видны водителям и контрагентам)
+   */
+  operatorNotes?: string | null;
+
+  /**
    * Доход водителя с поездки
    */
   driverProfit?: number | null;
@@ -153,4 +165,19 @@ export interface GetOrderDTO {
    * Метод оплаты (Наличные / Безналичный)
    */
   paymentMethodType?: PaymentMethodType | null;
+
+  /**
+   * ID предпочитаемого автомобиля пассажиров
+   */
+  requestedCar?: string | null;
+
+  /**
+   * Цвет метки заказа (hex-строка, например '#EF4444')
+   */
+  markColor?: string | null;
+
+  /**
+   * Флаг выплаты водителю: true — деньги переданы водителю
+   */
+  driverPayedOut?: boolean | null;
 }

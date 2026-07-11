@@ -15,6 +15,15 @@ export interface CarDriverRelation {
   assignedAt: string;
 }
 
+export interface CarImageDTO {
+  id: string;
+  path: string;
+  name?: string;
+  extension?: string;
+  size?: number;
+  createdAt?: string;
+}
+
 /**
  * Интерфейс для получения полной информации об автомобиле с ID и водителями
  * @interface GetCarDTO
@@ -32,4 +41,5 @@ export interface GetCarDTO {
   features: CarFeature[];
   id: string;
   drivers?: Array<CarDriverRelation>;
+  images?: CarImageDTO[];
 }

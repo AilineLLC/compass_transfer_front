@@ -25,7 +25,6 @@ export const MapSearch: React.FC<MapSearchProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // Поиск через Nominatim API
   const searchLocations = async (searchQuery: string) => {
     if (!searchQuery.trim()) {
       setResults([]);
@@ -34,13 +33,14 @@ export const MapSearch: React.FC<MapSearchProps> = ({
 
     setIsLoading(true);
     try {
+      const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
       const response = await fetch(
-        `/api/geocoding/search?q=${encodeURIComponent(searchQuery)}`
+        `${basePath}/api/geocoding/search?q=${encodeURIComponent(searchQuery)}`
       );
-      
+
       if (response.ok) {
         const data = await response.json();
-        setResults(data.slice(0, 5)); // Показываем только первые 5 результатов
+        setResults(data.slice(0, 5));
       } else {
         setResults([]);
       }

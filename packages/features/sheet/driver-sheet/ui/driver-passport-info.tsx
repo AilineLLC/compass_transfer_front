@@ -7,6 +7,17 @@ interface DriverPassportInfoProps {
 }
 
 export function DriverPassportInfo({ driver }: DriverPassportInfoProps) {
+  const passport = driver.profile.passport;
+
+  if (!passport) {
+    return (
+      <div className='space-y-4'>
+        <h3 className='text-lg font-semibold'>Паспортные данные</h3>
+        <p className='text-sm text-muted-foreground'>Паспортные данные не заполнены</p>
+      </div>
+    );
+  }
+
   return (
     <div className='space-y-4'>
       <h3 className='text-lg font-semibold'>Паспортные данные</h3>
@@ -15,35 +26,35 @@ export function DriverPassportInfo({ driver }: DriverPassportInfoProps) {
           <div className='flex justify-between'>
             <span className='text-sm text-muted-foreground'>Серия и номер:</span>
             <span className='font-medium'>
-              {driver.profile.passport.series ? `${driver.profile.passport.series} ` : ''}
-              {driver.profile.passport.number}
+              {passport.series ? `${passport.series} ` : ''}
+              {passport.number}
             </span>
           </div>
           <div className='flex justify-between'>
             <span className='text-sm text-muted-foreground'>Дата выдачи:</span>
             <span className='font-medium'>
-              {driver.profile.passport.issueDate
-                ? new Date(driver.profile.passport.issueDate).toLocaleDateString('ru-RU')
+              {passport.issueDate
+                ? new Date(passport.issueDate).toLocaleDateString('ru-RU')
                 : 'Не указана'
               }
             </span>
           </div>
           <div className='flex justify-between'>
             <span className='text-sm text-muted-foreground'>Кем выдан:</span>
-            <span className='font-medium'>{driver.profile.passport.issuedBy || 'Не указано'}</span>
+            <span className='font-medium'>{passport.issuedBy || 'Не указано'}</span>
           </div>
           <div className='flex justify-between'>
             <span className='text-sm text-muted-foreground'>Срок действия:</span>
             <span className='font-medium'>
-              {driver.profile.passport.expiryDate
-                ? new Date(driver.profile.passport.expiryDate).toLocaleDateString('ru-RU')
+              {passport.expiryDate
+                ? new Date(passport.expiryDate).toLocaleDateString('ru-RU')
                 : 'Не указан'
               }
             </span>
           </div>
           <div className='flex justify-between'>
             <span className='text-sm text-muted-foreground'>Тип документа:</span>
-            <span className='font-medium'>{driver.profile.passport.identityType || 'Не указан'}</span>
+            <span className='font-medium'>{passport.identityType || 'Не указан'}</span>
           </div>
         </div>
       </div>

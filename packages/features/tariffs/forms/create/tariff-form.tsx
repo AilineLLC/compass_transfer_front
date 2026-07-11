@@ -2,10 +2,11 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { AxiosError } from 'axios';
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { tariffsApi } from '@shared/api/tariffs';
+import { filesApi } from '@shared/api/files';
 import { logger } from '@shared/lib';
 import { CarType } from '@entities/tariffs/enums/CarType.enum';
 import { ServiceClass } from '@entities/tariffs/enums/ServiceClass.enum';
@@ -19,6 +20,7 @@ import {
   tariffCreateSchema,
   type TariffCreateFormData,
 } from '@entities/tariffs/schemas/tariffCreateSchema';
+import type { TariffIconItem } from '@entities/tariffs/ui/tariff-basic-section';
 
 type ApiError = {
   detail?: string;
@@ -33,6 +35,7 @@ export function useTariffFormLogic({
   onSuccess: () => void;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const iconItemRef = useRef<TariffIconItem | null>(null);
 
   const form = useForm<TariffCreateFormData>({
     resolver: zodResolver(tariffCreateSchema),
@@ -46,6 +49,8 @@ export function useTariffFormLogic({
       minimumPrice: 0,
       perKmPrice: undefined,
       freeWaitingTimeMinutes: undefined,
+      isLanding: false,
+      color: null,
     },
   });
 
@@ -59,20 +64,34 @@ export function useTariffFormLogic({
 
   const formData = watch();
 
+  const onIconChange = useCallback((item: TariffIconItem | null) => {
+    iconItemRef.current = item;
+  }, []);
+
   const onSubmit = useCallback(
     async (data: TariffCreateFormData) => {
       setIsSubmitting(true);
       try {
-        // Подготавливаем данные для API
+        let iconId: string | null = null;
+        const iconItem = iconItemRef.current;
+        if (iconItem?.kind === 'pending' && !iconItem.error) {
+          iconId = await filesApi.uploadFile('TariffIcon', iconItem.file);
+        } else if (iconItem?.kind === 'existing') {
+          iconId = iconItem.id;
+        }
+
         const apiData = {
           name: data.name,
           serviceClass: data.serviceClass,
           carType: data.carType,
           basePrice: data.basePrice,
           minutePrice: data.minutePrice,
-          minimumPrice: 0, // Всегда передаем 0
+          minimumPrice: 0,
           perKmPrice: data.perKmPrice,
           freeWaitingTimeMinutes: data.freeWaitingTimeMinutes,
+          isLanding: data.isLanding,
+          color: data.color,
+          iconId,
         };
 
         const result = await tariffsApi.createTariff(apiData);
@@ -176,5 +195,6 @@ export function useTariffFormLogic({
     onCreate,
     handleChapterClick,
     onBack,
+    onIconChange,
   };
 }

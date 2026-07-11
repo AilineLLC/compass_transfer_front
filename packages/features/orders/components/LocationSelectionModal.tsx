@@ -21,6 +21,7 @@ interface LocationSelectionModalProps {
   onLocationSelect: (location: GetLocationDTO) => void;
   title: string;
   selectedLocationIds?: string[]; // Уже выбранные локации
+  isLandingOnly?: boolean; // Показывать только лендинговые локации
 }
 
 interface Filters {
@@ -63,7 +64,8 @@ export function LocationSelectionModal({
   onClose,
   onLocationSelect,
   title,
-  selectedLocationIds = []
+  selectedLocationIds = [],
+  isLandingOnly,
 }: LocationSelectionModalProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<Filters>({});
@@ -101,10 +103,11 @@ export function LocationSelectionModal({
         if (filters.city) { params.City = filters.city; params.CityOp = 'Contains'; }
         if (filters.region) { params.Region = filters.region; params.RegionOp = 'Contains'; }
         if (filters.isActive !== undefined) params.IsActive = filters.isActive;
+        if (isLandingOnly) params.IsLandingOnly = true;
 
         // Запускаем геокодинг параллельно с поиском в базе (только при запросе ≥ 2 символов)
         const geocodingPromise: Promise<GeocodingResult[]> = trimmedQuery.length >= 2
-          ? fetch(`/api/geocoding/search?q=${encodeURIComponent(trimmedQuery)}`)
+          ? fetch(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/api/geocoding/search?q=${encodeURIComponent(trimmedQuery)}`)
               .then(r => r.ok ? r.json() : [])
               .catch(() => [])
           : Promise.resolve([]);
@@ -168,7 +171,7 @@ export function LocationSelectionModal({
         street: '',
       };
       try {
-        const reverseResponse = await fetch(`/api/geocoding/reverse?lat=${lat}&lon=${lon}`);
+        const reverseResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/api/geocoding/reverse?lat=${lat}&lon=${lon}`);
         if (reverseResponse.ok) {
           addressData = await reverseResponse.json();
         }
@@ -182,14 +185,18 @@ export function LocationSelectionModal({
         type: LocationType.Other,
         name: name || result.display_name,
         address: result.display_name,
+        description: null,
         city: addressData.city || 'Бишкек',
         country: addressData.country || 'Кыргызстан',
         region: addressData.region || addressData.city || 'Чуйская область',
         latitude: lat,
         longitude: lon,
         isActive: true,
+        isLandingOnly: isLandingOnly ?? null,
         district: null,
         group: null,
+        images: [],
+        poi: [],
       });
 
       onLocationSelect(newLocation as unknown as GetLocationDTO);

@@ -12,7 +12,8 @@ export const driverPassportSchema = z.object({
     .string({
       message: 'Номер паспорта должен быть строкой',
     })
-    .min(1, { message: 'Номер паспорта не может быть пустым' }),
+    .nullable()
+    .optional(),
 
   /**
    * Серия паспорта
@@ -21,6 +22,7 @@ export const driverPassportSchema = z.object({
     .string({
       message: 'Серия паспорта должна быть строкой',
     })
+    .max(2, { message: 'Серия паспорта не должна превышать 2 символа' })
     .nullable()
     .optional(),
 
@@ -68,7 +70,7 @@ export const driverPassportSchema = z.object({
    */
   identityType: z.nativeEnum(IdentityDocumentType, {
     message: 'Выберите тип документа',
-  }),
+  }).optional(),
 });
 /**
  * Тип данных паспорта водителя, выведенный из схемы

@@ -33,3 +33,4 @@ export * from './CreateOperatorDTO';
 export * from './CreatePartnerDTO';
 export * from './CreateTerminalDTO';
 export * from './GetUserSelfProfileDTO';
+export * from './GetUserSelfDTO';

@@ -2,6 +2,7 @@
 
 import { LogOut } from 'lucide-react';
 import { useState } from 'react';
+import { AuthService } from '@shared/api/auth-service';
 import { logger } from '@shared/lib';
 import { Button } from '@shared/ui/forms/button';
 
@@ -21,24 +22,27 @@ export function LogoutButton({
   const handleLogout = async () => {
     setIsLoading(true);
 
+    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+
+    // 1. Вызываем бэкенд напрямую из браузера — он корректно очистит сессию и куку
     try {
-      // Сначала вызываем наш API route для очистки куки
-      const logoutResponse = await fetch('/api/auth/logout', {
+      await AuthService.logout();
+    } catch (error) {
+      logger.warn('Ошибка при вызове бэкенд logout:', error);
+    }
+
+    // 2. Дополнительно очищаем куки на стороне Next.js через API route
+    try {
+      await fetch(`${basePath}/api/auth/logout`, {
         method: 'POST',
         credentials: 'include',
       });
-
-      if (logoutResponse.ok) {
-        // Перенаправляем на страницу входа
-        window.location.href = '/login';
-      } else {
-        logger.error('Ошибка при выходе из системы');
-      }
     } catch (error) {
-      logger.error('Ошибка при выходе:', error);
-    } finally {
-      setIsLoading(false);
+      logger.warn('Ошибка при вызове Next.js logout route:', error);
     }
+
+    // 3. Перенаправляем на страницу входа в любом случае
+    window.location.href = `${basePath}/login`;
   };
 
   return (

@@ -8,6 +8,7 @@ export interface User {
     online: boolean;
     phoneNumber?: string | null;
     avatarUrl?: string | null;
+    activeCarId?: string | null;
 }
 
 export const driverProfileApi = {

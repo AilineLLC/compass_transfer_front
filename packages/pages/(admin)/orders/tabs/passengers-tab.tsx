@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Users, Plus, Trash2, User, Phone, Mail, Search, UserCheck, MapPin, ExternalLink } from 'lucide-react';
 import { Badge } from '@shared/ui/data-display/badge';
 import { Button } from '@shared/ui/forms/button';
@@ -23,7 +24,76 @@ interface PassengersTabProps {
   [key: string]: unknown;
 }
 
+interface CountryOption {
+  code: string;
+  name: string;
+  dialCode: string;
+  flag: string;
+  digitCount: number | [number, number];
+}
+
+const COUNTRY_OPTIONS: CountryOption[] = [
+  { code: 'KG', name: 'Кыргызстан',   dialCode: '+996', flag: '🇰🇬', digitCount: 9 },
+  { code: 'RU', name: 'Россия',        dialCode: '+7',   flag: '🇷🇺', digitCount: 10 },
+  { code: 'KZ', name: 'Казахстан',     dialCode: '+7',   flag: '🇰🇿', digitCount: 10 },
+  { code: 'UZ', name: 'Узбекистан',    dialCode: '+998', flag: '🇺🇿', digitCount: 9 },
+  { code: 'TJ', name: 'Таджикистан',   dialCode: '+992', flag: '🇹🇯', digitCount: 9 },
+  { code: 'TM', name: 'Туркменистан',  dialCode: '+993', flag: '🇹🇲', digitCount: 8 },
+  { code: 'AZ', name: 'Азербайджан',   dialCode: '+994', flag: '🇦🇿', digitCount: 9 },
+  { code: 'AM', name: 'Армения',       dialCode: '+374', flag: '🇦🇲', digitCount: 8 },
+  { code: 'GE', name: 'Грузия',        dialCode: '+995', flag: '🇬🇪', digitCount: 9 },
+  { code: 'UA', name: 'Украина',       dialCode: '+380', flag: '🇺🇦', digitCount: 9 },
+  { code: 'BY', name: 'Беларусь',      dialCode: '+375', flag: '🇧🇾', digitCount: 9 },
+  { code: 'CN', name: 'Китай',         dialCode: '+86',  flag: '🇨🇳', digitCount: 11 },
+  { code: 'TR', name: 'Турция',        dialCode: '+90',  flag: '🇹🇷', digitCount: 10 },
+  { code: 'US', name: 'США / Канада',  dialCode: '+1',   flag: '🇺🇸', digitCount: 10 },
+  { code: 'DE', name: 'Германия',      dialCode: '+49',  flag: '🇩🇪', digitCount: [10, 11] },
+  { code: 'GB', name: 'Великобритания',dialCode: '+44',  flag: '🇬🇧', digitCount: 10 },
+  { code: 'AE', name: 'ОАЭ',           dialCode: '+971', flag: '🇦🇪', digitCount: 9 },
+];
+
+const DEFAULT_COUNTRY = COUNTRY_OPTIONS[0];
+
+function detectCountryFromPhone(phone: string): CountryOption | null {
+  if (!phone) return null;
+  const cleaned = phone.replace(/[\s\-\(\)\.]/g, '');
+  if (/^0\d{9}$/.test(cleaned)) return COUNTRY_OPTIONS.find(c => c.code === 'KG') ?? null;
+  if (!cleaned.startsWith('+')) return null;
+  // Match longest dial code first to avoid +7 shadowing +374, +375, etc.
+  const sorted = [...COUNTRY_OPTIONS].sort((a, b) => b.dialCode.length - a.dialCode.length);
+  for (const country of sorted) {
+    if (cleaned.startsWith(country.dialCode)) return country;
+  }
+  return null;
+}
+
+function getNationalNumber(fullPhone: string, country: CountryOption): string {
+  if (!fullPhone) return '';
+  const cleaned = fullPhone.replace(/[\s\-\(\)\.]/g, '');
+  if (country.code === 'KG' && /^0\d{9}$/.test(cleaned)) return cleaned.slice(1);
+  if (cleaned.startsWith(country.dialCode)) return cleaned.slice(country.dialCode.length);
+  return cleaned;
+}
+
+function validateNationalNumber(digits: string, country: CountryOption): string {
+  if (!digits) return '';
+  const count = digits.replace(/\D/g, '').length;
+  const expected = country.digitCount;
+  if (typeof expected === 'number') {
+    if (count !== expected) return `Нужно ${expected} цифр (введено ${count})`;
+  } else {
+    if (count < expected[0] || count > expected[1]) {
+      return `Нужно ${expected[0]}–${expected[1]} цифр (введено ${count})`;
+    }
+  }
+  return '';
+}
+
 export function PassengersTab({ users, passengers: initialPassengers, handlePassengersChange, selectedTariff, isInstantOrder = false, onValidationError: _onValidationError, userRole = 'operator' }: PassengersTabProps) {
+  const [phoneErrors, setPhoneErrors] = useState<Record<string, string>>({});
+  // Explicit country selection per passenger (overrides auto-detection)
+  const [phoneCountries, setPhoneCountries] = useState<Record<string, string>>({});
+
   const {
     passengers,
     selectedCustomer,
@@ -53,7 +123,42 @@ export function PassengersTab({ users, passengers: initialPassengers, handlePass
     onValidationError: _onValidationError,
   });
 
+  // Determine country for a passenger (explicit selection → auto-detect → default KG)
+  const getCountryForPassenger = (passenger: EnhancedPassenger): CountryOption => {
+    const code = phoneCountries[passenger.id];
+    if (code) return COUNTRY_OPTIONS.find(c => c.code === code) ?? DEFAULT_COUNTRY;
+    if (passenger.phone) {
+      const detected = detectCountryFromPhone(passenger.phone);
+      if (detected) return detected;
+    }
+    return DEFAULT_COUNTRY;
+  };
 
+  const handleCountryChange = (passengerId: string, newCode: string) => {
+    const newCountry = COUNTRY_OPTIONS.find(c => c.code === newCode) ?? DEFAULT_COUNTRY;
+    const passenger = passengers.find(p => p.id === passengerId);
+    const oldCountry = passenger ? getCountryForPassenger(passenger) : DEFAULT_COUNTRY;
+    const oldNationalDigits = passenger?.phone
+      ? getNationalNumber(passenger.phone, oldCountry).replace(/\D/g, '')
+      : '';
+    setPhoneCountries(prev => ({ ...prev, [passengerId]: newCode }));
+    const newPhone = oldNationalDigits ? `${newCountry.dialCode}${oldNationalDigits}` : '';
+    updatePassenger(passengerId, 'phone', newPhone);
+    setPhoneErrors(prev => ({ ...prev, [passengerId]: validateNationalNumber(oldNationalDigits, newCountry) }));
+  };
+
+  const handleNationalNumberChange = (passengerId: string, raw: string, country: CountryOption) => {
+    let digits = raw.replace(/\D/g, '');
+    // Auto-strip pasted country code prefix when digit count matches
+    const dialDigits = country.dialCode.slice(1);
+    const maxDigits = typeof country.digitCount === 'number' ? country.digitCount : country.digitCount[1];
+    if (digits.startsWith(dialDigits) && digits.length > maxDigits && (digits.length - dialDigits.length) <= maxDigits) {
+      digits = digits.slice(dialDigits.length);
+    }
+    const fullPhone = digits ? `${country.dialCode}${digits}` : '';
+    updatePassenger(passengerId, 'phone', fullPhone);
+    setPhoneErrors(prev => ({ ...prev, [passengerId]: validateNationalNumber(digits, country) }));
+  };
 
   // Показываем индикатор загрузки, пока данные пассажиров не загружены
   if (isLoadingPassengerData || !passengersDataLoaded) {
@@ -426,12 +531,50 @@ export function PassengersTab({ users, passengers: initialPassengers, handlePass
                               onChange={(e) => updatePassenger(passenger.id, 'firstName', e.target.value)}
                               className='font-medium'
                             />
-                            <Input
-                              placeholder="Введите телефон"
-                              value={passenger.phone}
-                              onChange={(e) => updatePassenger(passenger.id, 'phone', e.target.value)}
-                              className='text-sm'
-                            />
+                            {(() => {
+                              const country = getCountryForPassenger(passenger);
+                              const nationalNumber = getNationalNumber(passenger.phone ?? '', country);
+                              const digitHint = typeof country.digitCount === 'number'
+                                ? `${country.digitCount} цифр`
+                                : `${country.digitCount[0]}–${country.digitCount[1]} цифр`;
+                              const isEmpty = !nationalNumber;
+                              return (
+                                <div className='space-y-1'>
+                                  <div className='flex items-center gap-1'>
+                                    <span className='text-sm font-medium'>Телефон</span>
+                                    <span className='text-red-500 text-sm'>*</span>
+                                  </div>
+                                  {/* Единый контейнер — один бордер, одна высота */}
+                                  <div className={`flex h-10 rounded-md border bg-background overflow-hidden transition-colors focus-within:ring-1 focus-within:ring-ring ${phoneErrors[passenger.id] || isEmpty ? 'border-red-500 focus-within:ring-red-500' : 'border-input'}`}>
+                                    <select
+                                      value={country.code}
+                                      onChange={(e) => handleCountryChange(passenger.id, e.target.value)}
+                                      className='h-full bg-muted border-r border-input text-sm pl-2 pr-1 focus:outline-none cursor-pointer shrink-0'
+                                    >
+                                      {COUNTRY_OPTIONS.map(c => (
+                                        <option key={c.code} value={c.code}>
+                                          {c.flag} {c.dialCode}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    <input
+                                      placeholder={digitHint}
+                                      value={nationalNumber}
+                                      maxLength={typeof country.digitCount === 'number' ? country.digitCount : country.digitCount[1]}
+                                      onChange={(e) => handleNationalNumberChange(passenger.id, e.target.value, country)}
+                                      className='flex-1 min-w-0 px-3 text-sm bg-transparent placeholder:text-muted-foreground focus:outline-none'
+                                    />
+                                  </div>
+                                  {phoneErrors[passenger.id] ? (
+                                    <p className='text-xs text-red-500'>{phoneErrors[passenger.id]}</p>
+                                  ) : isEmpty ? (
+                                    <p className='text-xs text-red-500'>Номер телефона обязателен</p>
+                                  ) : (
+                                    <p className='text-xs text-muted-foreground'>{country.dialCode}{nationalNumber}</p>
+                                  )}
+                                </div>
+                              );
+                            })()}
                             {passenger.email && (
                               <div className='flex items-center gap-1 text-sm text-gray-500'>
                                 <Mail className='h-3 w-3' />

@@ -2,10 +2,12 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { AxiosError } from 'axios';
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { carsApi } from '@shared/api/cars';
+import { filesApi } from '@shared/api/files';
+import type { CarImagesItem } from '@entities/cars/ui/car-images-section';
 import { logger } from '@shared/lib';
 import { CarColor, VehicleType, ServiceClass, VehicleStatus, CarFeature, VEHICLE_TYPE_CAPACITY } from '@entities/cars/enums';
 import {
@@ -47,6 +49,7 @@ export function useCarEditFormLogic({
   onSuccess: () => void;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const imageItemsRef = useRef<CarImagesItem[]>([]);
 
   const form = useForm({
     resolver: zodResolver(carUpdateSchema),
@@ -80,6 +83,16 @@ export function useCarEditFormLogic({
     async (data: CarUpdateFormData) => {
       setIsSubmitting(true);
       try {
+        const imageIds = await Promise.all(
+          imageItemsRef.current
+            .filter(item => item.kind !== 'pending' || !item.error)
+            .map(item =>
+              item.kind === 'existing'
+                ? Promise.resolve(item.id)
+                : filesApi.uploadFile('CarImage', item.file),
+            ),
+        );
+
         const apiData = {
           make: data.make,
           model: data.model,
@@ -91,8 +104,9 @@ export function useCarEditFormLogic({
           status: data.status,
           passengerCapacity: data.passengerCapacity,
           features: data.features,
+          images: imageIds,
         };
-        
+
         const result = await carsApi.updateCar(carId, apiData);
 
         if (result && result.make && result.model) {
@@ -188,6 +202,7 @@ export function useCarEditFormLogic({
   return {
     form,
     isSubmitting,
+    imageItemsRef,
     getChapterStatus,
     getChapterErrors,
     onUpdate,
