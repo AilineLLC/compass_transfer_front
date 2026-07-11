@@ -11,6 +11,7 @@ const config = {
     '../../packages/entities/**/*.{ts,tsx}',
     '../../packages/features/auth/**/*.{ts,tsx}',
     '../../packages/features/cars/**/*.{ts,tsx}',
+    '../../packages/features/chat/**/*.{ts,tsx}',
     '../../packages/features/dashboard/**/*.{ts,tsx}',
     '../../packages/features/drivers/**/*.{ts,tsx}',
     '../../packages/features/gis/**/*.{ts,tsx}',

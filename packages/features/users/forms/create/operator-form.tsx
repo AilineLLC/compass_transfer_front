@@ -42,6 +42,7 @@ export function useOperatorFormLogic({
       fullName: '',
       avatarUrl: null,
       isActive: true,
+      isMainSupportOperator: false,
       profile: {
         employeeId: `OP-${Date.now()}`,
         department: 'Операторы',

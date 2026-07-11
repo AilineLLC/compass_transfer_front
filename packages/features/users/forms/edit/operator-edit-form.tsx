@@ -34,6 +34,7 @@ export function useOperatorEditFormLogic({
     phoneNumber?: string | null;
     avatarUrl?: string | null;
     isActive: boolean;
+    isMainSupportOperator: boolean;
     profile: Record<string, unknown>; // TODO: Использовать OperatorProfile после исправления несоответствий типов
   };
   onBack: () => void;
@@ -49,6 +50,7 @@ export function useOperatorEditFormLogic({
       phoneNumber: initialData.phoneNumber || '',
       avatarUrl: initialData.avatarUrl || null,
       isActive: initialData.isActive,
+      isMainSupportOperator: initialData.isMainSupportOperator,
       profile: initialData.profile,
     },
   });

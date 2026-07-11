@@ -12,6 +12,7 @@ import {
   ArrowLeftRight,
   ClipboardList,
   Wallet,
+  MessageCircle,
 } from 'lucide-react';
 import { sidebarMockData } from '@entities/users/mock-data';
 
@@ -215,6 +216,12 @@ export const sidebarData = {
           url: '/notifications/create',
         },
       ],
+    },
+    {
+      title: 'Чат с водителями',
+      url: '/chat',
+      icon: MessageCircle,
+      items: [],
     },
   ],
   documents: [

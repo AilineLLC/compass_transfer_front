@@ -18,6 +18,7 @@ import {
 import { NavMain, NavDocuments } from '@entities/navigation';
 import { NavUser } from '@entities/users';
 import { Role, ActivityStatus } from '@entities/users/enums';
+import { useSelfUser } from '@entities/users/hooks/useSelfUser';
 import type { GetUserSelfProfileDTO, GetDriverDTO } from '@entities/users/interface';
 import { getRoleDisplayName } from '@entities/users/utils';
 import { useDrivers, type SidebarDriver } from '@widgets/sidebar/hooks';
@@ -27,8 +28,17 @@ import { DriversList } from './drivers-list';
 import { RefreshCw } from 'lucide-react';
 
 // Функция для фильтрации пунктов меню в зависимости от роли
-const filterMenuItemsByRole = (items: typeof sidebarData.navMain, userRole: Role) => {
+const filterMenuItemsByRole = (
+  items: typeof sidebarData.navMain,
+  userRole: Role,
+  isMainSupportOperator: boolean,
+) => {
   return items.filter(item => {
+    // "Чат с водителями" — только у оператора с флагом isMainSupportOperator
+    if (item.title === 'Чат с водителями') {
+      return isMainSupportOperator;
+    }
+
     // Для роли Operator убираем "Уведомления"
     if (userRole === Role.Operator && item.title === 'Уведомления') {
       return false;
@@ -227,8 +237,12 @@ const guestUser: GetUserSelfProfileDTO = {
 export function AppSidebar({ currentUser, ...props }: AppSidebarProps) {
   const userRole = currentUser ? currentUser.role : Role.Unknown;
 
+  // Флаг главного оператора поддержки — определяет доступ к разделу "Чат с водителями"
+  const { data: selfUser } = useSelfUser({ enabled: userRole === Role.Operator });
+  const isMainSupportOperator = userRole === Role.Operator && selfUser?.isMainSupportOperator === true;
+
   // Фильтруем пункты меню в зависимости от роли пользователя
-  const filteredNavMain = filterMenuItemsByRole(sidebarData.navMain, userRole);
+  const filteredNavMain = filterMenuItemsByRole(sidebarData.navMain, userRole, isMainSupportOperator);
   const filteredDocuments = filterDocumentsByRole(sidebarData.documents, userRole);
 
   // Определяем, нужно ли показывать список водителей для данной роли

@@ -1,11 +1,11 @@
 import type { Role } from '@entities/users/enums';
-import type { OperatorProfile } from '@entities/users/interface/OperatorProfile';
 
 /**
- * Интерфейс GetOperatorDTO
+ * Интерфейс ответа GET /User/self
+ * Базовые данные текущего пользователя + служебные флаги (напр. isMainSupportOperator)
  * @interface
  */
-export interface GetOperatorDTO {
+export interface GetUserSelfDTO {
   id: string;
   email: string;
   role: Role;
@@ -13,8 +13,6 @@ export interface GetOperatorDTO {
   fullName: string;
   avatarUrl?: string | null;
   online?: boolean | null;
-  isActive?: boolean;
   /** true только у одного оператора — того, кто ведёт чат с водителями */
-  isMainSupportOperator?: boolean;
-  profile: OperatorProfile;
+  isMainSupportOperator?: boolean | null;
 }

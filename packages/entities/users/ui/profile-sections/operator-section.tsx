@@ -1,6 +1,7 @@
 'use client';
 
 import { Users } from 'lucide-react';
+import { Badge } from '@shared/ui/data-display/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/layout/card';
 import { formatDate } from '@entities/my-profile';
 import type { GetOperatorDTO } from '@entities/users/interface';
@@ -19,9 +20,14 @@ export function OperatorSection({ profile }: RoleSpecificSectionProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className='flex items-center gap-2'>
-          <Users className='h-5 w-5' />
-          Информация оператора
+        <CardTitle className='flex items-center gap-2 justify-between'>
+          <span className='flex items-center gap-2'>
+            <Users className='h-5 w-5' />
+            Информация оператора
+          </span>
+          {profile.isMainSupportOperator && (
+            <Badge>Главный оператор поддержки</Badge>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className='flex flex-col gap-4'>

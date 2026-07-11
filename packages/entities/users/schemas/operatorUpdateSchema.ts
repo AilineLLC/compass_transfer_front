@@ -15,6 +15,7 @@ export const operatorUpdateSchema = z.object({
     .max(255, { message: 'Полное имя не должно превышать 255 символов' }),
   avatarUrl: z.string().nullable().optional(),
   isActive: z.boolean(),
+  isMainSupportOperator: z.boolean(),
   profile: z.object({
     employeeId: z
       .string()

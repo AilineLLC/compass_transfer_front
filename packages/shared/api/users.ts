@@ -19,6 +19,7 @@ import type {
   GetPartnerDTO,
   GetTerminalDTO,
   GetUserSelfProfileDTO,
+  GetUserSelfDTO,
 } from '@entities/users/interface';
 import { apiGet, apiPost, apiPut, apiDelete, ApiRequestError } from './client';
 
@@ -219,6 +220,17 @@ export const usersApi = {
   // Получение профиля текущего пользователя
   getSelfProfile: async (): Promise<GetUserSelfProfileDTO> => {
     const result = await apiGet<GetUserSelfProfileDTO>('/User/self/profile');
+
+    if (result.error) {
+      throw new ApiRequestError(result.error);
+    }
+
+    return result.data!;
+  },
+
+  // Получение базовых данных текущего пользователя (включая isMainSupportOperator)
+  getSelf: async (): Promise<GetUserSelfDTO> => {
+    const result = await apiGet<GetUserSelfDTO>('/User/self');
 
     if (result.error) {
       throw new ApiRequestError(result.error);

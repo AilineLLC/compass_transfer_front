@@ -1,8 +1,15 @@
 import type { WSNotificationDTO } from '@shared/hooks/signal/interface/WSNotificationDTO';
+import type { ChatMessageDTO } from '@entities/chat/interface';
 
 export type { WSNotificationDTO };
 
 export type SignalREventData = WSNotificationDTO | Record<string, unknown>;
+
+/** Обёртка уведомления для событий чата (data — само сообщение чата) */
+export interface WSChatMessageEventDTO extends Omit<WSNotificationDTO, 'data' | 'type'> {
+  type: 'ChatMessageNew' | 'ChatMessageUpdated' | 'ChatMessageDeleted';
+  data: ChatMessageDTO;
+}
 
 /**
  * Все события SignalR. 'New' — единственный event от сервера.
@@ -27,6 +34,9 @@ export interface SignalREventMap {
   DriverArrived: WSNotificationDTO;
   DriverAssigned: WSNotificationDTO;
   DriverCancelled: WSNotificationDTO;
+  ChatMessageNew: WSChatMessageEventDTO;
+  ChatMessageUpdated: WSChatMessageEventDTO;
+  ChatMessageDeleted: WSChatMessageEventDTO;
 }
 
 export type SignalRCallback<T = SignalREventData> = (data: T) => void;
